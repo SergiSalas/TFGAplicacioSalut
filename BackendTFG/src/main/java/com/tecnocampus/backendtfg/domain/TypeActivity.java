@@ -1,0 +1,5 @@
+package com.tecnocampus.backendtfg.domain;
+
+public enum TypeActivity {RUNNING, WALKING, CYCLING, SWIMMING, HIKING, CLIMBING, HIIT,
+    CROSSFIT, SPINNING, YOGA, PILATES, DANCE, BOXING, KICKBOXING, RACKET, FOOTBALL,TRIATHLON}
+// e.g., tennis or basketball SURFING, SKATING, TRIATHLON, OTHER
