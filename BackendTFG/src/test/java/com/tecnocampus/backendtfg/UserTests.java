@@ -42,4 +42,34 @@ public class UserTests {
 
         System.out.println("Verified userRepository.save was called once");
     }
+
+    @Test
+    void testDeleteUser() {
+        UserDTO userDTO = new UserDTO();
+        userDTO.setName("testuser2");
+        userDTO.setPassword("password2");
+        userDTO.setEmail("test@example.com");  // Add this line
+
+        System.out.println("UserDTO created: " + userDTO);
+
+        User user = new User(userDTO);
+
+        System.out.println("User created from UserDTO: " + user);
+
+        Mockito.when(userRepository.findByEmail("test@example.com")).thenReturn(user);
+
+        System.out.println("Mock setup for userRepository.findByEmail");
+
+        userService.deleteUser(userDTO);
+
+        System.out.println("UserService.deleteUser called with UserDTO");
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByEmail("test@example.com");
+
+        System.out.println("Verified userRepository.findByEmail was called once");
+
+        Mockito.verify(userRepository, Mockito.times(1)).delete(user);
+
+        System.out.println("Verified userRepository.delete was called once");
+    }
 }
