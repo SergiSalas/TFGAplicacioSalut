@@ -8,13 +8,14 @@ import lombok.Setter;
 import java.util.Date;
 
 @Entity
+@Table(name = "Activities")
 @Getter
 @Setter
 @NoArgsConstructor
 public class Activity {
 
     @Id
-    private Long id;
+    private String id = java.util.UUID.randomUUID().toString();
     private double duration;
     private Date date;
     private  TypeActivity type;

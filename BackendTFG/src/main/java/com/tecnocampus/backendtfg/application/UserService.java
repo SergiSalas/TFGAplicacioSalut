@@ -19,4 +19,10 @@ public class UserService {
         User user = new User(userDTO);
         userRepository.save(user);
     }
+
+    public void deleteUser(UserDTO userDTO) {
+        String email = userDTO.getEmail();
+        User user = userRepository.findByEmail(email);
+        userRepository.delete(user);
+    }
 }
