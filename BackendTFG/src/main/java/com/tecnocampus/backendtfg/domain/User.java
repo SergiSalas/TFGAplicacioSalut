@@ -1,6 +1,7 @@
 package com.tecnocampus.backendtfg.domain;
 
 
+import com.tecnocampus.backendtfg.application.dto.UserDTO;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
@@ -56,6 +57,18 @@ public class User {
         this.surname = surname;
         this.email = email;
         this.password = password;
+        this.activityProfile = new ActivityProfile();
+        this.sleepProfile = new SleepProfile();
+        this.hidratationProfile = new HidratationProfile();
+    }
+
+    public User (UserDTO userDTO) {
+        this.name = userDTO.getName();
+        this.surname = userDTO.getSurname();
+        this.email = userDTO.getEmail();
+        this.password = userDTO.getPassword();
+        this.weight = userDTO.getWeight();
+        this.height = userDTO.getHeight();
         this.activityProfile = new ActivityProfile();
         this.sleepProfile = new SleepProfile();
         this.hidratationProfile = new HidratationProfile();
