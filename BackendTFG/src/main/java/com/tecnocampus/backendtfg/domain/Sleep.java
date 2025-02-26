@@ -52,4 +52,13 @@ public class Sleep {
         this.comment = sleepDTO.getComment();
         this.sleepProfile = sleepProfile;
     }
+
+    public void update(SleepDTO sleepDTO) {
+        this.hours = sleepDTO.getHours();
+        this.date = sleepDTO.getDate();
+        this.startTime = sleepDTO.getStartTime();
+        this.endTime = sleepDTO.getEndTime();
+        this.quality = sleepDTO.getQuality();
+        this.comment = sleepDTO.getComment();
+    }
 }

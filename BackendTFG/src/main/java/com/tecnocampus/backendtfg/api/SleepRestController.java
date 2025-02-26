@@ -26,4 +26,10 @@ public class SleepRestController {
         sleepService.deleteSleep(sleepDTO,email);
         return ResponseEntity.ok("Sleep deleted");
     }
+
+    @PutMapping("/updateSleep")
+    public ResponseEntity<String> updateSleep(@RequestBody SleepDTO sleepDTO, String email) {
+        sleepService.updateSleep(sleepDTO,email);
+        return ResponseEntity.ok("Sleep updated");
+    }
 }
