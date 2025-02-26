@@ -15,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import java.util.Date;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 public class ActivityTests {
@@ -117,5 +120,30 @@ public class ActivityTests {
             Mockito.verify(activityRepository, Mockito.times(1)).findByDate(date);
             Mockito.verify(activityRepository, Mockito.times(1)).save(Mockito.any(Activity.class));
             Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+    }
+
+    @Test
+    public void getActivitiesTest() {
+        // Arrange
+        ActivityProfile activityProfile = new ActivityProfile();
+        User user = new User();
+        String email = "example@email.com";
+        user.setEmail(email);
+        user.setActivityProfile(activityProfile);
+
+        Activity activity1 = new Activity(1.5, new Date(), TypeActivity.RUNNING, "Test Description 1", activityProfile);
+        Activity activity2 = new Activity(2.0, new Date(), TypeActivity.CYCLING, "Test Description 2", activityProfile);
+        activityProfile.setActivities(List.of(activity1, activity2));
+
+        Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
+
+        // Act
+        List<ActivityDTO> activities = activityService.getActivities(email);
+
+        // Assert
+        Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
+        assertEquals(2, activities.size());
+        assertEquals("Test Description 1", activities.get(0).getDescription());
+        assertEquals("Test Description 2", activities.get(1).getDescription());
     }
 }
