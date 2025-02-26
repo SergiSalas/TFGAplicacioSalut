@@ -14,11 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 public class ActivityTests {
@@ -62,6 +58,36 @@ public class ActivityTests {
         // Assert
         Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
         Mockito.verify(activityRepository, Mockito.times(1)).save(Mockito.any(Activity.class));
+        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+    }
+
+    @Test
+    public void deleteActivityTest() {
+        // Arrange
+        ActivityProfile activityProfile = new ActivityProfile();
+        User user = new User();
+        String email = "example@email.com";
+        user.setEmail(email);
+        user.setActivityProfile(activityProfile);
+
+        Date date = new Date();
+        ActivityDTO activityDTO = new ActivityDTO();
+        activityDTO.setDuration(1.5);
+        activityDTO.setDate(date);
+        activityDTO.setType(TypeActivity.RUNNING);
+        activityDTO.setDescription("Test Description");
+
+        Activity activity = new Activity(activityDTO, activityProfile);
+
+        Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
+        Mockito.when(activityRepository.findByDate(date)).thenReturn(activity);
+
+        // Act
+        activityService.deleteActivity(activityDTO, email);
+
+        // Assert
+        Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
+        Mockito.verify(activityRepository, Mockito.times(1)).delete(Mockito.any(Activity.class));
         Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
     }
 }
