@@ -19,6 +19,8 @@ public class Activity {
     private String id = java.util.UUID.randomUUID().toString();
     private double duration;
     private Date date;
+
+    @Enumerated(EnumType.STRING)
     private  TypeActivity type;
     private String description;
 
