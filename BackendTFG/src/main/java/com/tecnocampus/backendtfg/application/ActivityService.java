@@ -9,6 +9,8 @@ import com.tecnocampus.backendtfg.persistence.ActivityRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+
 @Service
 public class ActivityService {
 
@@ -30,6 +32,15 @@ public class ActivityService {
         ActivityProfile activityProfile = user.getActivityProfile();
         Activity activity = new Activity(activityDTO,activityProfile);
         activityRepository.save(activity);
+        activityProfileRepository.save(activityProfile);
+    }
+
+    public void deleteActivity(ActivityDTO activityDTO,String email) {
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        Date date = activityDTO.getDate();
+        Activity activity = activityRepository.findByDate(date);
+        activityRepository.delete(activity);
         activityProfileRepository.save(activityProfile);
     }
 }
