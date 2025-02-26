@@ -66,4 +66,12 @@ public class User {
         this.sleepProfile = new SleepProfile(this);
         this.hidratationProfile = new HidratationProfile(this);
     }
+
+    public void update(UserDTO userDTO) {
+        this.name = userDTO.getName();
+        this.email = userDTO.getEmail();
+        this.password = userDTO.getPassword();
+        this.weight = userDTO.getWeight();
+        this.height = userDTO.getHeight();
+    }
 }

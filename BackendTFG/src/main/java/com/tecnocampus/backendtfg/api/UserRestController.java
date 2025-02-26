@@ -25,4 +25,9 @@ public class UserRestController {
         userService.deleteUser(userDTO);
         return ResponseEntity.ok("User deleted");
     }
+    @PutMapping("/updateUser")
+    public ResponseEntity<String> updateUser(@RequestBody UserDTO userDTO) {
+        userService.updateUser(userDTO);
+        return ResponseEntity.ok("User updated");
+    }
 }
