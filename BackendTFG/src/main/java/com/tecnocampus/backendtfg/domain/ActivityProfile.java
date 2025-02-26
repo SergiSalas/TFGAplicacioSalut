@@ -26,7 +26,7 @@ public class ActivityProfile {
     @OneToOne
     private User user;
 
-    @OneToMany
+    @OneToMany(mappedBy = "activityProfile", cascade = CascadeType.ALL)
     private List<Activity> activities = new ArrayList<>();
 
     public ActivityProfile(User user) {
