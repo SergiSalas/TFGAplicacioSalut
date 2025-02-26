@@ -63,4 +63,27 @@ public class SleepTests {
         verify(sleepRepository, times(1)).save(any(Sleep.class));
         verify(sleepProfileRepository, times(1)).save(sleepProfile);
     }
+
+    @Test
+    public void testDeleteSleep() {
+        // Arrange
+        String email = "test@example.com";
+        SleepDTO sleepDTO = new SleepDTO();
+        User user = new User();
+        user.setSleepProfile(new SleepProfile());
+        Date date = new Date();
+        sleepDTO.setDate(date);
+        Sleep sleep = new Sleep(sleepDTO, user.getSleepProfile());
+        sleep.setDate(date);
+        user.getSleepProfile().getSleeps().add(sleep);
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(sleepRepository.findByDate(date)).thenReturn(sleep);
+
+        // Act
+        sleepService.deleteSleep(sleepDTO, email);
+
+        // Assert
+        verify(sleepRepository, times(1)).delete(sleep);
+    }
 }
