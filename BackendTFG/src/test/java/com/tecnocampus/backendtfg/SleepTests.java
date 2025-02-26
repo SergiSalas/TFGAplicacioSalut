@@ -86,4 +86,34 @@ public class SleepTests {
         // Assert
         verify(sleepRepository, times(1)).delete(sleep);
     }
+
+    @Test
+    public void testUpdateSleep() {
+        // Arrange
+        String email = "test@example.com";
+        SleepDTO sleepDTO = new SleepDTO();
+        sleepDTO.setHours(7);
+        sleepDTO.setDate(new Date());
+        sleepDTO.setStartTime(new Date());
+        sleepDTO.setEndTime(new Date());
+        sleepDTO.setQuality(TypeQuality.AVERAGE);
+        sleepDTO.setComment("Average sleep");
+
+        User user = new User();
+        SleepProfile sleepProfile = new SleepProfile();
+        user.setSleepProfile(sleepProfile);
+
+        Sleep existingSleep = new Sleep();
+        existingSleep.setDate(sleepDTO.getDate());
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(sleepRepository.findByDate(sleepDTO.getDate())).thenReturn(existingSleep);
+
+        // Act
+        sleepService.updateSleep(sleepDTO, email);
+
+        // Assert
+        verify(sleepRepository, times(1)).save(existingSleep);
+        verify(sleepProfileRepository, times(1)).save(sleepProfile);
+    }
 }
