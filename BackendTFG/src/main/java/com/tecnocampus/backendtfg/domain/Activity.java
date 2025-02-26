@@ -42,4 +42,11 @@ public class Activity {
         this.description = activityDTO.getDescription();
         this.activityProfile = activityProfile;
     }
+
+    public void update (ActivityDTO activityDTO) {
+        this.duration = activityDTO.getDuration();
+        this.date = activityDTO.getDate();
+        this.type = activityDTO.getType();
+        this.description = activityDTO.getDescription();
+    }
 }

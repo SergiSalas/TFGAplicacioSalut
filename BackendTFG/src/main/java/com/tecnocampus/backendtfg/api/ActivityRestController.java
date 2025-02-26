@@ -26,5 +26,10 @@ public class ActivityRestController {
         activityService.deleteActivity(activityDTO,email);
         return ResponseEntity.ok("Activity deleted");
     }
+    @PutMapping("/updateActivity")
+    public ResponseEntity<String> updateActivity(@RequestBody ActivityDTO activityDTO,String email) {
+        activityService.updateActivity(activityDTO,email);
+        return ResponseEntity.ok("Activity updated");
+    }
 
 }
