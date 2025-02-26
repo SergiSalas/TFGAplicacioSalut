@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.domain;
 
+import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,10 +27,19 @@ public class Activity {
     @ManyToOne
     private ActivityProfile activityProfile;
 
-    public Activity(double duration, Date date, String type, String description, ActivityProfile activityProfile) {
+    public Activity(double duration, Date date, TypeActivity type, String description, ActivityProfile activityProfile) {
         this.duration = duration;
+        this.type = type;
         this.date = date;
         this.description = description;
+        this.activityProfile = activityProfile;
+    }
+
+    public Activity (ActivityDTO activityDTO, ActivityProfile activityProfile) {
+        this.duration = activityDTO.getDuration();
+        this.date = activityDTO.getDate();
+        this.type = activityDTO.getType();
+        this.description = activityDTO.getDescription();
         this.activityProfile = activityProfile;
     }
 }
