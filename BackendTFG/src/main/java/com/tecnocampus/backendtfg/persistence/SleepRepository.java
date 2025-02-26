@@ -9,6 +9,6 @@ import java.util.Date;
 @Repository
 public interface SleepRepository extends JpaRepository<Sleep, Long> {
 
-    Sleep findSleepByDate (Date date);
+    Sleep findByDate (Date date);
 
 }

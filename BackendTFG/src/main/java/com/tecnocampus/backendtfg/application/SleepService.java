@@ -31,4 +31,12 @@ public class SleepService {
         sleepRepository.save(sleep);
         sleepProfileRepository.save(sleepProfile);
     }
+
+    public void deleteSleep(SleepDTO sleepDTO, String email) {
+        User user = userRepository.findByEmail(email);
+        SleepProfile sleepProfile = user.getSleepProfile();
+        Sleep sleep = sleepRepository.findByDate(sleepDTO.getDate());
+        sleepRepository.delete(sleep);
+        sleepProfileRepository.save(sleepProfile);
+    }
 }
