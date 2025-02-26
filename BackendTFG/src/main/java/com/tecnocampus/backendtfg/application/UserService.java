@@ -25,4 +25,11 @@ public class UserService {
         User user = userRepository.findByEmail(email);
         userRepository.delete(user);
     }
+
+    public void updateUser(UserDTO userDTO) {
+        String email = userDTO.getEmail();
+        User user = userRepository.findByEmail(email);
+        user.update(userDTO);
+        userRepository.save(user);
+    }
 }
