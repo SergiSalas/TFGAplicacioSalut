@@ -43,4 +43,14 @@ public class ActivityService {
         activityRepository.delete(activity);
         activityProfileRepository.save(activityProfile);
     }
+
+    public void updateActivity(ActivityDTO activityDTO,String email) {
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        Date date = activityDTO.getDate();
+        Activity activity = activityRepository.findByDate(date);
+        activity.update(activityDTO);
+        activityRepository.save(activity);
+        activityProfileRepository.save(activityProfile);
+    }
 }

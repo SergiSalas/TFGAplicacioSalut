@@ -90,4 +90,32 @@ public class ActivityTests {
         Mockito.verify(activityRepository, Mockito.times(1)).delete(Mockito.any(Activity.class));
         Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
     }
+
+    @Test
+    public void updateActivityTest() {
+        ActivityProfile activityProfile = new ActivityProfile();
+        User user = new User();
+        String email = "example@email.com";
+            user.setEmail(email);
+            user.setActivityProfile(activityProfile);
+
+        Date date = new Date();
+        ActivityDTO activityDTO = new ActivityDTO();
+            activityDTO.setDuration(1.5);
+            activityDTO.setDate(date);
+            activityDTO.setType(TypeActivity.RUNNING);
+            activityDTO.setDescription("Updated Description");
+
+        Activity activity = new Activity(activityDTO, activityProfile);
+
+            Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
+            Mockito.when(activityRepository.findByDate(date)).thenReturn(activity);
+
+            activityService.updateActivity(activityDTO, email);
+
+            Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
+            Mockito.verify(activityRepository, Mockito.times(1)).findByDate(date);
+            Mockito.verify(activityRepository, Mockito.times(1)).save(Mockito.any(Activity.class));
+            Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+    }
 }
