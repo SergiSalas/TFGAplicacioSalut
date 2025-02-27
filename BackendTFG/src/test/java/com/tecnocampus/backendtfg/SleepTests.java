@@ -16,7 +16,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Date;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class SleepTests {
@@ -115,5 +117,31 @@ public class SleepTests {
         // Assert
         verify(sleepRepository, times(1)).save(existingSleep);
         verify(sleepProfileRepository, times(1)).save(sleepProfile);
+    }
+
+    @Test
+    public void testGetSleeps() {
+        // Arrange
+        String email = "test@example.com";
+        User user = new User();
+        SleepProfile sleepProfile = new SleepProfile();
+        user.setSleepProfile(sleepProfile);
+
+        Sleep sleep1 = new Sleep(8, new Date(), new Date(), new Date(), TypeQuality.GOOD, "Good sleep", sleepProfile);
+        Sleep sleep2 = new Sleep(6, new Date(), new Date(), new Date(), TypeQuality.AVERAGE, "Average sleep", sleepProfile);
+        sleepProfile.setSleeps(List.of(sleep1, sleep2));
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(List.of(sleep1, sleep2));
+
+        // Act
+        List<SleepDTO> sleeps = sleepService.getSleeps(email);
+
+        // Assert
+        verify(userRepository, times(1)).findByEmail(email);
+        verify(sleepRepository, times(1)).findBySleepProfile(sleepProfile);
+        assertEquals(2, sleeps.size());
+        assertEquals("Good sleep", sleeps.get(0).getComment());
+        assertEquals("Average sleep", sleeps.get(1).getComment());
     }
 }

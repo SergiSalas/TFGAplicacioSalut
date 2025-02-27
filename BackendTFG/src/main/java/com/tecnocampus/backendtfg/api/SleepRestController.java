@@ -32,4 +32,9 @@ public class SleepRestController {
         sleepService.updateSleep(sleepDTO,email);
         return ResponseEntity.ok("Sleep updated");
     }
+
+    @GetMapping("/getSleeps")
+    public ResponseEntity<?> getSleeps(String email) {
+        return ResponseEntity.ok(sleepService.getSleeps(email));
+    }
 }

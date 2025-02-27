@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.application.dto;
 
+import com.tecnocampus.backendtfg.domain.Sleep;
 import com.tecnocampus.backendtfg.domain.TypeQuality;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,5 +26,14 @@ public class SleepDTO {
         this.endTime = endTime;
         this.quality = quality;
         this.comment = comment;
+    }
+
+    public SleepDTO (Sleep sleep) {
+        this.hours = sleep.getHours();
+        this.date = sleep.getDate();
+        this.startTime = sleep.getStartTime();
+        this.endTime = sleep.getEndTime();
+        this.quality = sleep.getQuality();
+        this.comment = sleep.getComment();
     }
 }

@@ -9,6 +9,9 @@ import com.tecnocampus.backendtfg.persistence.SleepRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class SleepService {
 
@@ -47,5 +50,12 @@ public class SleepService {
         sleep.update(sleepDTO);
         sleepRepository.save(sleep);
         sleepProfileRepository.save(sleepProfile);
+    }
+
+    public List<SleepDTO> getSleeps(String email) {
+        User user = userRepository.findByEmail(email);
+        SleepProfile sleepProfile = user.getSleepProfile();
+        List<Sleep> sleeps = sleepRepository.findBySleepProfile(sleepProfile);
+        return sleeps.stream().map(SleepDTO::new).toList();
     }
 }
