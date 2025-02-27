@@ -10,6 +10,8 @@ import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ActivityService {
@@ -52,5 +54,13 @@ public class ActivityService {
         activity.update(activityDTO);
         activityRepository.save(activity);
         activityProfileRepository.save(activityProfile);
+    }
+
+    public List<ActivityDTO> getActivities(String email) {
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        return activityProfile.getActivities().stream()
+                .map(ActivityDTO::new)
+                .toList();
     }
 }

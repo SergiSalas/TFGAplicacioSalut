@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.application.dto;
 
+import com.tecnocampus.backendtfg.domain.Activity;
 import com.tecnocampus.backendtfg.domain.TypeActivity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,5 +22,12 @@ public class ActivityDTO {
         this.date = date;
         this.type = type;
         this.description = description;
+    }
+
+    public ActivityDTO(Activity activity) {
+        this.duration = activity.getDuration();
+        this.date = activity.getDate();
+        this.type = activity.getType();
+        this.description = activity.getDescription();
     }
 }

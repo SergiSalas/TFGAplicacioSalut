@@ -5,6 +5,7 @@ import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 @RequestMapping("/activity")
 @RestController
 public class ActivityRestController {
@@ -30,6 +31,11 @@ public class ActivityRestController {
     public ResponseEntity<String> updateActivity(@RequestBody ActivityDTO activityDTO,String email) {
         activityService.updateActivity(activityDTO,email);
         return ResponseEntity.ok("Activity updated");
+    }
+
+    @GetMapping("/getActivities")
+    public ResponseEntity<?> getActivities(String email) {
+        return ResponseEntity.ok(activityService.getActivities(email));
     }
 
 }
