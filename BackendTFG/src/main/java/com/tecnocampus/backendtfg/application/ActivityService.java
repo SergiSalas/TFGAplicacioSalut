@@ -63,4 +63,12 @@ public class ActivityService {
                 .map(ActivityDTO::new)
                 .toList();
     }
+
+    public void addObjective(double dailyObjectiveDistance,String email) {
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        activityProfile.addObjective(dailyObjectiveDistance);
+        activityProfileRepository.save(activityProfile);
+        userRepository.save(user);
+    }
 }

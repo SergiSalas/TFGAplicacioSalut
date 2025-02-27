@@ -38,4 +38,10 @@ public class ActivityRestController {
         return ResponseEntity.ok(activityService.getActivities(email));
     }
 
+    @PostMapping("/addObjective")
+    public ResponseEntity<String> addObjective(double dailyActivityObjective,String email) {
+        activityService.addObjective(dailyActivityObjective,email);
+        return ResponseEntity.ok("Objective added");
+    }
+
 }

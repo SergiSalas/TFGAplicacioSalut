@@ -14,10 +14,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @SpringBootTest
 public class ActivityTests {
@@ -145,5 +149,26 @@ public class ActivityTests {
         assertEquals(2, activities.size());
         assertEquals("Test Description 1", activities.get(0).getDescription());
         assertEquals("Test Description 2", activities.get(1).getDescription());
+    }
+
+    @Test
+    public void addObjectiveServiceTest() {
+        // Arrange
+        double dailyActivityObjective = 5.0;
+        String email = "test@example.com";
+        User user = new User();
+        user.setEmail(email);
+        ActivityProfile activityProfile = new ActivityProfile(user);
+        user.setActivityProfile(activityProfile);
+
+        Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
+
+        // Act
+        activityService.addObjective(dailyActivityObjective, email);
+
+        // Assert
+        Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
+        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+        Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any(User.class));
     }
 }

@@ -37,4 +37,8 @@ public class ActivityProfile {
         this.user = user;
         this.dailyObjectiveDistance = dailyObjectiveDistance;
     }
+
+    public void addObjective(double dailyObjectiveDistance) {
+        this.dailyObjectiveDistance = dailyObjectiveDistance;
+    }
 }
