@@ -144,4 +144,25 @@ public class SleepTests {
         assertEquals("Good sleep", sleeps.get(0).getComment());
         assertEquals("Average sleep", sleeps.get(1).getComment());
     }
+
+    @Test
+    public void testAddObjective() {
+        // Arrange
+        String email = "test@example.com";
+        double dailyObjectiveSleep = 8.0;
+
+        User user = new User();
+        SleepProfile sleepProfile = new SleepProfile();
+        user.setSleepProfile(sleepProfile);
+
+        when(userRepository.findByEmail(email)).thenReturn(user);
+
+        // Act
+        sleepService.addObjective(dailyObjectiveSleep, email);
+
+        // Assert
+        verify(sleepProfileRepository, times(1)).save(sleepProfile);
+        verify(userRepository, times(1)).save(user);
+        assertEquals(dailyObjectiveSleep, sleepProfile.getDailyObjectiveSleep());
+    }
 }
