@@ -58,4 +58,12 @@ public class SleepService {
         List<Sleep> sleeps = sleepRepository.findBySleepProfile(sleepProfile);
         return sleeps.stream().map(SleepDTO::new).toList();
     }
+
+    public void addObjective(double dailyObjectiveSleep, String email) {
+        User user = userRepository.findByEmail(email);
+        SleepProfile sleepProfile = user.getSleepProfile();
+        sleepProfile.addObjective(dailyObjectiveSleep);
+        sleepProfileRepository.save(sleepProfile);
+        userRepository.save(user);
+    }
 }

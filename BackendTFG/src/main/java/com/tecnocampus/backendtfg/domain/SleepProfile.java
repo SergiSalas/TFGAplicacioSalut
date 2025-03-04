@@ -33,4 +33,8 @@ public class SleepProfile {
         this.user = user;
         this.dailyObjectiveSleep = dailyObjectiveSleep;
     }
+
+    public void addObjective(double dailyObjectiveSleep) {
+        this.dailyObjectiveSleep = dailyObjectiveSleep;
+    }
 }

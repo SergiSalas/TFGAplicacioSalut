@@ -37,4 +37,11 @@ public class SleepRestController {
     public ResponseEntity<?> getSleeps(String email) {
         return ResponseEntity.ok(sleepService.getSleeps(email));
     }
+
+    @PostMapping("/addObjective")
+    public ResponseEntity<String> addObjective(double dailyObjectiveSleep, String email) {
+        sleepService.addObjective(dailyObjectiveSleep,email);
+        return ResponseEntity.ok("Objective added");
+    }
+
 }
