@@ -33,6 +33,17 @@ public class AuthService {
         return new JwtDTO(jwtUtils.generateToken(user.getEmail(), user.getName()), user.getName(), user.getEmail());
     }
 
+    public JwtDTO loginUser(UserDTO userDTO) {
+        if (!checkUserExist(userDTO.getEmail())) {
+            throw new RuntimeException("User does not exist");
+        }
+        User user = userRepository.findByEmail(userDTO.getEmail());
+        if (user == null || !passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+        return new JwtDTO(jwtUtils.generateToken(user.getEmail(), user.getName()), user.getName(), user.getEmail());
+    }
+
 
     private boolean checkUserExist(String email) {
         return userRepository.existsByEmail(email);
