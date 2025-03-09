@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +26,9 @@ public class AuthTests {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     public void setup() {
@@ -66,5 +70,63 @@ public class AuthTests {
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("User already exists"));
+    }
+    @Test
+    public void testLoginUser_Success() throws Exception {
+        // Create a user with an encoded password
+        User user = new User();
+        user.setEmail("login@example.com");
+        user.setName("Login User");
+        user.setPassword(passwordEncoder.encode("password123"));
+        userRepository.save(user);
+
+        String requestBody = "{" +
+                "\"email\": \"login@example.com\"," +
+                "\"password\": \"password123\"," +
+                "\"name\": \"Login User\"" +
+                "}";
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
+    }
+
+    @Test
+    public void testLoginUser_UserNotExist() throws Exception {
+        String requestBody = "{" +
+                "\"email\": \"nonexistent@example.com\"," +
+                "\"password\": \"password123\"," +
+                "\"name\": \"Nonexistent User\"" +
+                "}";
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("User does not exist"));
+    }
+
+    @Test
+    public void testLoginUser_InvalidCredentials() throws Exception {
+        // Create a user with the correct password encoded.
+        User user = new User();
+        user.setEmail("loginfail@example.com");
+        user.setName("Login Fail");
+        user.setPassword(passwordEncoder.encode("correctpassword"));
+        userRepository.save(user);
+
+        String requestBody = "{" +
+                "\"email\": \"loginfail@example.com\"," +
+                "\"password\": \"wrongpassword\"," +
+                "\"name\": \"Login Fail\"" +
+                "}";
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Invalid credentials"));
     }
 }

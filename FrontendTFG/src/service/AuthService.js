@@ -15,3 +15,16 @@ export const registerUser = async (name, email, password) => {
     throw new Error('Registration failed');
   }
 };
+
+export const loginUser = async (email, password) => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/login`, {
+      email,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw new Error('Login failed');
+  }
+};

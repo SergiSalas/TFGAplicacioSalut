@@ -29,5 +29,15 @@ public class AuthRestController {
         }
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody UserDTO userDTO) {
+        try{
+            JwtDTO jwtDTO = authService.loginUser(userDTO);
+            return ResponseEntity.ok(jwtDTO);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
 }

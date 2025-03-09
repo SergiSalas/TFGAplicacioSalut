@@ -1,6 +1,8 @@
 // /src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
-import { registerUser } from '../service/AuthService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerUser, loginUser } from '../service/AuthService';
+
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -8,27 +10,46 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Simular carga inicial (por ejemplo, de AsyncStorage)
   useEffect(() => {
-    setTimeout(() => {
-      setUser(null); // Por defecto, no autenticado
+    const loadUserData = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem('token');
+        const storedUser = await AsyncStorage.getItem('user');
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Error loading user data', error);
+      }
       setLoading(false);
-    }, 1000);
+    };
+    loadUserData();
   }, []);
 
   // Simulación de login
-  const login = (email, password) => {
-    // Aquí podrías validar credenciales contra una API real
-    // Por ahora, asumimos que todo va bien y creamos un usuario de ejemplo
-    const fakeUser = { id: '1', name: 'Sergi', email };
-    setUser(fakeUser);
+  const login = async (email, password) => {
+    try {
+      const data = await loginUser(email, password);
+      setToken(data.token);
+      const userData = { name: data.name, email: data.email };
+      setUser(userData);
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error iniciando sesión', error);
+      throw error;
+    }
   };
 
   const register = async (name, email, password) => {
     try {
       const data = await registerUser(name, email, password);
       setToken(data.token);
-      setUser({ name: data.name, email: data.email }); 
+      const userData = { name: data.name, email: data.email };
+      setUser(userData);
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
       console.error('Error registrando usuario', error);
       throw error;

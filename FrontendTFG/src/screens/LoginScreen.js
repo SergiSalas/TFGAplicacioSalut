@@ -1,6 +1,6 @@
 // /src/screens/LoginScreen.js
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import styles from '../styles/screens/LoginScreen.styles';
@@ -12,7 +12,11 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    login(email, password); // Llamada a la función del contexto
+    try {
+      login(email, password);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo iniciar sesión. ' + error.message);
+    }
   };
 
   return (
