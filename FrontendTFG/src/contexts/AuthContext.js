@@ -1,10 +1,11 @@
 // /src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
-
+import { registerUser } from '../service/AuthService';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Simular carga inicial (por ejemplo, de AsyncStorage)
@@ -23,12 +24,15 @@ export const AuthProvider = ({ children }) => {
     setUser(fakeUser);
   };
 
-  // Simulación de registro
-  const register = (name, email, password) => {
-    // En un proyecto real, harías una llamada a tu backend para crear el usuario
-    // Suponemos que se creó exitosamente, y autenticamos al instante
-    const newUser = { id: '2', name, email };
-    setUser(newUser);
+  const register = async (name, email, password) => {
+    try {
+      const data = await registerUser(name, email, password);
+      setToken(data.token);
+      setUser({ name: data.name, email: data.email }); 
+    } catch (error) {
+      console.error('Error registrando usuario', error);
+      throw error;
+    }
   };
 
   // Cerrar sesión

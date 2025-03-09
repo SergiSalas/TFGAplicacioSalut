@@ -1,6 +1,6 @@
 // /src/screens/RegisterScreen.js
 import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import styles from '../styles/screens/RegisterScreen.styles';
@@ -12,8 +12,12 @@ const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleRegister = () => {
-    register(name, email, password); // Llamada a la función del contexto
+  const handleRegister = async () => {
+    try {
+      await register(name, email, password);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo registrar. ' + error.message);
+    }
   };
 
   return (

@@ -15,6 +15,7 @@ public class UserRestController {
         this.userService = userService;
     }
 
+    /*
     @PostMapping("/createUser")
     public ResponseEntity<String> createUser(@RequestBody UserDTO userDTO) {
         userService.createUser(userDTO);
@@ -30,4 +31,5 @@ public class UserRestController {
         userService.updateUser(userDTO);
         return ResponseEntity.ok("User updated");
     }
+    */
 }

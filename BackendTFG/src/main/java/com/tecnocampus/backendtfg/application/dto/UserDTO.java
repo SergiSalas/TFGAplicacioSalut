@@ -27,4 +27,10 @@ public class UserDTO {
         this.height = height;
     }
 
+    public UserDTO(String name, String email, String password) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+    }
+
 }
