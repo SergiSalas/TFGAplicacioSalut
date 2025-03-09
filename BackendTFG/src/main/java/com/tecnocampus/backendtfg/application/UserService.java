@@ -14,7 +14,7 @@ public class UserService {
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
-
+    /*
     public void createUser(UserDTO userDTO) {
         User user = new User(userDTO);
         userRepository.save(user);
@@ -32,4 +32,5 @@ public class UserService {
         user.update(userDTO);
         userRepository.save(user);
     }
+    */
 }
