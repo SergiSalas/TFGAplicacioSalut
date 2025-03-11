@@ -21,7 +21,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const { user, loading } = useContext(AuthContext);
+  const { user, token, loading } = useContext(AuthContext);
 
   if (loading) {
     // Mostrar indicador de carga mientras se recupera la sesión
@@ -34,7 +34,7 @@ const AppNavigator = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
+      {(user && token) ?(
         // Navegación para usuarios autenticados
         <>
           <Stack.Screen name="HomeScreen" component={HomeScreen} />

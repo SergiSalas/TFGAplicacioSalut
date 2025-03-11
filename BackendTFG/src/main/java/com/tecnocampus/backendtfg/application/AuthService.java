@@ -24,13 +24,16 @@ public class AuthService {
     }
 
     public JwtDTO registerUser (UserDTO userDTO) {
+        System.out.println("llego aqui ");
         if (checkUserExist(userDTO.getEmail())) {
             throw new RuntimeException("User already exists");
         }
         User user = new User(userDTO);
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         userRepository.save(user);
-        return new JwtDTO(jwtUtils.generateToken(user.getEmail(), user.getName()), user.getName(), user.getEmail());
+        JwtDTO jwtDTO = new JwtDTO(jwtUtils.generateToken(user.getEmail(), user.getName()), user.getName(), user.getEmail());
+        System.out.println(jwtDTO);
+        return jwtDTO;
     }
 
     public JwtDTO loginUser(UserDTO userDTO) {
@@ -41,7 +44,27 @@ public class AuthService {
         if (user == null || !passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
-        return new JwtDTO(jwtUtils.generateToken(user.getEmail(), user.getName()), user.getName(), user.getEmail());
+        JwtDTO jwtDTO = new JwtDTO(jwtUtils.generateToken(user.getEmail(), user.getName()), user.getName(), user.getEmail());
+        System.out.println(jwtDTO);
+        return jwtDTO;
+    }
+
+    public boolean verifyToken(String token) {
+        try {
+            String email = jwtUtils.extractEmail(token);
+            System.out.println("Token en verifyToken: " + email);
+            // Check if the user is registered
+            if (!userRepository.existsByEmail(email)) {
+                System.out.println("User does not exist");
+                return false;
+            }
+            // validateToken should throw an exception if token has expired or is invalid
+            jwtUtils.validateToken(token);
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            return false;
+        }
     }
 
 

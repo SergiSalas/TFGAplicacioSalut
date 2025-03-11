@@ -1,6 +1,7 @@
 package com.tecnocampus.backendtfg.application;
 
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
+import com.tecnocampus.backendtfg.component.JwtUtils;
 import com.tecnocampus.backendtfg.domain.Activity;
 import com.tecnocampus.backendtfg.domain.ActivityProfile;
 import com.tecnocampus.backendtfg.domain.User;
@@ -22,14 +23,22 @@ public class ActivityService {
 
     private final ActivityProfileRepository activityProfileRepository;
 
+    private final JwtUtils jwtUtils;
+
     public ActivityService(ActivityRepository activityRepository, UserRepository userRepository,
-                           ActivityProfileRepository activityProfileRepository) {
+                           ActivityProfileRepository activityProfileRepository, JwtUtils jwtUtils) {
         this.activityRepository = activityRepository;
         this.userRepository = userRepository;
         this.activityProfileRepository = activityProfileRepository;
+        this.jwtUtils = jwtUtils;
     }
 
-    public void createActivity(ActivityDTO activityDTO,String email) {
+    public void createActivity(ActivityDTO activityDTO,String token) {
+        System.out.println("Token: "+token);
+        String email = getEmailFromToken(token);
+        if (!userRepository.existsByEmail(email)){
+            throw new IllegalArgumentException("User not found");
+        }
         User user = userRepository.findByEmail(email);
         ActivityProfile activityProfile = user.getActivityProfile();
         Activity activity = new Activity(activityDTO,activityProfile);
@@ -56,7 +65,8 @@ public class ActivityService {
         activityProfileRepository.save(activityProfile);
     }
 
-    public List<ActivityDTO> getActivities(String email) {
+    public List<ActivityDTO> getActivities(String token) {
+        String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         ActivityProfile activityProfile = user.getActivityProfile();
         return activityProfile.getActivities().stream()
@@ -70,5 +80,9 @@ public class ActivityService {
         activityProfile.addObjective(dailyObjectiveDistance);
         activityProfileRepository.save(activityProfile);
         userRepository.save(user);
+    }
+
+    private String getEmailFromToken(String token) {
+        return jwtUtils.extractEmail(token);
     }
 }

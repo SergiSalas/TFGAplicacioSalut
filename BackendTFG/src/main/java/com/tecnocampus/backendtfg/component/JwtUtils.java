@@ -14,19 +14,20 @@ public class JwtUtils {
     @Value("${jwt.secret}")
     private String secret;
 
-    // Genera el token a partir del email y username
     public String generateToken(String email, String username) {
         return Jwts.builder()
-                .setSubject(username)
-                .claim("email", email)
+                .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 3600000)) // Token válido 1 hora
                 .signWith(SignatureAlgorithm.HS512, secret)
                 .compact();
     }
 
-    // Extrae el username (subject) del token
-    public String extractUsername(String token) {
+    // Método para extraer el email del token
+    public String extractEmail(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7).trim();
+        }
         return getClaims(token).getSubject();
     }
 
@@ -38,12 +39,15 @@ public class JwtUtils {
 
     // Valida el token comparándolo con los detalles del usuario
     public boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
-        String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        String email = extractEmail(token);
+        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
     // Método auxiliar para obtener los claims
     private Claims getClaims(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7).trim();
+        }
         return Jwts.parser()
                 .setSigningKey(secret)
                 .parseClaimsJws(token)
