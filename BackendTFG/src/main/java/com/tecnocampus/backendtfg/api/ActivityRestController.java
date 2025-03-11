@@ -2,6 +2,8 @@ package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.ActivityService;
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
+import jakarta.servlet.http.HttpServletRequest;
+import org.apache.catalina.filters.ExpiresFilter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +19,9 @@ public class ActivityRestController {
     }
 
     @PostMapping("/createActivity")
-    public ResponseEntity<String> createActivity(@RequestBody ActivityDTO activityDTO,String email) {
-        activityService.createActivity(activityDTO,email);
+    public ResponseEntity<String> createActivity(HttpServletRequest request, @RequestBody ActivityDTO activityDTO) {
+        String token = request.getHeader("Authorization");
+        activityService.createActivity(activityDTO,token);
         return ResponseEntity.ok("Activity created");
     }
 
@@ -34,14 +37,24 @@ public class ActivityRestController {
     }
 
     @GetMapping("/getActivities")
-    public ResponseEntity<?> getActivities(String email) {
-        return ResponseEntity.ok(activityService.getActivities(email));
+    public ResponseEntity<?> getActivities(HttpServletRequest request) {
+        String token = getTokenAuthFromRequest(request);
+        return ResponseEntity.ok(activityService.getActivities(token));
     }
 
     @PostMapping("/addObjective")
     public ResponseEntity<String> addObjective(double dailyActivityObjective,String email) {
         activityService.addObjective(dailyActivityObjective,email);
         return ResponseEntity.ok("Objective added");
+    }
+
+    @GetMapping("/getActivityTypes")
+    public ResponseEntity<?> getActivityTypes() {
+        return ResponseEntity.ok(activityService.getActivityTypes());
+    }
+
+    private String getTokenAuthFromRequest(HttpServletRequest request) {
+        return request.getHeader("Authorization");
     }
 
 }

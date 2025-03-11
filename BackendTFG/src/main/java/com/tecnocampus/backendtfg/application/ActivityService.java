@@ -1,15 +1,18 @@
 package com.tecnocampus.backendtfg.application;
 
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
+import com.tecnocampus.backendtfg.application.dto.ActivityTypeDTO;
 import com.tecnocampus.backendtfg.component.JwtUtils;
 import com.tecnocampus.backendtfg.domain.Activity;
 import com.tecnocampus.backendtfg.domain.ActivityProfile;
+import com.tecnocampus.backendtfg.domain.TypeActivity;
 import com.tecnocampus.backendtfg.domain.User;
 import com.tecnocampus.backendtfg.persistence.ActivityProfileRepository;
 import com.tecnocampus.backendtfg.persistence.ActivityRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -82,7 +85,14 @@ public class ActivityService {
         userRepository.save(user);
     }
 
+    public List<ActivityTypeDTO> getActivityTypes() {
+        return Arrays.stream(TypeActivity.values())
+                .map(ActivityTypeDTO::new)
+                .collect(Collectors.toList());
+    }
+
     private String getEmailFromToken(String token) {
         return jwtUtils.extractEmail(token);
     }
+
 }
