@@ -5,13 +5,19 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Collections;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
-public class User {
+public class User implements UserDetails {
 
     @Id
     private String id = java.util.UUID.randomUUID().toString();
@@ -73,5 +79,42 @@ public class User {
         this.password = userDTO.getPassword();
         this.weight = userDTO.getWeight();
         this.height = userDTO.getHeight();
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Aquí puedes asignar roles dinámicamente.
+        // Por defecto, asignamos el rol "ROLE_USER".
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getUsername() {
+        // Usamos el email como nombre de usuario
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        // Puedes implementar la lógica de expiración de cuenta
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        // Aquí podrías validar si la cuenta está bloqueada
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        // Valida si las credenciales (contraseña) están expiradas
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        // Aquí puedes indicar si el usuario está activo
+        return true;
     }
 }

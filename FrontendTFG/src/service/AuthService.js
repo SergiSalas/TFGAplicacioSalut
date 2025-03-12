@@ -1,6 +1,7 @@
+import Config from 'react-native-config';
 import axios from 'axios';
 
-const API_URL = 'http://10.0.2.2:8080'; // Emulador Android
+API_URL = "http://10.0.2.2:8080";
 
 export const registerUser = async (name, email, password) => {
   try {
@@ -28,3 +29,17 @@ export const loginUser = async (email, password) => {
     throw new Error('Login failed');
   }
 };
+
+export const verifyToken = async (token) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/verifyToken`, null, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return false;
+    }
+  };

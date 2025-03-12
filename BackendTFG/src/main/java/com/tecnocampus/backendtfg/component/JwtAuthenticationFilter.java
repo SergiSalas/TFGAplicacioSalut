@@ -28,29 +28,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+        System.out.println("Entering JwtAuthenticationFilter.doFilterInternal");
         final String authorizationHeader = request.getHeader("Authorization");
 
-        String username = null;
+        String email = null;
         String token = null;
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            System.out.println("Authorization header found: " + authorizationHeader);
             token = authorizationHeader.substring(7);
+            System.out.println("Extracted token: " + token);
             try {
-                username = jwtUtils.extractUsername(token);
+                email = jwtUtils.extractEmail(token);
+                System.out.println("Extracted email: " + email);
             } catch (Exception e) {
-                // Handle exception if needed
+                System.out.println("Error parsing token: " + e.getMessage());
             }
+        } else {
+            System.out.println("Authorization header not found or does not start with \"Bearer \"");
         }
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            System.out.println("Loading user details for email: " + email);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             if (jwtUtils.validateToken(token, userDetails)) {
+                System.out.println("Token validated. Setting authentication context.");
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            } else {
+                System.out.println("Invalid token for the given user details.");
             }
+        } else {
+            System.out.println("Email is null or user is already authenticated.");
         }
         filterChain.doFilter(request, response);
+        System.out.println("Exiting JwtAuthenticationFilter.doFilterInternal");
     }
 }

@@ -1,33 +1,54 @@
-import React from 'react';
-import { View, ScrollView, Text } from 'react-native';
+import React, { useEffect, useState ,useContext} from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, ScrollView } from 'react-native';
 import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Footer from '../components/layout/Footer';
 import styles from '../styles/screens/ActivityScreen.styles';
+import { getActivities } from '../service/ActivityService';
+import { AuthContext } from '../contexts/AuthContext';
 
 const ActivityScreen = ({ navigation }) => {
+  const [activities, setActivities] = useState([]);
+  const { token } = useContext(AuthContext);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (token) {
+        getActivities(token)
+          .then(data => {
+            setActivities(data);
+          })
+          .catch(error => {
+            console.error('Error fetching activities:', error);
+          });
+      }
+    }, [token])
+  );
+
+
   return (
     <View style={styles.container}>
       <Header title="Actividad Física" onBackPress={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Card style={styles.card}>
-          <Text style={styles.metricTitle}>Pasos diarios</Text>
-          <Text style={styles.metricValue}>10,000</Text>
-        </Card>
-        <Card style={styles.card}>
-          <Text style={styles.metricTitle}>Calorías quemadas</Text>
-          <Text style={styles.metricValue}>500 kcal</Text>
-        </Card>
-        <Card style={styles.card}>
-          <Text style={styles.metricTitle}>Distancia recorrida</Text>
-          <Text style={styles.metricValue}>7 km</Text>
-        </Card>
+        {activities.map((activity, index) => (
+          <Card style={styles.card} key={index}>
+            <Text style={styles.metricTitle}>{activity.type}</Text>
+            <Text style={styles.metricValue}>Duración: {activity.duration} min</Text>
+            <Text>Fecha: {activity.date}</Text>
+            <Text>Descripción: {activity.description}</Text>
+          </Card>
+        ))}
         <Button
           title="Ver Detalles de Entrenamiento"
           onPress={() => {
-            // Agrega la lógica para navegar a otra pantalla con más detalles
+            // Lógica para navegar a otra pantalla con más detalles
           }}
+        />
+       <Button
+          title="Crear Nueva Actividad"
+          onPress={() => navigation.navigate('CreateActivityScreen')}
         />
       </ScrollView>
       <Footer />
@@ -36,3 +57,4 @@ const ActivityScreen = ({ navigation }) => {
 };
 
 export default ActivityScreen;
+

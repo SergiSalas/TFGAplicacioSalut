@@ -1,7 +1,7 @@
 // /src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { registerUser, loginUser } from '../service/AuthService';
+import { registerUser, loginUser,verifyToken } from '../service/AuthService';
 
 export const AuthContext = createContext();
 
@@ -15,12 +15,32 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedToken = await AsyncStorage.getItem('token');
         const storedUser = await AsyncStorage.getItem('user');
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+        console.log('Stored token:', storedToken);
+        console.log('Stored user:', storedUser);
+        if (
+          storedToken && storedUser &&
+          storedToken !== 'null' && storedUser !== 'null'
+        ) {
+          const isValid = await verifyToken(storedToken);
+          console.log('Token valid:', isValid);
+          if (isValid === true) { // Aseguramos que sea estrictamente true
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+          } else {
+            // Token inválido: se limpian los datos y se fuerza a logear nuevamente
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+          }
+        } else {
+          setToken(null);
+          setUser(null);
         }
       } catch (error) {
         console.error('Error loading user data', error);
+        setToken(null);
+        setUser(null);
       }
       setLoading(false);
     };
@@ -56,13 +76,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Cerrar sesión
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Error al cerrar sesión', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user,token, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -36,7 +36,8 @@ public class SecurityConfig {
         // Configura rutas públicas y el filtro JWT
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/login", "/h2-console/**").permitAll()
+                        .requestMatchers("/auth/register", "/auth/login", "/auth/verifyToken","/h2-console/**").permitAll()
+                        .requestMatchers("/activity/**","/activity/getActivityTypes").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
