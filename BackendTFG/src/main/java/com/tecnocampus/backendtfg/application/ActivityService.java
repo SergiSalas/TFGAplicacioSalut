@@ -37,7 +37,6 @@ public class ActivityService {
     }
 
     public void createActivity(ActivityDTO activityDTO,String token) {
-        System.out.println("Token: "+token);
         String email = getEmailFromToken(token);
         if (!userRepository.existsByEmail(email)){
             throw new IllegalArgumentException("User not found");

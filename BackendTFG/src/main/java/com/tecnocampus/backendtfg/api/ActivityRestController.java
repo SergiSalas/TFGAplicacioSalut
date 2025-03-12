@@ -20,7 +20,7 @@ public class ActivityRestController {
 
     @PostMapping("/createActivity")
     public ResponseEntity<String> createActivity(HttpServletRequest request, @RequestBody ActivityDTO activityDTO) {
-        String token = request.getHeader("Authorization");
+        String token = getTokenAuthFromRequest(request);
         activityService.createActivity(activityDTO,token);
         return ResponseEntity.ok("Activity created");
     }

@@ -13,10 +13,12 @@ import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 import WorkoutListScreen from '../screens/WorkoutListScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
+import CreateActivityScreen from '../screens/CreateActivityScreen';
 
 // Importación de pantallas de autenticación
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import { StackActions } from '@react-navigation/native';
 
 const Stack = createStackNavigator();
 
@@ -46,6 +48,7 @@ const AppNavigator = () => {
           <Stack.Screen name="WorkoutListScreen" component={WorkoutListScreen} />
           <Stack.Screen name="ProgressScreen" component={ProgressScreen} />
           <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
+          <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
         </>
       ) : (
         // Navegación para usuarios no autenticados

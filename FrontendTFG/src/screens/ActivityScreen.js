@@ -1,4 +1,5 @@
 import React, { useEffect, useState ,useContext} from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, ScrollView } from 'react-native';
 import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
@@ -12,17 +13,20 @@ const ActivityScreen = ({ navigation }) => {
   const [activities, setActivities] = useState([]);
   const { token } = useContext(AuthContext);
 
-  useEffect(() => {
-    if (token) {
-      getActivities(token)
-        .then(data => {
-          setActivities(data);
-        })
-        .catch(error => {
-          console.error('Error fetching activities:', error);
-        });
-    }
-  }, [token]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (token) {
+        getActivities(token)
+          .then(data => {
+            setActivities(data);
+          })
+          .catch(error => {
+            console.error('Error fetching activities:', error);
+          });
+      }
+    }, [token])
+  );
+
 
   return (
     <View style={styles.container}>
@@ -41,6 +45,10 @@ const ActivityScreen = ({ navigation }) => {
           onPress={() => {
             // Lógica para navegar a otra pantalla con más detalles
           }}
+        />
+       <Button
+          title="Crear Nueva Actividad"
+          onPress={() => navigation.navigate('CreateActivityScreen')}
         />
       </ScrollView>
       <Footer />
