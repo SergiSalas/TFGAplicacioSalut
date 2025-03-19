@@ -20,4 +20,13 @@ export default StyleSheet.create({
     fontSize: 20,
     color: '#333',
   },
+  // Add this to your existing styles
+  healthCard: {
+    marginBottom: 20,
+    backgroundColor: '#e6f7ff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#1890ff',
+  },
 });
+
+
