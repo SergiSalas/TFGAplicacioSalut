@@ -20,4 +20,15 @@ export default StyleSheet.create({
     fontSize: 20,
     color: '#333',
   },
+  activityItem: {
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  activityType: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 4,
+  },
 });
