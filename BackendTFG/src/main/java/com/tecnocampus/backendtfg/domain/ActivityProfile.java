@@ -19,7 +19,7 @@ public class ActivityProfile {
     @Id
     private String id = java.util.UUID.randomUUID().toString();
 
-    private double dailyObjectiveDistance;
+    private int dailyObjectiveDistance;
 
     //FrecuenciaCardiaca???
 
@@ -33,12 +33,12 @@ public class ActivityProfile {
         this.user = user;
     }
 
-    public ActivityProfile(User user, double dailyObjectiveDistance) {
+    public ActivityProfile(User user, int dailyObjectiveDistance) {
         this.user = user;
         this.dailyObjectiveDistance = dailyObjectiveDistance;
     }
 
-    public void addObjective(double dailyObjectiveDistance) {
+    public void addObjective(int dailyObjectiveDistance) {
         this.dailyObjectiveDistance = dailyObjectiveDistance;
     }
 }

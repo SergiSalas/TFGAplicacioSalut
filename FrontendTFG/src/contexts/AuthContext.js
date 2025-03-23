@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -54,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       const userData = { name: data.name, email: data.email };
       setUser(userData);
+      setIsNewUser(false);
       await AsyncStorage.setItem('token', data.token);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
@@ -68,6 +70,7 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       const userData = { name: data.name, email: data.email };
       setUser(userData);
+      setIsNewUser(true);
       await AsyncStorage.setItem('token', data.token);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
@@ -88,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user,token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user,token, loading, login, register, logout, isNewUser, setIsNewUser }}>
       {children}
     </AuthContext.Provider>
   );

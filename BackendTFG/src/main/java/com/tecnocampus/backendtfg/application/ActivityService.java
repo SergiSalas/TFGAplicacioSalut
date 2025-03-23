@@ -76,7 +76,8 @@ public class ActivityService {
                 .toList();
     }
 
-    public void addObjective(double dailyObjectiveDistance,String email) {
+    public void addObjective(String token, int dailyObjectiveDistance) {
+        String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         ActivityProfile activityProfile = user.getActivityProfile();
         activityProfile.addObjective(dailyObjectiveDistance);
@@ -94,4 +95,14 @@ public class ActivityService {
         return jwtUtils.extractEmail(token);
     }
 
+    public void addDailySteps(String token, int dailySteps) {
+
+    }
+
+    public int  getObjective(String token) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        return activityProfile.getDailyObjectiveDistance();
+    }
 }

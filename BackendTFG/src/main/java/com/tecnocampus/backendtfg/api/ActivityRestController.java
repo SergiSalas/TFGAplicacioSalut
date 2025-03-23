@@ -43,14 +43,25 @@ public class ActivityRestController {
     }
 
     @PostMapping("/addObjective")
-    public ResponseEntity<String> addObjective(double dailyActivityObjective,String email) {
-        activityService.addObjective(dailyActivityObjective,email);
+    public ResponseEntity<String> addObjective(HttpServletRequest request, @RequestBody int dailyActivityObjective) {
+        activityService.addObjective(getTokenAuthFromRequest(request),dailyActivityObjective);
         return ResponseEntity.ok("Objective added");
+    }
+
+    @GetMapping("/getObjective")
+    public ResponseEntity<?> getObjective(HttpServletRequest request) {
+        return ResponseEntity.ok(activityService.getObjective(getTokenAuthFromRequest(request)));
     }
 
     @GetMapping("/getActivityTypes")
     public ResponseEntity<?> getActivityTypes() {
         return ResponseEntity.ok(activityService.getActivityTypes());
+    }
+
+    @PostMapping("/addDailySteps")
+    public ResponseEntity<?> addDailySteps(HttpServletRequest request, int dailySteps) {
+        activityService.addDailySteps(getTokenAuthFromRequest(request), dailySteps);
+        return ResponseEntity.ok("Daily steps added");
     }
 
     private String getTokenAuthFromRequest(HttpServletRequest request) {
