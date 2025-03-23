@@ -20,10 +20,13 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import { StackActions } from '@react-navigation/native';
 
+// Añadir la importación de la nueva pantalla
+import SetDailyObjectiveScreen from '../screens/SetDailyObjectiveScreen';
+
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const { user, token, loading } = useContext(AuthContext);
+  const { user, token, loading, isNewUser } = useContext(AuthContext);
 
   if (loading) {
     // Mostrar indicador de carga mientras se recupera la sesión
@@ -36,19 +39,28 @@ const AppNavigator = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {(user && token) ?(
+      {(user && token) ? (
         // Navegación para usuarios autenticados
         <>
-          <Stack.Screen name="HomeScreen" component={HomeScreen} />
-          <Stack.Screen name="ActivityScreen" component={ActivityScreen} />
-          <Stack.Screen name="SleepScreen" component={SleepScreen} />
-          <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-          <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
-          <Stack.Screen name="WorkoutDetailScreen" component={WorkoutDetailScreen} />
-          <Stack.Screen name="WorkoutListScreen" component={WorkoutListScreen} />
-          <Stack.Screen name="ProgressScreen" component={ProgressScreen} />
-          <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
-          <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
+          {isNewUser ? (
+            // Si es un usuario nuevo, redirigir a la pantalla de objetivo diario
+            <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
+          ) : (
+            // Para usuarios existentes, mostrar la estructura normal de navegación
+            <>
+              <Stack.Screen name="HomeScreen" component={HomeScreen} />
+              <Stack.Screen name="ActivityScreen" component={ActivityScreen} />
+              <Stack.Screen name="SleepScreen" component={SleepScreen} />
+              <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+              <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+              <Stack.Screen name="WorkoutDetailScreen" component={WorkoutDetailScreen} />
+              <Stack.Screen name="WorkoutListScreen" component={WorkoutListScreen} />
+              <Stack.Screen name="ProgressScreen" component={ProgressScreen} />
+              <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
+              <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
+              <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
+            </>
+          )}
         </>
       ) : (
         // Navegación para usuarios no autenticados

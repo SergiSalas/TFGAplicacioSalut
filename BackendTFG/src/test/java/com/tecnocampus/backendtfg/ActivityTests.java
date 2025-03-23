@@ -2,6 +2,7 @@ package com.tecnocampus.backendtfg;
 
 import com.tecnocampus.backendtfg.application.ActivityService;
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
+import com.tecnocampus.backendtfg.component.JwtUtils;
 import com.tecnocampus.backendtfg.domain.Activity;
 import com.tecnocampus.backendtfg.domain.ActivityProfile;
 import com.tecnocampus.backendtfg.domain.TypeActivity;
@@ -37,6 +38,9 @@ public class ActivityTests {
 
     @Mock
     private ActivityProfileRepository activityProfileRepository;
+    
+    @Mock
+    private JwtUtils jwtUtils;
 
     @Test
     public void createActivityTest() {
@@ -154,17 +158,20 @@ public class ActivityTests {
     @Test
     public void addObjectiveServiceTest() {
         // Arrange
-        double dailyActivityObjective = 5.0;
+        int dailyActivityObjective = 5;
         String email = "test@example.com";
+        String token = "test-token";
+        
         User user = new User();
         user.setEmail(email);
         ActivityProfile activityProfile = new ActivityProfile(user);
         user.setActivityProfile(activityProfile);
 
         Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
+        Mockito.when(jwtUtils.extractEmail(token)).thenReturn(email);
 
         // Act
-        activityService.addObjective(dailyActivityObjective, email);
+        activityService.addObjective(token, dailyActivityObjective);
 
         // Assert
         Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
