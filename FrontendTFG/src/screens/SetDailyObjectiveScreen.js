@@ -22,7 +22,7 @@ const SetDailyObjectiveScreen = ({ navigation }) => {
 
     try {
       setIsSubmitting(true);
-      await addDailyObjective(token, parseFloat(dailyStepsObjective));
+      await addDailyObjective(token, parseInt(dailyStepsObjective));
       
       setIsNewUser(false);
       

@@ -33,25 +33,33 @@ export async function getActivityTypes(token) {
   }
 }
 
-export async function createActivity(token, activity) {
+export const createActivity = async (token, activityData) => {
   try {
-    const response = await axios.post(`${API_URL}/activity/createActivity`, activity, {
+    const response = await fetch(`${API_URL}/activity/createActivity`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`
       },
+      body: JSON.stringify(activityData)
     });
-    return response.data;
+    
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    return await response.text();
   } catch (error) {
-    console.error('Error al crear actividad:', error);
+    console.error('Error creating activity:', error);
     throw error;
   }
-}
+};
+
 
 export async function addDailyObjective(token, dailyActivityObjective) {
   try {
     const response = await axios.post(`${API_URL}/activity/addObjective`, 
-      dailyActivityObjective,
+      dailyActivityObjective ,
       {
         headers: {
           'Content-Type': 'application/json',
