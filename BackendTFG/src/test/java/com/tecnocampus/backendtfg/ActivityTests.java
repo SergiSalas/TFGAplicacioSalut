@@ -3,10 +3,7 @@ package com.tecnocampus.backendtfg;
 import com.tecnocampus.backendtfg.application.ActivityService;
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
 import com.tecnocampus.backendtfg.component.JwtUtils;
-import com.tecnocampus.backendtfg.domain.Activity;
-import com.tecnocampus.backendtfg.domain.ActivityProfile;
-import com.tecnocampus.backendtfg.domain.TypeActivity;
-import com.tecnocampus.backendtfg.domain.User;
+import com.tecnocampus.backendtfg.domain.*;
 import com.tecnocampus.backendtfg.persistence.ActivityProfileRepository;
 import com.tecnocampus.backendtfg.persistence.ActivityRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
@@ -15,14 +12,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+
 
 @SpringBootTest
 public class ActivityTests {
@@ -48,6 +44,7 @@ public class ActivityTests {
         ActivityProfile activityProfile = new ActivityProfile();
         User user = new User();
         String email = "example@email.com";
+        String token = "test-token";
         user.setEmail(email);
         user.setActivityProfile(activityProfile);
 
@@ -56,20 +53,19 @@ public class ActivityTests {
         activityDTO.setDate(new Date());
         activityDTO.setType(TypeActivity.RUNNING);
         activityDTO.setDescription("Test Description");
+        activityDTO.setOrigin(ActivityOrigin.APP);
 
-        Activity activity = new Activity(activityDTO, activityProfile);
-
+        Mockito.when(jwtUtils.extractEmail(token)).thenReturn(email);
         Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
-        Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(activity);
-        Mockito.when(activityProfileRepository.save(Mockito.any(ActivityProfile.class))).thenReturn(activityProfile);
+        Mockito.when(userRepository.existsByEmail(email)).thenReturn(true);
 
         // Act
-        activityService.createActivity(activityDTO, email);
+        activityService.createActivity(activityDTO, token);
 
         // Assert
         Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
-        Mockito.verify(activityRepository, Mockito.times(1)).save(Mockito.any(Activity.class));
-        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+        Mockito.verify(activityRepository, Mockito.times(1)).save(Mockito.any(AbstractActivity.class));
+        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(activityProfile);
     }
 
     @Test
@@ -88,7 +84,7 @@ public class ActivityTests {
         activityDTO.setType(TypeActivity.RUNNING);
         activityDTO.setDescription("Test Description");
 
-        Activity activity = new Activity(activityDTO, activityProfile);
+        AbstractActivity activity = new AppActivity(1.5, date, TypeActivity.RUNNING, "Test Description", activityProfile);
 
         Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
         Mockito.when(activityRepository.findByDate(date)).thenReturn(activity);
@@ -98,8 +94,8 @@ public class ActivityTests {
 
         // Assert
         Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
-        Mockito.verify(activityRepository, Mockito.times(1)).delete(Mockito.any(Activity.class));
-        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+        Mockito.verify(activityRepository, Mockito.times(1)).delete(activity);
+        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(activityProfile);
     }
 
     @Test
@@ -107,27 +103,27 @@ public class ActivityTests {
         ActivityProfile activityProfile = new ActivityProfile();
         User user = new User();
         String email = "example@email.com";
-            user.setEmail(email);
-            user.setActivityProfile(activityProfile);
+        user.setEmail(email);
+        user.setActivityProfile(activityProfile);
 
         Date date = new Date();
         ActivityDTO activityDTO = new ActivityDTO();
-            activityDTO.setDuration(1.5);
-            activityDTO.setDate(date);
-            activityDTO.setType(TypeActivity.RUNNING);
-            activityDTO.setDescription("Updated Description");
+        activityDTO.setDuration(1.5);
+        activityDTO.setDate(date);
+        activityDTO.setType(TypeActivity.RUNNING);
+        activityDTO.setDescription("Updated Description");
 
-        Activity activity = new Activity(activityDTO, activityProfile);
+        AbstractActivity activity = new AppActivity(1.0, date, TypeActivity.RUNNING, "Original Description", activityProfile);
 
-            Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
-            Mockito.when(activityRepository.findByDate(date)).thenReturn(activity);
+        Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
+        Mockito.when(activityRepository.findByDate(date)).thenReturn(activity);
 
-            activityService.updateActivity(activityDTO, email);
+        activityService.updateActivity(activityDTO, email);
 
-            Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
-            Mockito.verify(activityRepository, Mockito.times(1)).findByDate(date);
-            Mockito.verify(activityRepository, Mockito.times(1)).save(Mockito.any(Activity.class));
-            Mockito.verify(activityProfileRepository, Mockito.times(1)).save(Mockito.any(ActivityProfile.class));
+        Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
+        Mockito.verify(activityRepository, Mockito.times(1)).findByDate(date);
+        Mockito.verify(activityRepository, Mockito.times(1)).save(activity);
+        Mockito.verify(activityProfileRepository, Mockito.times(1)).save(activityProfile);
     }
 
     @Test
@@ -136,25 +132,30 @@ public class ActivityTests {
         ActivityProfile activityProfile = new ActivityProfile();
         User user = new User();
         String email = "example@email.com";
+        String token = "test-token";
         user.setEmail(email);
         user.setActivityProfile(activityProfile);
 
-        Activity activity1 = new Activity(1.5, new Date(), TypeActivity.RUNNING, "Test Description 1", activityProfile);
-        Activity activity2 = new Activity(2.0, new Date(), TypeActivity.CYCLING, "Test Description 2", activityProfile);
-        activityProfile.setActivities(List.of(activity1, activity2));
+        List<AbstractActivity> activities = new ArrayList<>();
+        AppActivity activity1 = new AppActivity(1.5, new Date(), TypeActivity.RUNNING, "Test Description 1", activityProfile);
+        AppActivity activity2 = new AppActivity(2.0, new Date(), TypeActivity.CYCLING, "Test Description 2", activityProfile);
+        HealthConnectActivity activity3 = new HealthConnectActivity(3.0, new Date(), TypeActivity.WALKING, "Health Connect Activity", activityProfile);
 
+        activities.add(activity1);
+        activities.add(activity2);
+        activities.add(activity3);
+        activityProfile.setActivities(activities);
+
+        Mockito.when(jwtUtils.extractEmail(token)).thenReturn(email);
         Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
 
         // Act
-        List<ActivityDTO> activities = activityService.getActivities(email);
+        List<ActivityDTO> resultActivities = activityService.getActivities(token);
 
         // Assert
         Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
-        assertEquals(2, activities.size());
-        assertEquals("Test Description 1", activities.get(0).getDescription());
-        assertEquals("Test Description 2", activities.get(1).getDescription());
+        assertEquals(2, resultActivities.size()); // Solo se devuelven actividades APP
     }
-
     @Test
     public void addObjectiveServiceTest() {
         // Arrange

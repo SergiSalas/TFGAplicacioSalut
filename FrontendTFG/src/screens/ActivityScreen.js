@@ -16,7 +16,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Footer from '../components/layout/Footer';
 import styles from '../styles/screens/ActivityScreen.styles';
-import { getActivities, getDailyObjective } from '../service/ActivityService';
+import { getActivities, getDailyObjective, createActivity } from '../service/ActivityService';
 import { AuthContext } from '../contexts/AuthContext';
 import { 
   initialize, 
@@ -27,7 +27,8 @@ import * as Progress from 'react-native-progress';
 import { 
   getExerciseTypeName, 
   getExerciseTypeIcon, 
-  getExerciseTypeColor 
+  getExerciseTypeColor,
+  getBackendActivityType
 } from '../utils/ExerciseTypeMapper';
 
 const ActivityScreen = ({ navigation }) => {
@@ -43,6 +44,9 @@ const ActivityScreen = ({ navigation }) => {
   const [objectiveLoaded, setObjectiveLoaded] = useState(false);
   const [todaySteps, setTodaySteps] = useState(0);
   const { token } = useContext(AuthContext);
+  
+  // Agregar un nuevo estado para rastrear las actividades ya guardadas de Health Connect
+  const [savedHealthConnectIds, setSavedHealthConnectIds] = useState([]);
   
   useEffect(() => {
     initializeHealthConnect();
@@ -164,11 +168,163 @@ const ActivityScreen = ({ navigation }) => {
           ...prevData,
           steps: stepsData.records
         }));
+
+        // Guardar los pasos en el backend
+        await saveStepsToBackend(stepsData);
       }
     } catch (error) {
       console.error('Error al obtener datos de Health Connect:', error);
     } finally {
       setIsLoadingHealthData(false);
+    }
+  };
+
+  // Añade esta nueva función después de saveNewHealthConnectActivities
+  const saveStepsToBackend = async (stepsData) => {
+    if (!token || !stepsData || !stepsData.records) return;
+
+    // Agrupar pasos por día
+    const stepsByDay = stepsData.records.reduce((acc, record) => {
+      const date = new Date(record.startTime);
+      const dateKey = date.toISOString().split('T')[0];
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = {
+          steps: 0,
+          date: record.startTime // Guardamos la fecha completa
+        };
+      }
+      acc[dateKey].steps += record.count;
+      return acc;
+    }, {});
+
+    // Guardar los totales diarios
+    for (const [dateKey, data] of Object.entries(stepsByDay)) {
+      try {
+        const dailyStepsDTO = {
+          steps: data.steps,
+          date: new Date(data.date).toISOString() // Formatear la fecha como ISO string
+        };
+
+        const stepActivity = {
+          type: 'WALKING',
+          duration: 0,
+          date: data.date,
+          description: `Total de ${data.steps} pasos registrados en el día`,
+          origin: 'HEALTH_CONNECT',
+          externalId: `steps-${dateKey}`,
+          dailySteps: dailyStepsDTO
+        };
+
+        const alreadyExists = activities.some(activity => 
+          activity.externalId === `steps-${dateKey}` && 
+          activity.origin === 'HEALTH_CONNECT'
+        );
+
+        if (!alreadyExists && data.steps > 0) {
+          await createActivity(token, stepActivity);
+        }
+      } catch (error) {
+        console.error('Error al guardar pasos en el backend:', error);
+      }
+    }
+  };
+
+  // Efecto para guardar nuevas actividades de Health Connect
+  useEffect(() => {
+    if (healthConnectData.exercises && healthConnectData.exercises.length > 0 && activities.length >= 0) {
+      // Identificar actividades nuevas que no estén guardadas aún
+      const newExercises = healthConnectData.exercises.filter(exercise => {
+        const exerciseId = exercise.metadata ? exercise.metadata.id : null;
+        // Si no tiene ID o ya está en la lista de guardados, ignorar
+        if (!exerciseId || savedHealthConnectIds.includes(exerciseId)) {
+          return false;
+        }
+        
+        // Verificar que no exista ya en las actividades guardadas (doble verificación)
+        const alreadyExists = activities.some(activity => 
+          activity.externalId === exerciseId && activity.source === 'Health Connect'
+        );
+        
+        return !alreadyExists;
+      });
+      
+      // Guardar las nuevas actividades en el backend
+      saveNewHealthConnectActivities(newExercises);
+    }
+  }, [healthConnectData.exercises, activities, token]);
+  
+  // Función para guardar nuevas actividades en el backend
+  const saveNewHealthConnectActivities = async (newExercises) => {
+    if (!token || newExercises.length === 0) return;
+    
+    const idsToSave = [];
+    
+    for (const exercise of newExercises) {
+      try {
+        const exerciseId = exercise.metadata ? exercise.metadata.id : null;
+        if (!exerciseId) continue;
+        
+        // Obtener el tipo de actividad para el backend
+        const backendType = exercise.exerciseType ? 
+          getBackendActivityType(exercise.exerciseType) : 
+          'RUNNING'; // Valor por defecto
+
+        // Obtener el nombre legible para la descripción
+        const readableName = exercise.exerciseType ? 
+          getExerciseTypeName(exercise.exerciseType) : 
+          'Ejercicio';
+        
+        // Calcular duración en minutos
+        let durationMinutes = null;
+        if (exercise.duration && !isNaN(exercise.duration)) {
+          durationMinutes = Math.round(exercise.duration / 60000000); // nanosegundos a minutos
+        } else if (exercise.startTime && exercise.endTime) {
+          const start = new Date(exercise.startTime);
+          const end = new Date(exercise.endTime);
+          durationMinutes = Math.round((end - start) / 60000); // milisegundos a minutos
+        }
+        
+        // Descripción de la actividad
+        const description = exercise.notes && exercise.notes.trim() !== '' 
+          ? exercise.notes 
+          : `Sesión de ${readableName.toLowerCase()} registrada con Health Connect`;
+        
+        // Crear objeto para enviar al backend
+        const activityToSave = {
+          type: backendType, // Usar el tipo mapeado para el backend
+          duration: durationMinutes,
+          date: exercise.startTime,
+          description: description,
+          origin: 'HEALTH_CONNECT',
+          externalId: exerciseId // Guardar ID externo para evitar duplicados
+        };
+        
+        // Llamar al endpoint para guardar
+        await createActivity(token, activityToSave);
+        
+        // Agregar ID a la lista de IDs guardados
+        idsToSave.push(exerciseId);
+        
+      } catch (error) {
+        console.error('Error al guardar actividad de Health Connect:', error);
+      }
+    }
+    
+    // Actualizar la lista de IDs guardados
+    if (idsToSave.length > 0) {
+      setSavedHealthConnectIds(prev => [...prev, ...idsToSave]);
+      
+      // Opcional: recargar actividades para reflejar las nuevas adiciones
+      if (token) {
+        getActivities(token)
+          .then(data => {
+            setActivities(data);
+          })
+          .catch(error => {
+            console.error('Error fetching activities after save:', error);
+          });
+      }
     }
   };
 
@@ -313,12 +469,13 @@ const ActivityScreen = ({ navigation }) => {
       
       return {
         id: exercise.metadata ? exercise.metadata.id : `hc-${Date.now()}-${Math.random()}`,
+        externalId: exercise.metadata ? exercise.metadata.id : null,
         type: activityTitle,
         duration: durationMinutes,
         date: exercise.startTime,
         description: description,
         source: "Health Connect",
-        calories: exercise.calories ? Math.round(exercise.calories) : null,
+        calories: exercise.calories ? Math.round(exercise.calories) : null
       };
     });
     
@@ -462,4 +619,3 @@ const ActivityScreen = ({ navigation }) => {
 };
 
 export default ActivityScreen;
-

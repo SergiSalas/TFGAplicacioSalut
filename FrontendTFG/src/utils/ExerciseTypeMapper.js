@@ -20,7 +20,7 @@ export const EXERCISE_TYPES = {
   EXERCISE_TYPE_ELLIPTICAL: 12,
   EXERCISE_TYPE_FENCING: 13,
   EXERCISE_TYPE_FOOTBALL_AMERICAN: 14,
-  EXERCISE_TYPE_FOOTBALL_AUSTRALIAN: 15,
+  EXERCISE_TYPE_FOOTBALL: 15,
   EXERCISE_TYPE_FRISBEE_DISC: 16,
   EXERCISE_TYPE_GOLF: 17,
   EXERCISE_TYPE_GUIDED_BREATHING: 18,
@@ -110,8 +110,8 @@ export const getExerciseTypeName = (exerciseType) => {
       return "Esgrima";
     case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL_AMERICAN:
       return "Fútbol Americano";
-    case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL_AUSTRALIAN:
-      return "Fútbol Australiano";
+    case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL:
+      return "Fútbol";
     case EXERCISE_TYPES.EXERCISE_TYPE_FRISBEE_DISC:
       return "Frisbee";
     case EXERCISE_TYPES.EXERCISE_TYPE_GOLF:
@@ -206,6 +206,7 @@ export const getExerciseTypeName = (exerciseType) => {
       return "Ejercicio";
   }
 };
+
 
 // Mapeo de tipo de ejercicio a icono (usando Ionicons)
 export const getExerciseTypeIcon = (exerciseType) => {
@@ -315,4 +316,90 @@ export const getExerciseTypeColor = (exerciseType) => {
   };
   
   return colorsMap[typeName] || '#4a69bd';
+};
+
+// Añade esta nueva función al archivo
+export const getBackendActivityType = (exerciseType) => {
+  // Si recibimos un string, intentamos convertirlo a número
+  const typeCode = typeof exerciseType === 'string' 
+    ? parseInt(exerciseType, 10) 
+    : exerciseType;
+
+  // Mapeo de Health Connect a TypeActivity del backend
+  switch (typeCode) {
+    case EXERCISE_TYPES.EXERCISE_TYPE_RUNNING:
+      return 'RUNNING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_WALKING:
+      return 'WALKING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_BIKING:
+    case EXERCISE_TYPES.EXERCISE_TYPE_BIKING_STATIONARY:
+      return 'CYCLING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_SWIMMING_POOL:
+    case EXERCISE_TYPES.EXERCISE_TYPE_SWIMMING_OPEN_WATER:
+      return 'SWIMMING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_HIKING:
+      return 'HIKING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROCK_CLIMBING:
+      return 'CLIMBING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
+      return 'HIIT';
+    case EXERCISE_TYPES.EXERCISE_TYPE_YOGA:
+      return 'YOGA';
+    case EXERCISE_TYPES.EXERCISE_TYPE_PILATES:
+      return 'PILATES';
+    case EXERCISE_TYPES.EXERCISE_TYPE_DANCING:
+      return 'DANCE';
+    case EXERCISE_TYPES.EXERCISE_TYPE_BOXING:
+      return 'BOXING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL:
+    case EXERCISE_TYPES.EXERCISE_TYPE_SOCCER:
+      return 'FOOTBALL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_AEROBICS:
+      return 'AEROBICS';
+    case EXERCISE_TYPES.EXERCISE_TYPE_BADMINTON:
+      return 'BADMINTON';
+    case EXERCISE_TYPES.EXERCISE_TYPE_BASEBALL:
+      return 'BASEBALL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_BASKETBALL:
+      return 'BASKETBALL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_BOOT_CAMP:
+      return 'BOOT_CAMP';
+    case EXERCISE_TYPES.EXERCISE_TYPE_CALISTHENICS:
+      return 'CALISTHENICS';
+    case EXERCISE_TYPES.EXERCISE_TYPE_CRICKET:
+      return 'CRICKET';
+    case EXERCISE_TYPES.EXERCISE_TYPE_ELLIPTICAL:
+      return 'ELLIPTICAL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_FENCING:
+      return 'FENCING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL_AMERICAN:
+      return 'FOOTBALL_AMERICAN';
+    case EXERCISE_TYPES.EXERCISE_TYPE_FRISBEE_DISC:
+      return 'FRISBEE_DISC';
+    case EXERCISE_TYPES.EXERCISE_TYPE_GOLF:
+      return 'GOLF';
+    case EXERCISE_TYPES.EXERCISE_TYPE_HANDBALL:
+      return 'HANDBALL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_ICE_HOCKEY:
+      return 'ICE_HOCKEY';
+    case EXERCISE_TYPES.EXERCISE_TYPE_MARTIAL_ARTS:
+      return 'MARTIAL_ARTS';
+    case EXERCISE_TYPES.EXERCISE_TYPE_PADDLING:
+      return 'PADDLING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_PARAGLIDING:
+      return 'PARAGLIDING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_RACQUETBALL:
+      return 'RACQUETBALL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROWING:
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROWING_MACHINE:
+      return 'ROWING';
+    case EXERCISE_TYPES.EXERCISE_TYPE_RUGBY:
+      return 'RUGBY';
+    case EXERCISE_TYPES.EXERCISE_TYPE_VOLLEYBALL:
+      return 'VOLLEYBALL';
+    case EXERCISE_TYPES.EXERCISE_TYPE_WEIGHTLIFTING:
+      return 'WEIGHTLIFTING';
+    default:
+      return 'RUNNING'; // Valor por defecto
+  }
 }; 

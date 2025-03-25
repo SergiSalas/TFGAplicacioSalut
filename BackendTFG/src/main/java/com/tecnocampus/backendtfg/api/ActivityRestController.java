@@ -2,6 +2,8 @@ package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.ActivityService;
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
+import com.tecnocampus.backendtfg.application.dto.DailyStepsDTO;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.catalina.filters.ExpiresFilter;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +23,11 @@ public class ActivityRestController {
     @PostMapping("/createActivity")
     public ResponseEntity<String> createActivity(HttpServletRequest request, @RequestBody ActivityDTO activityDTO) {
         String token = getTokenAuthFromRequest(request);
-        activityService.createActivity(activityDTO,token);
+        try{
+            activityService.createActivity(activityDTO,token);
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
         return ResponseEntity.ok("Activity created");
     }
 
@@ -43,7 +49,8 @@ public class ActivityRestController {
     }
 
     @PostMapping("/addObjective")
-    public ResponseEntity<String> addObjective(HttpServletRequest request, @RequestBody int dailyActivityObjective) {
+    public ResponseEntity<String> addObjective(HttpServletRequest request, @RequestBody Integer dailyActivityObjective) {
+        System.out.println(dailyActivityObjective);
         activityService.addObjective(getTokenAuthFromRequest(request),dailyActivityObjective);
         return ResponseEntity.ok("Objective added");
     }
@@ -59,8 +66,8 @@ public class ActivityRestController {
     }
 
     @PostMapping("/addDailySteps")
-    public ResponseEntity<?> addDailySteps(HttpServletRequest request, int dailySteps) {
-        activityService.addDailySteps(getTokenAuthFromRequest(request), dailySteps);
+    public ResponseEntity<?> addDailySteps(HttpServletRequest request, @RequestBody DailyStepsDTO dailyStepsDTO) {
+        activityService.addDailySteps(getTokenAuthFromRequest(request), dailyStepsDTO);
         return ResponseEntity.ok("Daily steps added");
     }
 

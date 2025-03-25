@@ -27,7 +27,10 @@ public class ActivityProfile {
     private User user;
 
     @OneToMany(mappedBy = "activityProfile", cascade = CascadeType.ALL)
-    private List<Activity> activities = new ArrayList<>();
+    private List<DailySteps> dailySteps = new ArrayList<>();
+
+    @OneToMany(mappedBy = "activityProfile", cascade = CascadeType.ALL)
+    private List<AbstractActivity> activities = new ArrayList<>();
 
     public ActivityProfile(User user) {
         this.user = user;
@@ -40,5 +43,15 @@ public class ActivityProfile {
 
     public void addObjective(int dailyObjectiveDistance) {
         this.dailyObjectiveDistance = dailyObjectiveDistance;
+    }
+
+    public void addActivity(AbstractActivity activity) {
+        activities.add(activity);
+        activity.setActivityProfile(this);
+    }
+
+    public void addDailySteps(DailySteps dailySteps) {
+        this.dailySteps.add(dailySteps);
+        dailySteps.setActivityProfile(this);
     }
 }
