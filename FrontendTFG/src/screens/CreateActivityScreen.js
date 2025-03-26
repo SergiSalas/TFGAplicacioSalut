@@ -11,7 +11,6 @@ const CreateActivityScreen = ({ navigation }) => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [types, setTypes] = useState([]);
-  // Asumimos que el backend espera un valor simple (por ejemplo, un String)
   const [selectedType, setSelectedType] = useState('');
   const [description, setDescription] = useState('');
 
@@ -20,8 +19,7 @@ const CreateActivityScreen = ({ navigation }) => {
       getActivityTypes(token)
         .then(data => {
           setTypes(data);
-          // Asegurarse de asignar un valor simple, no el objeto completo
-          if (data.length > 0) setSelectedType(data[0].name);
+          if(data.length > 0) setSelectedType(data[0].name);
         })
         .catch(error => console.error('Error fetching types:', error));
     }
@@ -32,7 +30,7 @@ const CreateActivityScreen = ({ navigation }) => {
       const newActivity = {
         duration: parseFloat(duration),
         date,
-        type: selectedType, // Ahora es un string, por ejemplo "Running"
+        type: selectedType,
         description,
       };
       await createActivity(token, newActivity);
@@ -67,12 +65,15 @@ const CreateActivityScreen = ({ navigation }) => {
       )}
 
       <Text>Tipo de actividad:</Text>
-      <Picker 
-        selectedValue={selectedType} 
-        onValueChange={(itemValue) => setSelectedType(itemValue)}
-      >
-        {types.map(opt => (
-          <Picker.Item key={opt.name} label={opt.name} value={opt.name} />
+      <Picker
+        selectedValue={selectedType}
+        onValueChange={(itemValue) => setSelectedType(itemValue)}>
+        {types.map(type => (
+          <Picker.Item 
+            key={type.name} 
+            label={type.displayName || type.name} 
+            value={type.name}
+          />
         ))}
       </Picker>
 

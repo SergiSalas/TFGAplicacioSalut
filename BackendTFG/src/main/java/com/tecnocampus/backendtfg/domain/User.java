@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.domain;
 
+import com.tecnocampus.backendtfg.application.dto.DataProfileDTO;
 import com.tecnocampus.backendtfg.application.dto.UserDTO;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -25,7 +26,8 @@ public class User implements UserDetails {
     private String email;
     private String password;
     private Double weight;
-    private Double height;
+    private int height;
+    private int age;
 
     @OneToOne(cascade = CascadeType.ALL)
     private ActivityProfile activityProfile;
@@ -42,12 +44,13 @@ public class User implements UserDetails {
     //Rewards class?
     //private Rewards rewards;
 
-    public User(String name, String email, String password, Double weight, Double height) {
+    public User(String name, String email, String password, Double weight, int height, int age) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.weight = weight;
         this.height = height;
+        this.age = age;
         this.activityProfile = new ActivityProfile(this);
         this.sleepProfile = new SleepProfile(this);
         this.hidratationProfile = new HidratationProfile(this);
@@ -68,6 +71,7 @@ public class User implements UserDetails {
         this.password = userDTO.getPassword();
         this.weight = userDTO.getWeight();
         this.height = userDTO.getHeight();
+        this.age = userDTO.getAge();
         this.activityProfile = new ActivityProfile(this);
         this.sleepProfile = new SleepProfile(this);
         this.hidratationProfile = new HidratationProfile(this);
@@ -79,6 +83,12 @@ public class User implements UserDetails {
         this.password = userDTO.getPassword();
         this.weight = userDTO.getWeight();
         this.height = userDTO.getHeight();
+    }
+
+    public void setDataProfile(DataProfileDTO dataProfileDTO) {
+        this.weight = dataProfileDTO.getWeight();
+        this.height = dataProfileDTO.getHeight();
+        this.age = dataProfileDTO.getAge();
     }
 
     @Override

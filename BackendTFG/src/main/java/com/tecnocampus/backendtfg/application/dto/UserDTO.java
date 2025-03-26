@@ -13,12 +13,13 @@ public class UserDTO {
     private String email;
     private String password;
     private Double weight;
-    private Double height;
+    private int height;
+    private int age;
 
     public UserDTO() {
     }
 
-    public UserDTO(String name, String surname, String email, String password, Double weight, Double height) {
+    public UserDTO(String name, String surname, String email, String password, Double weight, int height) {
         this.name = name;
         this.surname = surname;
         this.email = email;
