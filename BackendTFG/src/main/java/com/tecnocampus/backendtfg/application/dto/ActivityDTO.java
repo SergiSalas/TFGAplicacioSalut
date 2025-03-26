@@ -19,6 +19,7 @@ public class ActivityDTO {
     private TypeActivity type;
     private String description;
     private ActivityOrigin origin;
+    private Double calories;
 
     public ActivityDTO(double duration, Date date, TypeActivity type, String description, ActivityOrigin origin) {
         this.duration = duration;
@@ -35,5 +36,6 @@ public class ActivityDTO {
         this.origin = abstractActivity.getOrigin();
         this.type = abstractActivity.getType();
         this.description = abstractActivity.getDescription();
+        this.calories = abstractActivity.getCaloriesBurned();
     }
 }

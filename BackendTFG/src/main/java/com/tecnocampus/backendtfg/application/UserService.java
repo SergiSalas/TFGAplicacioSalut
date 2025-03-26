@@ -1,12 +1,20 @@
 package com.tecnocampus.backendtfg.application;
 
 
+import com.tecnocampus.backendtfg.application.dto.ActivityTypeDTO;
 import com.tecnocampus.backendtfg.application.dto.DataProfileDTO;
+import com.tecnocampus.backendtfg.application.dto.GenderTypeDTO;
 import com.tecnocampus.backendtfg.application.dto.UserDTO;
 import com.tecnocampus.backendtfg.component.JwtUtils;
+import com.tecnocampus.backendtfg.domain.Gender;
+import com.tecnocampus.backendtfg.domain.TypeActivity;
 import com.tecnocampus.backendtfg.domain.User;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -45,6 +53,12 @@ public class UserService {
         user.setDataProfile(dataProfileDTO);
         userRepository.save(user);
 
+    }
+
+    public List<GenderTypeDTO> getGenderTypes (){
+        return Arrays.stream(Gender.values())
+                .map(GenderTypeDTO::new)
+                .collect(Collectors.toList());
     }
 
 

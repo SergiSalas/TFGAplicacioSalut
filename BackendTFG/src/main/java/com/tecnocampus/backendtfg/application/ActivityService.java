@@ -70,6 +70,7 @@ public class ActivityService {
                     activityProfile);
             activity.setOrigin(ActivityOrigin.APP);
         }
+        activity.calculateCalories();
         activityProfile.addActivity(activity);
         activityProfileRepository.save(activityProfile);
     }

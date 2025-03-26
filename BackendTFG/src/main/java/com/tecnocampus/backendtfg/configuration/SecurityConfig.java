@@ -37,7 +37,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/register", "/auth/login", "/auth/verifyToken","/h2-console/**").permitAll()
-                        .requestMatchers("/activity/**","/activity/getActivityTypes","activity/addObjective").authenticated()
+                        .requestMatchers("/activity/**","/activity/getActivityTypes","activity/addObjective","/user/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
