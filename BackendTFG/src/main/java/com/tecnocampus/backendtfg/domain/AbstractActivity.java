@@ -1,6 +1,7 @@
 package com.tecnocampus.backendtfg.domain;
 
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
+import com.tecnocampus.backendtfg.component.CalorieCalculator;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,7 @@ public abstract class AbstractActivity {
 
     private double duration;
     private Date date;
+    private double caloriesBurned;
 
     @Enumerated(EnumType.STRING)
     private TypeActivity type;
@@ -35,5 +37,11 @@ public abstract class AbstractActivity {
         this.date = activityDTO.getDate();
         this.type = activityDTO.getType();
         this.description = activityDTO.getDescription();
+    }
+
+    public void calculateCalories() {
+        User user = this.activityProfile.getUser();
+        this.caloriesBurned = CalorieCalculator.calculateCaloriesBurned(
+                user, this.type, this.duration);
     }
 }

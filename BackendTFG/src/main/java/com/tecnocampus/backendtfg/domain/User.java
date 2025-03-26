@@ -29,6 +29,9 @@ public class User implements UserDetails {
     private int height;
     private int age;
 
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
     @OneToOne(cascade = CascadeType.ALL)
     private ActivityProfile activityProfile;
 
@@ -44,13 +47,14 @@ public class User implements UserDetails {
     //Rewards class?
     //private Rewards rewards;
 
-    public User(String name, String email, String password, Double weight, int height, int age) {
+    public User(String name, String email, String password, Double weight, int height, int age, Gender gender) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.weight = weight;
         this.height = height;
         this.age = age;
+        this.gender = gender;
         this.activityProfile = new ActivityProfile(this);
         this.sleepProfile = new SleepProfile(this);
         this.hidratationProfile = new HidratationProfile(this);
