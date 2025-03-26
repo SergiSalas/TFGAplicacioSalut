@@ -22,6 +22,7 @@ import { StackActions } from '@react-navigation/native';
 
 // Añadir la importación de la nueva pantalla
 import SetDailyObjectiveScreen from '../screens/SetDailyObjectiveScreen';
+import SetUserProfileScreen from '../screens/SetUserProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -43,8 +44,11 @@ const AppNavigator = () => {
         // Navegación para usuarios autenticados
         <>
           {isNewUser ? (
-            // Si es un usuario nuevo, redirigir a la pantalla de objetivo diario
-            <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
+            // Para usuarios nuevos, primero configurar el perfil
+            <>
+              <Stack.Screen name="SetUserProfileScreen" component={SetUserProfileScreen} />
+              <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
+            </>
           ) : (
             // Para usuarios existentes, mostrar la estructura normal de navegación
             <>

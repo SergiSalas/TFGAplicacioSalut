@@ -1,7 +1,9 @@
 package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.UserService;
+import com.tecnocampus.backendtfg.application.dto.DataProfileDTO;
 import com.tecnocampus.backendtfg.application.dto.UserDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,4 +34,15 @@ public class UserRestController {
         return ResponseEntity.ok("User updated");
     }
     */
+
+    @PostMapping("/setDataProfile")
+    public ResponseEntity<String> setDataProfile(HttpServletRequest request, @RequestBody DataProfileDTO dataProfileDTO) {
+        String token = getTokenAuthFromRequest(request);
+        userService.setDataProfile(token,dataProfileDTO);
+        return ResponseEntity.ok("Data profile updated");
+    }
+
+    private String getTokenAuthFromRequest(HttpServletRequest request) {
+        return request.getHeader("Authorization");
+    }
 }
