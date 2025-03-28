@@ -154,7 +154,7 @@ const ActivityScreen = ({ navigation, route }) => {
       
       // Al volver a primer plano, actualizar inmediatamente
       if (nextAppState === 'active' && healthConnectAvailable) {
-        healthConnectService.requestImmediateUpdate()
+        healthConnectService.requestUpdate('ActivityScreen')
           .then(data => {
             if (data) {
               if (data.steps !== undefined) {

@@ -474,29 +474,61 @@ class HealthConnectService {
       
       // Obtener la última lectura de frecuencia cardíaca
       const now = new Date();
-      const oneHourAgo = new Date(now);
-      oneHourAgo.setHours(now.getHours() - 1);
+      const sixHoursAgo = new Date(now);
+      sixHoursAgo.setHours(now.getHours() - 6); // Ampliar la ventana a 6 horas
       
       const timeFilter = {
         timeRangeFilter: {
           operator: 'between',
-          startTime: oneHourAgo.toISOString(),
+          startTime: sixHoursAgo.toISOString(),
           endTime: now.toISOString(),
         }
       };
       
+      // Añadir logs para diagnóstico
+      console.log('Buscando datos de ritmo cardíaco entre', sixHoursAgo.toISOString(), 'y', now.toISOString());
+      
       const heartRateResponse = await readRecords('HeartRate', timeFilter);
       
+      // Añadir más información de diagnóstico
+      console.log('Respuesta de HeartRate recibida:', 
+        heartRateResponse ? 
+        `${heartRateResponse.records ? heartRateResponse.records.length : 0} registros` : 
+        'sin datos');
+      
       if (heartRateResponse && heartRateResponse.records && heartRateResponse.records.length > 0) {
+        // Imprimir la estructura del primer registro para depuración
+        console.log('Primer registro HeartRate:', JSON.stringify(heartRateResponse.records[0]));
+        
         // Ordenar por tiempo para obtener la más reciente
         const sortedRecords = [...heartRateResponse.records].sort((a, b) => {
-          return new Date(b.time) - new Date(a.time);
+          return new Date(b.time || b.endTime || b.startTime) - new Date(a.time || a.endTime || a.startTime);
         });
         
-        // Devolver la última medición
-        return sortedRecords[0].beatsPerMinute || null;
+        // Buscar el valor del ritmo cardíaco probando diferentes estructuras de datos
+        const firstRecord = sortedRecords[0];
+        
+        // Manejar diferentes estructuras posibles
+        let heartRate = null;
+        
+        if (firstRecord.beatsPerMinute) {
+          heartRate = firstRecord.beatsPerMinute;
+        } else if (firstRecord.samples && firstRecord.samples.length > 0) {
+          // Algunas implementaciones devuelven muestras
+          heartRate = firstRecord.samples[0].beatsPerMinute || firstRecord.samples[0].value;
+        } else if (firstRecord.value) {
+          // Otras implementaciones usan value
+          heartRate = firstRecord.value;
+        } else if (firstRecord.heartRate) {
+          // Otro posible nombre
+          heartRate = firstRecord.heartRate;
+        }
+        
+        console.log('Ritmo cardíaco encontrado:', heartRate);
+        return heartRate;
       }
       
+      console.log('No se encontraron datos de ritmo cardíaco recientes');
       return null;
     } catch (error) {
       console.error('Error al leer datos de frecuencia cardíaca:', error);
