@@ -6,8 +6,11 @@ import com.tecnocampus.backendtfg.application.dto.DailyStepsDTO;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.catalina.filters.ExpiresFilter;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Date;
 
 
 @RequestMapping("/activity")
@@ -43,9 +46,12 @@ public class ActivityRestController {
     }
 
     @GetMapping("/getActivities")
-    public ResponseEntity<?> getActivities(HttpServletRequest request) {
+    public ResponseEntity<?> getActivities(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
         String token = getTokenAuthFromRequest(request);
-        return ResponseEntity.ok(activityService.getActivities(token));
+        System.out.println( activityService.getActivities(token, date));
+        return ResponseEntity.ok(activityService.getActivities(token, date));
     }
 
     @PostMapping("/addObjective")
@@ -71,6 +77,12 @@ public class ActivityRestController {
         return ResponseEntity.ok("Daily steps added");
     }
 
+    @GetMapping("/getTotalCalories")
+    public ResponseEntity<?> getTotalCalories(
+            HttpServletRequest request,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
+        return ResponseEntity.ok(activityService.getTotalCalories(getTokenAuthFromRequest(request), date));
+    }
     private String getTokenAuthFromRequest(HttpServletRequest request) {
         return request.getHeader("Authorization");
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, Button } from 'react-native';
+import { View, Text, TextInput, Button, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { AuthContext } from '../contexts/AuthContext';
@@ -13,6 +13,7 @@ const CreateActivityScreen = ({ navigation }) => {
   const [types, setTypes] = useState([]);
   const [selectedType, setSelectedType] = useState('');
   const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -33,10 +34,32 @@ const CreateActivityScreen = ({ navigation }) => {
         type: selectedType,
         description,
       };
+      
+      // Mostrar indicador de carga
+      setIsSubmitting(true);
+      
       await createActivity(token, newActivity);
-      navigation.goBack();
+      
+      // Mostrar mensaje de éxito
+      Alert.alert(
+        'Actividad creada',
+        'La actividad se ha guardado correctamente',
+        [{ 
+          text: 'OK', 
+          onPress: () => {
+            // Navegar de vuelta con un parámetro para actualizar calorías
+            navigation.navigate('ActivityScreen', { 
+              activityCreated: true,
+              timestamp: Date.now() // Para asegurar que el parámetro siempre cambia
+            });
+          } 
+        }]
+      );
     } catch (error) {
       console.error('Error creando la actividad', error);
+      Alert.alert('Error', 'No se pudo crear la actividad. Inténtalo de nuevo.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

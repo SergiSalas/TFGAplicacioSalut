@@ -1,7 +1,9 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native';
 import { AuthContext } from '../contexts/AuthContext';
+import AppContent from '../components/AppContent';
 
 // Importación de pantallas para usuarios autenticados
 import HomeScreen from '../screens/HomeScreen';
@@ -26,21 +28,11 @@ import SetUserProfileScreen from '../screens/SetUserProfileScreen';
 
 const Stack = createStackNavigator();
 
-const AppNavigator = () => {
-  const { user, token, loading, isNewUser } = useContext(AuthContext);
-
-  if (loading) {
-    // Mostrar indicador de carga mientras se recupera la sesión
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
-
+// Separar la definición del navegador de su uso
+const StackNavigator = ({ isAuthenticated, isNewUser }) => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {(user && token) ? (
+      {isAuthenticated ? (
         // Navegación para usuarios autenticados
         <>
           {isNewUser ? (
@@ -67,13 +59,44 @@ const AppNavigator = () => {
           )}
         </>
       ) : (
-        // Navegación para usuarios no autenticados
+        // Navegación para usuarios NO autenticados
         <>
           <Stack.Screen name="LoginScreen" component={LoginScreen} />
           <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
         </>
       )}
     </Stack.Navigator>
+  );
+};
+
+const AppNavigator = () => {
+  const { token, loading, isNewUser, registerNavigation } = useContext(AuthContext);
+  const isAuthenticated = !!token;
+  const navigationRef = useRef(null);
+
+  useEffect(() => {
+    if (navigationRef.current) {
+      registerNavigation(navigationRef.current);
+    }
+  }, [navigationRef.current, registerNavigation]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <AppContent>
+        <StackNavigator 
+          isAuthenticated={isAuthenticated} 
+          isNewUser={isNewUser} 
+        />
+      </AppContent>
+    </NavigationContainer>
   );
 };
 

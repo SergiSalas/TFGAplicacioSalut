@@ -150,12 +150,13 @@ public class ActivityTests {
         Mockito.when(userRepository.findByEmail(email)).thenReturn(user);
 
         // Act
-        List<ActivityDTO> resultActivities = activityService.getActivities(token);
+        List<ActivityDTO> resultActivities = activityService.getActivities(token, null);
 
         // Assert
         Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
         assertEquals(2, resultActivities.size()); // Solo se devuelven actividades APP
     }
+
     @Test
     public void addObjectiveServiceTest() {
         // Arrange

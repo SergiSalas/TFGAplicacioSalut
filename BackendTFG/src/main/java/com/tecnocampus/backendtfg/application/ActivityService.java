@@ -12,9 +12,11 @@ import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class ActivityService {
@@ -40,6 +42,7 @@ public class ActivityService {
     }
 
     public void createActivity(ActivityDTO activityDTO, String token) {
+        System.out.println(activityDTO.toString());
         String email = getEmailFromToken(token);
         if (!userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("User not found");
@@ -100,14 +103,32 @@ public class ActivityService {
         activityProfileRepository.save(activityProfile);
     }
 
-    public List<ActivityDTO> getActivities(String token) {
+    public List<ActivityDTO> getActivities(String token, Date date) {
         String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         ActivityProfile activityProfile = user.getActivityProfile();
-        return activityProfile.getActivities().stream()
-                .filter(activity -> activity.getOrigin() == ActivityOrigin.APP)
-                .map(ActivityDTO::new)
-                .toList();
+
+        Stream<AbstractActivity> activityStream = activityProfile.getActivities().stream()
+                .filter(activity -> activity.getType() != TypeActivity.WALKING);
+
+        if (date != null) {
+            activityStream = activityStream.filter(activity -> isSameDay(activity.getDate(), date));
+        }
+
+        return activityStream.map(ActivityDTO::new).collect(Collectors.toList());
+    }
+
+    private boolean isSameDay(Date date1, Date date2) {
+        if (date1 == null || date2 == null) {
+            return false;
+        }
+        Calendar cal1 = Calendar.getInstance();
+        cal1.setTime(date1);
+        Calendar cal2 = Calendar.getInstance();
+        cal2.setTime(date2);
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
+                cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH);
     }
 
     public void addObjective(String token, int dailyObjectiveDistance) {
@@ -160,5 +181,18 @@ public class ActivityService {
                                 Math.abs(existingActivity.getDate().getTime() - activityDTO.getDate().getTime()) < 60000 && // Within 1 minute
                                 Math.abs(existingActivity.getDuration() - activityDTO.getDuration()) < 0.1 && // Similar duration
                                 existingActivity.getOrigin() == activityDTO.getOrigin());
+    }
+
+    public double getTotalCalories(String token, Date date) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        double totalCalories = activityProfile.getActivities().stream()
+                .filter(activity -> isSameDay(activity.getDate(), date)) // Using isSameDay for better date matching
+                .mapToDouble(AbstractActivity::getCaloriesBurned)
+                .sum();
+
+        // Round to one decimal place
+        return Math.round(totalCalories * 10.0) / 10.0;
     }
 }

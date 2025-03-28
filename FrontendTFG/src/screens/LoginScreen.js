@@ -11,11 +11,11 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     try {
-      login(email, password);
+      await login(email, password);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo iniciar sesión. ' + error.message);
+      Alert.alert('Error', 'No se pudo iniciar sesión. ' + (error.message || 'Verifica tus credenciales'));
     }
   };
 
