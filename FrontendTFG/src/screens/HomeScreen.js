@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { View, ScrollView, Text, ActivityIndicator, TouchableOpacity, AppState, StatusBar } from 'react-native';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -9,6 +9,47 @@ import healthConnectService from '../service/HealthConnectService';
 import { getDailyObjective } from '../service/ActivityService';
 import { AuthContext } from '../contexts/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
+
+// En lugar de useMemo, crear un componente separado
+const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => {
+  return (
+    <View style={styles.statsCard}>
+      <View style={styles.statsContainer}>
+        <View style={styles.cardHeader}>
+          <Icon name="analytics-outline" size={20} color="#61dafb" />
+          <Text style={styles.statsTitle}>Resumen de Actividad</Text>
+        </View>
+        
+        <View style={styles.metricsContainer}>
+          {/* Pasos */}
+          <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+            <Icon name="footsteps-outline" size={28} color="#4a69bd" />
+            <Text style={styles.metricValue}>{todaySteps}</Text>
+            <Text style={styles.metricLabel}>Pasos</Text>
+          </View>
+          
+          {/* Ritmo cardíaco */}
+          <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+            <Icon name="heart-outline" size={28} color="#ff6b6b" />
+            <Text style={styles.metricValue}>{heartRate || '--'}</Text>
+            <Text style={styles.metricLabel}>BPM</Text>
+          </View>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={() => navigation.navigate('ActivityScreen')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.buttonContent}>
+            <Text style={styles.buttonText}>Ver detalles</Text>
+            <Icon name="arrow-forward-outline" size={18} color="#fff" style={{marginLeft: 8}} />
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 const HomeScreen = ({ navigation }) => {
   const { token, user } = useContext(AuthContext);
@@ -43,34 +84,34 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [token]);
 
-  // Nuevo manejador para actualizaciones del servicio
-  const handleHealthConnectUpdate = (data) => {
+  // Usar useCallback para evitar recreaciones de funciones
+  const handleHealthConnectUpdate = useCallback((data) => {
     console.log('HomeScreen: Actualización recibida de Health Connect:', data);
     
-    if (data.type === 'today-steps' && data.steps !== undefined) {
+    if (data.type === 'today-steps' && data.steps !== undefined && data.steps !== todaySteps) {
       setTodaySteps(data.steps);
     }
     
-    if (data.type === 'heart-rate' && data.heartRate !== undefined) {
+    if (data.type === 'heart-rate' && data.heartRate !== undefined && data.heartRate !== heartRate) {
       console.log('HomeScreen: Actualizando ritmo cardíaco a:', data.heartRate);
       setHeartRate(data.heartRate);
     }
-  };
+  }, [todaySteps, heartRate]);
 
-  // Modificar para usar el servicio
-  const initializeHealthConnect = async () => {
+  // Inicializar Health Connect solo una vez
+  const initializeHealthConnect = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Inicializar el servicio con el token
+      // Inicializar el servicio con el token una sola vez
       const isInitialized = await healthConnectService.initialize(token);
       setHealthConnectAvailable(isInitialized);
       
       if (isInitialized) {
-        // Agregar listener para actualizaciones
+        // Registrar esta pantalla para recibir actualizaciones push
         healthConnectService.addListener(handleHealthConnectUpdate);
         
-        // Obtener datos actuales de Health Connect
+        // Solicitar datos iniciales
         const currentData = await healthConnectService.getCurrentData();
         if (currentData) {
           if (currentData.steps !== undefined) {
@@ -86,142 +127,68 @@ const HomeScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, handleHealthConnectUpdate]);
 
-  // Modificar esta función para usar el servicio
-  const fetchTodayHealthData = async () => {
+  // Modificar para que sea más eficiente
+  const refreshHealthData = useCallback(async () => {
+    if (!healthConnectAvailable) return;
+    
     try {
       setLoading(true);
-      
-      // Obtener datos actuales mediante el servicio
-      const currentData = await healthConnectService.getCurrentData();
-      if (currentData) {
-        if (currentData.steps !== undefined) {
-          setTodaySteps(currentData.steps);
-        }
-        if (currentData.heartRate !== undefined) {
-          setHeartRate(currentData.heartRate);
-        }
-      }
-    } catch (error) {
-      console.error('Error al obtener datos de salud:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Nuevo método para forzar actualización manual
-  const refreshHealthData = async () => {
-    try {
-      setLoading(true);
-      // Usar una única llamada al servicio en lugar de múltiples
-      const updatedData = await healthConnectService.syncWithHealthConnect(true);
-      
-      // Actualizar los estados solo si hay cambios reales
-      if (updatedData) {
-        if (updatedData.steps !== undefined && updatedData.steps !== todaySteps) {
-          setTodaySteps(updatedData.steps);
-        }
-        if (updatedData.heartRate !== undefined && updatedData.heartRate !== heartRate) {
-          setHeartRate(updatedData.heartRate);
-        }
-      }
+      // Indicar al servicio que queremos una actualización completa pero sin forzar sincronización
+      await healthConnectService.requestUpdate('HomeScreen');
     } catch (error) {
       console.error('Error refreshing health data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [healthConnectAvailable]);
 
-  // Registro de pantalla activa y actualización continua
+  // Efecto de inicialización - una sola vez
   useEffect(() => {
-    // 1. Registrar esta pantalla como activa de forma más eficiente
-    healthConnectService.registerActiveScreen('HomeScreen');
+    initializeHealthConnect();
     
-    // 2. Reducir la frecuencia de actualización para mejorar rendimiento
+    return () => {
+      healthConnectService.removeListener(handleHealthConnectUpdate);
+    };
+  }, [initializeHealthConnect, handleHealthConnectUpdate]);
+
+  // Modificar completamente la gestión de actualizaciones periódicas
+  useEffect(() => {
+    // Registrar la pantalla como activa con prioridad alta
+    healthConnectService.registerActiveScreen('HomeScreen', { priority: 'high' });
+    
+    // Configurar intervalo con frecuencia adaptativa según el estado de la app
+    let updateInterval = appState === 'active' ? 60000 : 180000; // 1 min activo, 3 min en background
+    
     const updateTimer = setInterval(() => {
       if (healthConnectAvailable && appState === 'active') {
-        // Solicitar datos solo si la aplicación está en primer plano
-        healthConnectService.getCurrentData()
-          .then(data => {
-            if (data) {
-              // Actualizar estados solo si cambiaron para evitar re-renders
-              if (data.steps !== undefined && data.steps !== todaySteps) {
-                setTodaySteps(data.steps);
-              }
-              if (data.heartRate !== undefined && data.heartRate !== heartRate) {
-                setHeartRate(data.heartRate);
-              }
-            }
-          })
-          .catch(error => {
-            console.error('Error en actualización periódica:', error);
-          });
+        // Solicitar actualización silenciosa (sin loading indicator)
+        healthConnectService.requestSilentUpdate('HomeScreen');
       }
-    }, 30000); // Cambiar a 30 segundos en lugar de 8 segundos
+    }, updateInterval);
     
-    // 3. Gestionar cambios de estado de la aplicación de forma más eficiente
+    // Manejo más eficiente de cambios de estado de app
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-      // Solo actualizar el estado cuando realmente cambia para reducir re-renders
-      if (appState !== nextAppState) {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        // App vuelve a primer plano - actualización inmediata
+        console.log('App vuelve a primer plano - solicitando actualización');
         setAppState(nextAppState);
-        
-        // Actualizar solo cuando la app vuelve a primer plano, no en cada cambio
-        if (nextAppState === 'active' && appState !== 'active' && healthConnectAvailable) {
-          console.log('App vuelve a primer plano - actualizando datos');
-          healthConnectService.requestImmediateUpdate();
+        if (healthConnectAvailable) {
+          healthConnectService.requestUpdate('HomeScreen');
         }
+      } else if (appState === 'active' && nextAppState.match(/inactive|background/)) {
+        // App va a segundo plano
+        setAppState(nextAppState);
       }
     });
     
-    // Limpieza al desmontar
     return () => {
       clearInterval(updateTimer);
       appStateSubscription.remove();
       healthConnectService.unregisterActiveScreen('HomeScreen');
     };
-  }, [healthConnectAvailable, appState, todaySteps, heartRate]);
-
-  // Componente para el recuadro de Health Connect
-  const HealthConnectSummary = () => {
-    return (
-      <View style={styles.statsCard}>
-        <View style={styles.statsContainer}>
-          <View style={styles.cardHeader}>
-            <Icon name="analytics-outline" size={20} color="#61dafb" />
-            <Text style={styles.statsTitle}>Resumen de Actividad</Text>
-          </View>
-          
-          <View style={styles.metricsContainer}>
-            {/* Pasos */}
-            <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
-              <Icon name="footsteps-outline" size={28} color="#4a69bd" />
-              <Text style={styles.metricValue}>{todaySteps}</Text>
-              <Text style={styles.metricLabel}>Pasos</Text>
-            </View>
-            
-            {/* Ritmo cardíaco */}
-            <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
-              <Icon name="heart-outline" size={28} color="#ff6b6b" />
-              <Text style={styles.metricValue}>{heartRate || '--'}</Text>
-              <Text style={styles.metricLabel}>BPM</Text>
-            </View>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => navigation.navigate('ActivityScreen')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonText}>Ver detalles</Text>
-              <Icon name="arrow-forward-outline" size={18} color="#fff" style={{marginLeft: 8}} />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
+  }, [healthConnectAvailable, appState]);
 
   return (
     <View style={styles.container}>
@@ -241,7 +208,11 @@ const HomeScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('ActivityScreen')}
           activeOpacity={0.7}
         >
-          <HealthConnectSummary />
+          <HealthConnectSummary 
+            todaySteps={todaySteps} 
+            heartRate={heartRate} 
+            navigation={navigation}
+          />
         </TouchableOpacity>
         
         <TouchableOpacity 

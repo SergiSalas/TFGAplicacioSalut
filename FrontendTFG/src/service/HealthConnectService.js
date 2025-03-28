@@ -7,6 +7,7 @@ import { ActivityCache } from '../cache/ActivityCache';
 import { createActivity } from './ActivityService';
 import { getBackendActivityType, getExerciseTypeName } from '../utils/ExerciseTypeMapper';
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
+import { BehaviorSubject } from 'rxjs';
 
 // Control de sincronización
 let syncInProgress = false;
@@ -18,58 +19,78 @@ const SYNC_INTERVAL = 30 * 60 * 1000; // 30 minutos
  */
 class HealthConnectService {
   constructor() {
-    this.isInitialized = false;
+    this.initialized = false;
     this.token = null;
+    this.listeners = new Map();
+    this.activeScreens = new Map();
+    this.stepsSubject = new BehaviorSubject(0);
+    this.heartRateSubject = new BehaviorSubject(null);
+    this.lastUpdate = {
+      steps: 0,
+      heartRate: 0
+    };
+    this.updateQueue = [];
+    this.isProcessingQueue = false;
+    this.healthConnectAvailable = false;
+    
+    // Añadir estas propiedades
     this.savedExerciseIds = [];
     this.savedStepIds = [];
-    this.listeners = [];
-    this.updateIntervalId = null;
-    this.updateInterval = 15000; // Reducir a 15 segundos en lugar de 60 segundos
-    this.activeScreens = new Set(); // Nuevo: para rastrear qué pantallas están activas
   }
   
   /**
    * Inicializa el servicio con el token del usuario
    */
   async initialize(token) {
-    if (!token) return false;
+    if (this.initialized && this.token === token) {
+      return this.healthConnectAvailable;
+    }
     
     this.token = token;
     
     try {
-      // Inicializar Health Connect
+      // Inicializar correctamente el cliente de Health Connect
       const isAvailable = await initialize();
+      
       if (!isAvailable) {
-        console.log('Health Connect no está disponible');
+        console.log('Health Connect no está disponible en este dispositivo');
+        this.healthConnectAvailable = false;
         return false;
       }
       
-      // Solicitar permisos (añadir HeartRate)
-      const permissions = await requestPermission([
-        { accessType: 'read', recordType: 'Steps' },
-        { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
-        { accessType: 'read', recordType: 'ExerciseSession' },
-        { accessType: 'read', recordType: 'HeartRate' }, // Añadido permiso de ritmo cardíaco
-        { accessType: 'write', recordType: 'ExerciseSession' }
-      ]);
+      console.log('Health Connect inicializado correctamente');
       
-      if (permissions.length === 0) {
-        console.log('No se obtuvieron permisos para Health Connect');
+      // Solicitar permisos si es necesario
+      try {
+        const granted = await requestPermission([
+          { accessType: 'read', recordType: 'Steps' },
+          { accessType: 'read', recordType: 'HeartRate' },
+          { accessType: 'read', recordType: 'ExerciseSession' },
+          // Añade aquí otros permisos que necesites
+        ]);
+        
+        if (!granted) {
+          console.log('No se otorgaron todos los permisos necesarios');
+          this.healthConnectAvailable = false;
+          return false;
+        }
+        
+        console.log('Permisos de Health Connect concedidos');
+        this.healthConnectAvailable = true;
+        this.initialized = true;
+        
+        // Cargar datos iniciales
+        await this.loadInitialData();
+        
+        return true;
+      } catch (permissionError) {
+        console.error('Error al solicitar permisos:', permissionError);
+        this.healthConnectAvailable = false;
         return false;
       }
-      
-      // Cargar IDs de ejercicios ya guardados
-      await this.loadSavedIds();
-      
-      this.isInitialized = true;
-      console.log('HealthConnectService inicializado correctamente');
-      
-      // Iniciar actualizaciones periódicas
-      this.startPeriodicUpdates();
-      
-      return true;
     } catch (error) {
-      console.error('Error al inicializar HealthConnectService:', error);
+      console.error('Error al inicializar Health Connect:', error);
+      this.healthConnectAvailable = false;
       return false;
     }
   }
@@ -79,19 +100,66 @@ class HealthConnectService {
    */
   async loadSavedIds() {
     try {
-      this.savedExerciseIds = await ActivityCache.getSavedExerciseIds();
-      this.savedStepIds = await ActivityCache.getSavedStepIds();
+      const exerciseIds = await ActivityCache.getSavedExerciseIds();
+      const stepIds = await ActivityCache.getSavedStepIds();
       
-      console.log(`Cargados ${this.savedExerciseIds.length} IDs de ejercicios guardados`);
-      console.log(`Cargados ${this.savedStepIds.length} IDs de pasos guardados`);
+      console.log(`Cargados ${exerciseIds.length} IDs de ejercicios guardados`);
+      console.log(`Cargados ${stepIds.length} IDs de pasos guardados`);
+      
+      // Asignar a las propiedades de la clase
+      this.savedExerciseIds = exerciseIds || [];
+      this.savedStepIds = stepIds || [];
       
       return {
-        exerciseIds: this.savedExerciseIds,
-        stepIds: this.savedStepIds
+        exerciseIds,
+        stepIds
       };
     } catch (error) {
       console.error('Error al cargar IDs guardados:', error);
+      // Asegurar que al menos tengamos arrays vacíos
+      this.savedExerciseIds = [];
+      this.savedStepIds = [];
       return { exerciseIds: [], stepIds: [] };
+    }
+  }
+  
+  /**
+   * Cargar datos iniciales de forma eficiente
+   */
+  async loadInitialData() {
+    try {
+      // Implementa tu lógica para cargar datos
+      // Por ejemplo:
+      const steps = await this.readStepsData();
+      const heartRate = await this.readHeartRateData();
+      
+      // Actualizar solo si hay cambios reales
+      if (steps !== this.stepsSubject.getValue()) {
+        this.stepsSubject.next(steps);
+      }
+      
+      if (heartRate !== this.heartRateSubject.getValue()) {
+        this.heartRateSubject.next(heartRate);
+      }
+      
+      return {
+        steps,
+        heartRate
+      };
+    } catch (error) {
+      console.error('Error al cargar datos iniciales:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Suscribirse a actualizaciones
+   */
+  subscribe(dataType, callback) {
+    if (dataType === 'steps') {
+      return this.stepsSubject.subscribe(callback);
+    } else if (dataType === 'heartRate') {
+      return this.heartRateSubject.subscribe(callback);
     }
   }
   
@@ -99,35 +167,50 @@ class HealthConnectService {
    * Añade un listener para notificaciones de cambios
    * @param {Function} listener - Función callback (data) => {}
    */
-  addListener(listener) {
-    if (typeof listener === 'function' && !this.listeners.includes(listener)) {
-      this.listeners.push(listener);
-      return true;
-    }
-    return false;
+  addListener(callback) {
+    const id = Date.now().toString();
+    this.listeners.set(id, callback);
+    return id;
   }
   
   /**
    * Elimina un listener
    */
-  removeListener(listener) {
-    const index = this.listeners.indexOf(listener);
-    if (index !== -1) {
-      this.listeners.splice(index, 1);
-      return true;
+  removeListener(callbackOrId) {
+    if (typeof callbackOrId === 'string') {
+      this.listeners.delete(callbackOrId);
+    } else {
+      // Buscar por función callback
+      for (const [id, cb] of this.listeners.entries()) {
+        if (cb === callbackOrId) {
+          this.listeners.delete(id);
+          break;
+        }
+      }
     }
-    return false;
   }
   
   /**
    * Notifica a todos los listeners con los datos
    */
   notifyListeners(data) {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach(callback => {
       try {
-        listener(data);
+        if (data.steps !== undefined) {
+          callback({
+            type: 'today-steps',
+            steps: data.steps
+          });
+        }
+        
+        if (data.heartRate !== undefined) {
+          callback({
+            type: 'heart-rate',
+            heartRate: data.heartRate
+          });
+        }
       } catch (error) {
-        console.error('Error en listener de HealthConnectService:', error);
+        console.error('Error en listener de Health Connect:', error);
       }
     });
   }
@@ -159,7 +242,7 @@ class HealthConnectService {
    */
   async syncWithHealthConnect(force = false) {
     // No sincronizar si no está inicializado o no hay token
-    if (!this.isInitialized || !this.token) {
+    if (!this.initialized || !this.token) {
       console.log('No se puede sincronizar, servicio no inicializado o sin token');
       return false;
     }
@@ -202,6 +285,12 @@ class HealthConnectService {
       
       // Cargar IDs más recientes
       await this.loadSavedIds();
+      
+      // Verificación de seguridad después de cargar IDs
+      if (!Array.isArray(this.savedExerciseIds)) {
+        console.warn('savedExerciseIds no es un array, inicializando como array vacío');
+        this.savedExerciseIds = [];
+      }
       
       // Identificar nuevas actividades
       const newExercises = exerciseSessions.records.filter(exercise => {
@@ -333,227 +422,206 @@ class HealthConnectService {
    * Obtiene datos actuales de Health Connect para mostrar (sin sincronizar)
    */
   async getCurrentData() {
-    if (!this.isInitialized) {
-      return { steps: 0, heartRate: null, calories: 0 };
-    }
-    
+    return {
+      steps: this.stepsSubject.getValue(),
+      heartRate: this.heartRateSubject.getValue()
+    };
+  }
+  
+  // Implementa tus métodos para leer datos específicos
+  async readStepsData() {
     try {
-      // Período para hoy (para datos de hoy)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const todayFilter = {
-        timeRangeFilter: {
-          operator: 'between',
-          startTime: today.toISOString(),
-          endTime: new Date().toISOString(),
-        }
-      };
-      
-      // MODIFICACIÓN: Incluir lectura de calorías activas quemadas
-      const [todayStepsData, heartRateData, caloriesData] = await Promise.all([
-        readRecords('Steps', todayFilter),
-        readRecords('HeartRate', {
-          ...todayFilter,
-          limit: 5,
-          ascendingOrder: false
-        }),
-        readRecords('ActiveCaloriesBurned', todayFilter) // Añadir esta línea
-      ]);
-      
-      // Calcular pasos totales de hoy
-      const stepsToday = todayStepsData && todayStepsData.records 
-        ? todayStepsData.records.reduce((sum, step) => sum + step.count, 0) 
-        : 0;
-      
-      // Calcular calorías quemadas hoy
-      const caloriesToday = caloriesData && caloriesData.records
-        ? caloriesData.records.reduce((sum, record) => sum + record.energy.inKilocalories, 0)
-        : 0;
-      
-      // ¡NECESITAMOS DECLARAR ESTA VARIABLE AQUÍ, FUERA DEL BLOQUE IF!
-      let latestHeartRate = null;
-      
-      // Mejorar la lógica para obtener el ritmo cardíaco más reciente
-      if (heartRateData && heartRateData.records && heartRateData.records.length > 0) {
-        // Ya tenemos los registros ordenados de más reciente a más antiguo
-        
-        // Verificar todas las lecturas hasta encontrar una válida
-        for (const record of heartRateData.records) {
-          if (record.samples && record.samples.length > 0) {
-            // Obtener el ritmo cardíaco más reciente
-            latestHeartRate = record.samples[0].beatsPerMinute;
-            console.log('Ritmo cardíaco encontrado:', latestHeartRate, 'BPM a las', new Date(record.time).toLocaleTimeString());
-            
-            // Notificar a los listeners
-            this.notifyListeners({
-              type: 'heart-rate',
-              heartRate: latestHeartRate,
-              timestamp: record.time
-            });
-            
-            // Salir del bucle una vez encontrado
-            break;
-          }
-        }
-        
-        if (!latestHeartRate) {
-          console.log('No se encontraron muestras válidas en los registros de ritmo cardíaco');
-        }
-      } else {
-        console.log('No se encontraron registros de ritmo cardíaco');
+      if (!this.healthConnectAvailable) {
+        return 0;
       }
       
-      // Notificar a los listeners sobre pasos actualizados
-      this.notifyListeners({
-        type: 'today-steps',
-        steps: stepsToday
-      });
+      // Filtrar para obtener los pasos de hoy
+      const now = new Date();
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
       
-      // Notificar a los listeners sobre calorías
-      this.notifyListeners({
-        type: 'calories',
-        calories: caloriesToday
-      });
-      
-      return { 
-        steps: stepsToday,
-        heartRate: latestHeartRate,
-        calories: caloriesToday // Incluir calorías en el retorno
+      const timeFilter = {
+        timeRangeFilter: {
+          operator: 'between',
+          startTime: startOfDay.toISOString(),
+          endTime: now.toISOString(),
+        }
       };
+      
+      const stepsResponse = await readRecords('Steps', timeFilter);
+      
+      // Sumar todos los pasos del día
+      if (stepsResponse && stepsResponse.records && stepsResponse.records.length > 0) {
+        const totalSteps = stepsResponse.records.reduce((total, record) => {
+          return total + (record.count || 0);
+        }, 0);
+        
+        return totalSteps;
+      }
+      
+      return 0;
     } catch (error) {
-      console.error('Error al obtener datos actuales de Health Connect:', error);
-      return { steps: 0, heartRate: null, calories: 0 };
+      console.error('Error al leer datos de pasos:', error);
+      return 0;
     }
   }
   
-  // Añadir esta función para iniciar actualizaciones periódicas
-  startPeriodicUpdates() {
-    // Limpiar cualquier intervalo existente antes de crear uno nuevo
-    this.stopPeriodicUpdates();
-    
-    // Crear un nuevo intervalo de actualización
-    this.updateIntervalId = setInterval(async () => {
-      if (this.isInitialized && this.token) {
-        try {
-          console.log('Ejecutando actualización periódica de datos de salud...');
-          await this.getCurrentData();
-        } catch (error) {
-          console.error('Error en actualización periódica:', error);
-        }
-      }
-    }, this.updateInterval);
-    
-    console.log(`Actualizaciones periódicas iniciadas (cada ${this.updateInterval/1000} segundos)`);
-  }
-  
-  // Función para detener actualizaciones periódicas
-  stopPeriodicUpdates() {
-    if (this.updateIntervalId) {
-      clearInterval(this.updateIntervalId);
-      this.updateIntervalId = null;
-      console.log('Actualizaciones periódicas detenidas');
-    }
-  }
-  
-  // Asegurarse de limpiar al desconectar
-  disconnect() {
-    this.stopPeriodicUpdates();
-    this.listeners = [];
-    this.isInitialized = false;
-  }
-
-  // Añadir métodos para rastrear qué pantallas están activas
-  registerActiveScreen(screenId) {
-    this.activeScreens.add(screenId);
-    // Si es la primera pantalla activa, aumentar la frecuencia
-    if (this.activeScreens.size === 1) {
-      this.increaseUpdateFrequency();
-    }
-    console.log(`Pantalla ${screenId} registrada como activa. Pantallas activas: ${this.activeScreens.size}`);
-  }
-
-  unregisterActiveScreen(screenId) {
-    this.activeScreens.delete(screenId);
-    // Si no quedan pantallas activas, reducir la frecuencia
-    if (this.activeScreens.size === 0) {
-      this.decreaseUpdateFrequency();
-    }
-    console.log(`Pantalla ${screenId} desregistrada. Pantallas activas: ${this.activeScreens.size}`);
-  }
-
-  // Método para aumentar frecuencia cuando hay pantallas activas
-  increaseUpdateFrequency() {
-    this.stopPeriodicUpdates();
-    this.updateInterval = 5000; // 5 segundos cuando hay pantallas con datos visibles
-    this.startPeriodicUpdates();
-    console.log('Frecuencia de actualización aumentada a 5 segundos');
-  }
-
-  // Método para reducir frecuencia cuando no hay pantallas activas
-  decreaseUpdateFrequency() {
-    this.stopPeriodicUpdates();
-    this.updateInterval = 15000; // 15 segundos en segundo plano
-    this.startPeriodicUpdates();
-    console.log('Frecuencia de actualización reducida a 15 segundos');
-  }
-
-  // Modificar el método para obtener datos inmediatamente
-  async requestImmediateUpdate() {
-    if (this.isInitialized && this.token) {
-      console.log('Solicitando actualización inmediata de datos de salud...');
-      return await this.getCurrentData();
-    }
-    return null;
-  }
-
-  // Añadir este nuevo método
-  async refreshHeartRateData() {
-    if (!this.isInitialized) return null;
-    
+  async readHeartRateData() {
     try {
-      console.log('Solicitando actualización explícita de ritmo cardíaco');
+      if (!this.healthConnectAvailable) {
+        return null;
+      }
       
-      // Leer solo datos de ritmo cardíaco
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Obtener la última lectura de frecuencia cardíaca
+      const now = new Date();
+      const oneHourAgo = new Date(now);
+      oneHourAgo.setHours(now.getHours() - 1);
       
-      const todayFilter = {
+      const timeFilter = {
         timeRangeFilter: {
           operator: 'between',
-          startTime: today.toISOString(),
-          endTime: new Date().toISOString(),
+          startTime: oneHourAgo.toISOString(),
+          endTime: now.toISOString(),
         }
       };
       
-      const heartRateData = await readRecords('HeartRate', todayFilter);
-      console.log(`Datos de ritmo cardíaco: ${heartRateData?.records?.length || 0} registros`);
+      const heartRateResponse = await readRecords('HeartRate', timeFilter);
       
-      if (heartRateData && heartRateData.records && heartRateData.records.length > 0) {
-        // Inspeccionar la estructura de los primeros datos de ritmo cardíaco
-        console.log('Estructura del primer registro de ritmo cardíaco:');
-        console.log(JSON.stringify(heartRateData.records[0], null, 2));
+      if (heartRateResponse && heartRateResponse.records && heartRateResponse.records.length > 0) {
+        // Ordenar por tiempo para obtener la más reciente
+        const sortedRecords = [...heartRateResponse.records].sort((a, b) => {
+          return new Date(b.time) - new Date(a.time);
+        });
         
-        const record = heartRateData.records[0];
-        if (record.samples && record.samples.length > 0) {
-          const latestHeartRate = record.samples[0].beatsPerMinute;
-          console.log(`Último ritmo cardíaco: ${latestHeartRate}`);
-          
-          this.notifyListeners({
-            type: 'heart-rate',
-            heartRate: latestHeartRate
-          });
-          
-          return latestHeartRate;
-        } else {
-          console.log('No se encontraron muestras en el registro de ritmo cardíaco');
-        }
+        // Devolver la última medición
+        return sortedRecords[0].beatsPerMinute || null;
       }
       
       return null;
     } catch (error) {
-      console.error('Error actualizando datos de ritmo cardíaco:', error);
+      console.error('Error al leer datos de frecuencia cardíaca:', error);
       return null;
+    }
+  }
+
+  // Registrar pantalla activa con prioridad
+  registerActiveScreen(screenName, options = { priority: 'normal' }) {
+    this.activeScreens.set(screenName, {
+      timestamp: Date.now(),
+      priority: options.priority
+    });
+    
+    // Programar actualización inicial si es de alta prioridad
+    if (options.priority === 'high') {
+      this.requestSilentUpdate(screenName);
+    }
+  }
+
+  unregisterActiveScreen(screenName) {
+    this.activeScreens.delete(screenName);
+  }
+
+  // Solicitar actualización inmediata
+  async requestUpdate(screenName) {
+    this.queueUpdate({
+      screenName,
+      silent: false,
+      priority: 'high'
+    });
+    
+    return this.processUpdateQueue();
+  }
+
+  // Solicitar actualización silenciosa (sin loading indicators)
+  async requestSilentUpdate(screenName) {
+    this.queueUpdate({
+      screenName,
+      silent: true,
+      priority: 'normal'
+    });
+    
+    return this.processUpdateQueue();
+  }
+
+  // Poner actualización en cola
+  queueUpdate(updateRequest) {
+    // Verificar si ya existe una solicitud similar
+    const existingIndex = this.updateQueue.findIndex(
+      req => req.screenName === updateRequest.screenName
+    );
+    
+    if (existingIndex >= 0) {
+      // Si la nueva solicitud es de mayor prioridad, actualizar la existente
+      if (updateRequest.priority === 'high') {
+        this.updateQueue[existingIndex] = updateRequest;
+      }
+    } else {
+      // Añadir nueva solicitud
+      this.updateQueue.push(updateRequest);
+    }
+  }
+
+  // Procesar cola de actualizaciones
+  async processUpdateQueue() {
+    if (this.isProcessingQueue || this.updateQueue.length === 0) {
+      return;
+    }
+    
+    try {
+      this.isProcessingQueue = true;
+      
+      // Ordenar por prioridad
+      this.updateQueue.sort((a, b) => {
+        if (a.priority === 'high' && b.priority !== 'high') return -1;
+        if (a.priority !== 'high' && b.priority === 'high') return 1;
+        return 0;
+      });
+      
+      // Obtener y eliminar la primera solicitud
+      const request = this.updateQueue.shift();
+      
+      // Comprobar tiempo desde última actualización
+      const now = Date.now();
+      const timeSinceLastStepsUpdate = now - this.lastUpdate.steps;
+      const timeSinceLastHeartRateUpdate = now - this.lastUpdate.heartRate;
+      
+      let updatedData = {};
+      
+      // Actualizar pasos solo si han pasado al menos 30 segundos
+      if (timeSinceLastStepsUpdate > 30000) {
+        const steps = await this.readStepsData();
+        if (steps !== this.stepsSubject.getValue()) {
+          this.stepsSubject.next(steps);
+          this.lastUpdate.steps = now;
+          updatedData.steps = steps;
+        }
+      }
+      
+      // Actualizar frecuencia cardíaca solo si han pasado al menos 30 segundos
+      if (timeSinceLastHeartRateUpdate > 30000) {
+        const heartRate = await this.readHeartRateData();
+        if (heartRate !== this.heartRateSubject.getValue()) {
+          this.heartRateSubject.next(heartRate);
+          this.lastUpdate.heartRate = now;
+          updatedData.heartRate = heartRate;
+        }
+      }
+      
+      // Notificar a los listeners sobre los cambios
+      if (Object.keys(updatedData).length > 0) {
+        this.notifyListeners(updatedData);
+      }
+      
+      return updatedData;
+    } catch (error) {
+      console.error('Error al procesar cola de actualizaciones:', error);
+    } finally {
+      this.isProcessingQueue = false;
+      
+      // Procesar siguiente solicitud si existe
+      if (this.updateQueue.length > 0) {
+        setTimeout(() => this.processUpdateQueue(), 500);
+      }
     }
   }
 }
