@@ -7,12 +7,14 @@ import com.tecnocampus.backendtfg.domain.TypeActivity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.Date;
 
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString
 public class ActivityDTO {
     private double duration;
     private Date date;

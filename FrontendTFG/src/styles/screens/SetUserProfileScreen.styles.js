@@ -40,4 +40,14 @@ export default StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
   },
+  pickerContainer: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    color: '#FFFFFF',
+  },
 }); 

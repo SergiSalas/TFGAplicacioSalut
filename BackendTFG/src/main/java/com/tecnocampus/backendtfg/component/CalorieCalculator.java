@@ -19,17 +19,18 @@ public class CalorieCalculator {
         double durationInHours = durationInMinutes / 60.0;
         double weight = user.getWeight();
 
-
+        double calories;
         if (user.getGender() == null) {
-            return metValue * weight * durationInHours;
-        }else{
+            calories = metValue * weight * durationInHours;
+        } else {
             // Apply gender adjustment if available (typically 10% lower for females)
             double genderFactor = (user.getGender() == Gender.FEMALE) ? 0.9 : 1.0;
-
-            return metValue * weight * durationInHours * genderFactor;
+            calories = metValue * weight * durationInHours * genderFactor;
         }
-    }
 
+        // Round to one decimal place
+        return Math.round(calories * 10.0) / 10.0;
+    }
     private static double getMETValueForActivity(TypeActivity type) {
         // MET values from Compendium of Physical Activities
         switch (type) {

@@ -1,26 +1,48 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { AuthContext } from '../contexts/AuthContext';
 import styles from '../styles/screens/SetUserProfileScreen.styles';
 import { CommonActions } from '@react-navigation/native';
-import { updateUserProfile } from '../service/UserService'; // Necesitarás crear este servicio
+import { updateUserProfile, getGenderTypes } from '../service/UserService';
 
 const SetUserProfileScreen = ({ navigation }) => {
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
+  const [genderTypes, setGenderTypes] = useState([]);
+  const [loadingGenders, setLoadingGenders] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { token, setIsNewUser } = useContext(AuthContext);
+
+  // Cargar los tipos de género al iniciar la pantalla
+  useEffect(() => {
+    if (token) {
+      getGenderTypes(token)
+        .then(data => {
+          setGenderTypes(data);
+          if (data.length > 0) {
+            setGender(data[0].name);
+          }
+          setLoadingGenders(false);
+        })
+        .catch(error => {
+          console.error('Error al cargar tipos de género:', error);
+          setLoadingGenders(false);
+        });
+    }
+  }, [token]);
 
   const validateInputs = () => {
     const weightNum = parseFloat(weight);
     const heightNum = parseInt(height);
     const ageNum = parseInt(age);
 
-    if (!weight || !height || !age || isNaN(weightNum) || isNaN(heightNum) || isNaN(ageNum)) {
+    if (!weight || !height || !age || isNaN(weightNum) || isNaN(heightNum) || isNaN(ageNum) || !gender) {
       Alert.alert('Error', 'Por favor, introduce valores válidos para todos los campos');
       return false;
     }
@@ -51,7 +73,8 @@ const SetUserProfileScreen = ({ navigation }) => {
       await updateUserProfile(token, {
         height: parseInt(height),
         weight: parseFloat(weight),
-        age: parseInt(age)
+        age: parseInt(age),
+        gender: gender
       });
 
       Alert.alert(
@@ -118,6 +141,30 @@ const SetUserProfileScreen = ({ navigation }) => {
             />
           </View>
 
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Género</Text>
+            {loadingGenders ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : (
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={gender}
+                  onValueChange={(itemValue) => setGender(itemValue)}
+                  style={styles.picker}
+                  dropdownIconColor="#FFFFFF"
+                >
+                  {genderTypes.map((type) => (
+                    <Picker.Item 
+                      key={type.name} 
+                      label={getGenderLabel(type.name)} 
+                      value={type.name} 
+                    />
+                  ))}
+                </Picker>
+              </View>
+            )}
+          </View>
+
           <Button
             title="Guardar y Continuar"
             onPress={handleSubmit}
@@ -128,6 +175,20 @@ const SetUserProfileScreen = ({ navigation }) => {
       </View>
     </View>
   );
+};
+
+// Función para obtener etiquetas más amigables para los géneros
+const getGenderLabel = (name) => {
+  switch (name) {
+    case 'MALE':
+      return 'Masculino';
+    case 'FEMALE':
+      return 'Femenino';
+    case 'OTHER':
+      return 'Otro';
+    default:
+      return name;
+  }
 };
 
 export default SetUserProfileScreen; 

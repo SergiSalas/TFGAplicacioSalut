@@ -1,12 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Text } from 'react-native';
 import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Footer from '../components/layout/Footer';
 import styles from '../styles/screens/ProfileScreen.styles';
+import healthConnectService from '../service/HealthConnectService';
 
 const ProfileScreen = ({ navigation }) => {
+  const [healthData, setHealthData] = useState(null);
+
+  useEffect(() => {
+    const initHealth = async () => {
+      try {
+        const isInitialized = await healthConnectService.initialize(token);
+        if (isInitialized) {
+          healthConnectService.addListener(handleHealthUpdate);
+          const currentData = await healthConnectService.getCurrentData();
+          updateHealthData(currentData);
+        }
+      } catch (error) {
+        console.error('Error al inicializar Health Connect:', error);
+      }
+    };
+    
+    initHealth();
+    
+    return () => {
+      healthConnectService.removeListener(handleHealthUpdate);
+    };
+  }, []);
+  
+  const handleHealthUpdate = (data) => {
+    if (data.type === 'today-steps' || data.type === 'heart-rate') {
+      updateHealthData(data);
+    }
+  };
+  
+  const updateHealthData = (data) => {
+    setHealthData(prevData => ({
+      ...prevData,
+      ...data
+    }));
+  };
+
   return (
     <View style={styles.container}>
       <Header title="Perfil" onBackPress={() => navigation.goBack()} />

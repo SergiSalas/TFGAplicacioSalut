@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  RefreshControl,
+  AppState
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Header from '../components/layout/Header';
@@ -16,7 +18,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import Footer from '../components/layout/Footer';
 import styles from '../styles/screens/ActivityScreen.styles';
-import { getActivities, getDailyObjective, createActivity } from '../service/ActivityService';
+import { getActivities, getDailyObjective, createActivity, getTotalCalories } from '../service/ActivityService';
 import { AuthContext } from '../contexts/AuthContext';
 import { 
   initialize, 
@@ -30,8 +32,18 @@ import {
   getExerciseTypeColor,
   getBackendActivityType
 } from '../utils/ExerciseTypeMapper';
+import { ActivityCache } from '../cache/ActivityCache';
+import { appStorage, activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import healthConnectService from '../service/HealthConnectService';
 
-const ActivityScreen = ({ navigation }) => {
+// Las declaraciones de función son "elevadas" (hoisted)
+function getCurrentDateFormatted() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+const ActivityScreen = ({ navigation, route }) => {
   const [activities, setActivities] = useState([]);
   const [healthConnectData, setHealthConnectData] = useState({
     steps: [],
@@ -43,15 +55,129 @@ const ActivityScreen = ({ navigation }) => {
   const [dailyObjective, setDailyObjective] = useState(10000);
   const [objectiveLoaded, setObjectiveLoaded] = useState(false);
   const [todaySteps, setTodaySteps] = useState(0);
-  const { token } = useContext(AuthContext);
-  
+  const { token, handleTokenExpiration } = useContext(AuthContext);
+
   // Agregar un nuevo estado para rastrear las actividades ya guardadas de Health Connect
   const [savedHealthConnectIds, setSavedHealthConnectIds] = useState([]);
   
+  const [refreshing, setRefreshing] = useState(false);
+  const [savedStepIds, setSavedStepIds] = useState([]);
+  const [savedExerciseIds, setSavedExerciseIds] = useState([]);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  
+  // Ahora la función getCurrentDateFormatted ya está definida cuando se usa aquí
+  const [selectedDate, setSelectedDate] = useState(getCurrentDateFormatted());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Añadir esta variable de estado para el ritmo cardíaco
+  const [heartRate, setHeartRate] = useState(null);
+
+  const [appState, setAppState] = useState(AppState.currentState);
+
+  // Añadir un nuevo estado para calorías
+  const [calories, setCalories] = useState(0);
+
+  // Añadir estos estados al inicio del componente
+  const [totalCalories, setTotalCalories] = useState(0);
+  const [isLoadingCalories, setIsLoadingCalories] = useState(false);
+
   useEffect(() => {
-    initializeHealthConnect();
-    fetchDailyObjective();
-  }, []);
+    if (token && !initialLoadDone) {
+      // Cargar Health Connect primero (es más rápido) para tener datos básicos
+      initializeHealthConnectService();
+      
+      // Cargar actividades en segundo plano (no bloqueante)
+      setTimeout(() => {
+        loadActivities();
+        setInitialLoadDone(true);
+      }, 100);
+    }
+  }, [token, initialLoadDone]);
+
+  // Añadir este nuevo useEffect para el enfoque
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Si Health Connect está disponible, actualizar datos en tiempo real
+      if (healthConnectAvailable) {
+        console.log('ActivityScreen recibió foco - Actualizando datos de salud');
+        
+        // Obtener datos actualizados sin mostrar UI de carga
+        healthConnectService.getCurrentData()
+          .then(data => {
+            if (data) {
+              if (data.steps !== undefined) {
+                setTodaySteps(data.steps);
+              }
+              if (data.heartRate !== undefined) {
+                setHeartRate(data.heartRate);
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error al actualizar datos de salud:', error);
+          });
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, healthConnectAvailable]);
+
+  // Registro de pantalla activa y actualización continua
+  useEffect(() => {
+    // 1. Registrar esta pantalla como activa
+    healthConnectService.registerActiveScreen('ActivityScreen');
+    
+    // 2. Configurar actualizador en primer plano (más frecuente)
+    const updateTimer = setInterval(() => {
+      if (healthConnectAvailable && appState === 'active') {
+        console.log('Actualización por intervalo (ActivityScreen activa)');
+        healthConnectService.getCurrentData()
+          .then(data => {
+            if (data) {
+              if (data.steps !== undefined) {
+                setTodaySteps(data.steps);
+              }
+              if (data.heartRate !== undefined) {
+                setHeartRate(data.heartRate);
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error en actualización periódica:', error);
+          });
+      }
+    }, 8000); // Actualizar cada 8 segundos mientras la pantalla está visible
+    
+    // 3. Gestionar cambios de estado de la aplicación
+    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
+      setAppState(nextAppState);
+      
+      // Al volver a primer plano, actualizar inmediatamente
+      if (nextAppState === 'active' && healthConnectAvailable) {
+        healthConnectService.requestUpdate('ActivityScreen')
+          .then(data => {
+            if (data) {
+              if (data.steps !== undefined) {
+                setTodaySteps(data.steps);
+              }
+              if (data.heartRate !== undefined) {
+                setHeartRate(data.heartRate);
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error al actualizar al volver a primer plano:', error);
+          });
+      }
+    });
+    
+    // Limpieza al desmontar
+    return () => {
+      clearInterval(updateTimer);
+      appStateSubscription.remove();
+      healthConnectService.unregisterActiveScreen('ActivityScreen');
+    };
+  }, [healthConnectAvailable, appState]);
 
   // Función para obtener el objetivo diario
   const fetchDailyObjective = async () => {
@@ -68,352 +194,331 @@ const ActivityScreen = ({ navigation }) => {
     }
   };
 
-  // Obtener actividades del backend
-  useFocusEffect(
-    React.useCallback(() => {
-      if (token) {
-        getActivities(token)
-          .then(data => {
-            setActivities(data);
-          })
-          .catch(error => {
-            console.error('Error fetching activities:', error);
-          });
-      }
-    }, [token])
-  );
-
-  // Inicializar Health Connect
-  const initializeHealthConnect = async () => {
+  // Añadir esta función auxiliar (después de otros métodos auxiliares)
+  const loadSavedIds = async () => {
     try {
-      const isInitialized = await initialize();
-      setHealthConnectAvailable(isInitialized);
+      // Cargar tanto IDs de ejercicios como de pasos
+      const exerciseIds = await ActivityCache.getSavedExerciseIds();
+      const stepIds = await ActivityCache.getSavedStepIds();
       
-      if (isInitialized) {
-        // Solicitar todos los permisos necesarios
-        const permissions = await requestPermission([
-          { accessType: 'read', recordType: 'Steps' },
-          { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
-          { accessType: 'read', recordType: 'ExerciseSession' },
-          { accessType: 'write', recordType: 'ExerciseSession' }
-        ]);
-        
-        if (permissions.length > 0) {
-          // Si tenemos permisos, leer datos
-          fetchHealthData();
-        }
-      }
+      console.log(`Cargados ${exerciseIds.length} IDs de ejercicios guardados`);
+      console.log(`Cargados ${stepIds.length} IDs de pasos guardados`);
+      
+      setSavedExerciseIds(exerciseIds);
+      setSavedStepIds(stepIds);
+      
+      return { exerciseIds, stepIds };
     } catch (error) {
-      console.error('Error al inicializar Health Connect:', error);
-      setHealthConnectAvailable(false);
+      console.error('Error al cargar IDs guardados:', error);
+      return { exerciseIds: [], stepIds: [] };
     }
   };
 
-  // Función para obtener datos de Health Connect
-  const fetchHealthData = async () => {
+  // Modificar la función loadActivities para asegurar que se cargan los IDs guardados
+  const loadActivities = useCallback(async (forceRefresh = false, date = null) => {
+    if (!token) {
+      console.log('No hay token, posible sesión expirada');
+      await handleTokenExpiration();
+      return;
+    }
+    
+    try {
+      setRefreshing(true);
+      
+      // IMPORTANTE: Cargar IDs guardados ANTES de hacer cualquier petición
+      await loadSavedIds();
+      
+      // Obtener la fecha actual en formato YYYY-MM-DD
+      const today = date || getCurrentDateFormatted();
+      
+      // Cargar solo las actividades de hoy
+      const data = await getActivities(token, forceRefresh, today);
+      setActivities(data || []);
+      setInitialLoadDone(true);
+      
+      // Registrar tiempo de carga
+      ActivityCache.setLastLoadTime();
+    } catch (error) {
+      console.error('Error al cargar actividades:', error);
+      
+      // Verificar si es un error de token
+      if (
+        !token || 
+        error.message?.includes('expirada') || 
+        error.message?.includes('inicia sesión') ||
+        error.response?.status === 401 ||
+        error.response?.status === 403 ||
+        error.response?.data?.message?.includes('token')
+      ) {
+        console.log('Detectado error de token en loadActivities:', 
+          error.message || error.response?.data?.message);
+        await handleTokenExpiration();
+        // No es necesario hacer nada más, el handleTokenExpiration nos llevará a login
+        return;
+      }
+      
+      // Otro tipo de error
+      Alert.alert("Error", "No se pudieron cargar las actividades.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [token, handleTokenExpiration]);
+  
+  // Obtener actividades iniciales solo una vez al montar el componente
+  useEffect(() => {
+    if (!initialLoadDone) {
+      loadActivities();
+    }
+  }, [initialLoadDone, loadActivities]);
+  
+  // Modificar useFocusEffect para solo recargar si venimos de crear una actividad
+  useFocusEffect(
+    React.useCallback(() => {
+      // Solo recargar si ya completamos la carga inicial
+      if (initialLoadDone) {
+        // Verificar si la caché ha sido invalidada (por ejemplo, después de crear una actividad)
+        const isValid = ActivityCache.isCacheValid(selectedDate);
+        if (!isValid) {
+          // La caché fue invalidada, recargar
+          loadActivities(false, selectedDate);
+        }
+      }
+    }, [initialLoadDone, loadActivities, selectedDate])
+  );
+  
+  // Función para manejar el refresh manual (Pull to refresh)
+  const handleRefresh = () => {
+    // Evitar iniciar otro refresh si ya está en progreso
+    if (!refreshing) {
+      loadActivities(true);
+    }
+  };
+
+  // Reemplazar la función initializeHealthConnect con esta versión simplificada que usa el servicio
+  const initializeHealthConnectService = async () => {
     try {
       setIsLoadingHealthData(true);
       
-      // Definir periodo (últimos 30 días)
-      const now = new Date();
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(now.getDate() - 30);
+      // Inicializar el servicio con el token
+      const isInitialized = await healthConnectService.initialize(token);
+      setHealthConnectAvailable(isInitialized);
       
-      // Periodo para hoy (para pasos de hoy)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const timeFilter = {
-        timeRangeFilter: {
-          operator: 'between',
-          startTime: thirtyDaysAgo.toISOString(),
-          endTime: now.toISOString(),
+      if (isInitialized) {
+        // Agregar listener para actualizaciones
+        healthConnectService.addListener(handleHealthConnectUpdate);
+        
+        // Obtener datos actuales de Health Connect
+        const currentData = await healthConnectService.getCurrentData();
+        if (currentData) {
+          if (currentData.steps !== undefined) {
+            setTodaySteps(currentData.steps);
+          }
+          if (currentData.heartRate !== undefined) {
+            setHeartRate(currentData.heartRate);
+          }
         }
-      };
-      
-      const todayFilter = {
-        timeRangeFilter: {
-          operator: 'between',
-          startTime: today.toISOString(),
-          endTime: now.toISOString(),
-        }
-      };
-      
-      // Leer sesiones de ejercicio
-      const exerciseSessions = await readRecords('ExerciseSession', timeFilter);
-      
-      // Leer pasos (total)
-      const stepsData = await readRecords('Steps', timeFilter);
-      
-      // Leer pasos de hoy
-      const todayStepsData = await readRecords('Steps', todayFilter);
-      
-      // Calcular pasos totales de hoy
-      const stepsToday = todayStepsData && todayStepsData.records 
-        ? todayStepsData.records.reduce((sum, step) => sum + step.count, 0) 
-        : 0;
-      
-      setTodaySteps(stepsToday);
-      
-      // Actualizar datos de Health Connect
-      if (exerciseSessions && exerciseSessions.records) {
-        setHealthConnectData(prevData => ({
-          ...prevData,
-          exercises: exerciseSessions.records
-        }));
-      }
-      
-      if (stepsData && stepsData.records) {
-        setHealthConnectData(prevData => ({
-          ...prevData,
-          steps: stepsData.records
-        }));
-
-        // Guardar los pasos en el backend
-        await saveStepsToBackend(stepsData);
+        
+        // Iniciar sincronización en segundo plano
+        await healthConnectService.syncWithHealthConnect();
       }
     } catch (error) {
-      console.error('Error al obtener datos de Health Connect:', error);
+      console.error('Error al inicializar Health Connect Service:', error);
+    } finally {
+      setIsLoadingHealthData(false);
+    }
+  };
+  
+  // Modificar forceRefreshExercises para eliminar la alerta
+  const forceRefreshExercises = async () => {
+    try {
+      setIsLoadingHealthData(true);
+      
+      // Iniciar Health Connect si no está inicializado
+      await initializeHealthConnectService();
+      
+      if (healthConnectAvailable) {
+        // Sincronizar con Health Connect
+        await healthConnectService.syncWithHealthConnect(true);
+        
+        // Actualizar datos locales
+        const currentData = await healthConnectService.getCurrentData();
+        if (currentData) {
+          if (currentData.steps !== undefined) {
+            setTodaySteps(currentData.steps);
+          }
+          if (currentData.heartRate !== undefined) {
+            setHeartRate(currentData.heartRate);
+          }
+        }
+        
+        // Recargar actividades y calorías desde el backend
+        await loadActivities(true);
+        await loadTotalCalories();
+      }
+    } catch (error) {
+      console.error('Error al sincronizar con Health Connect:', error);
+      // Mantenemos la alerta de error para informar al usuario
+      Alert.alert('Error', 'No se pudieron sincronizar los datos');
     } finally {
       setIsLoadingHealthData(false);
     }
   };
 
-  // Añade esta nueva función después de saveNewHealthConnectActivities
-  const saveStepsToBackend = async (stepsData) => {
-    if (!token || !stepsData || !stepsData.records) return;
-
-    // Agrupar pasos por día
-    const stepsByDay = stepsData.records.reduce((acc, record) => {
-      const date = new Date(record.startTime);
-      const dateKey = date.toISOString().split('T')[0];
-      
-      if (!acc[dateKey]) {
-        acc[dateKey] = {
-          steps: 0,
-          date: record.startTime // Guardamos la fecha completa
-        };
-      }
-      acc[dateKey].steps += record.count;
-      return acc;
-    }, {});
-
-    // Guardar los totales diarios
-    for (const [dateKey, data] of Object.entries(stepsByDay)) {
-      try {
-        const dailyStepsDTO = {
-          steps: data.steps,
-          date: new Date(data.date).toISOString() // Formatear la fecha como ISO string
-        };
-
-        const stepActivity = {
-          type: 'WALKING',
-          duration: 0,
-          date: data.date,
-          description: `Total de ${data.steps} pasos registrados en el día`,
-          origin: 'HEALTH_CONNECT',
-          externalId: `steps-${dateKey}`,
-          dailySteps: dailyStepsDTO
-        };
-
-        const alreadyExists = activities.some(activity => 
-          activity.externalId === `steps-${dateKey}` && 
-          activity.origin === 'HEALTH_CONNECT'
-        );
-
-        if (!alreadyExists && data.steps > 0) {
-          await createActivity(token, stepActivity);
-        }
-      } catch (error) {
-        console.error('Error al guardar pasos en el backend:', error);
-      }
+  // Modificar el manejador de actualizaciones para incluir el ritmo cardíaco
+  const handleHealthConnectUpdate = useCallback((data) => {
+    console.log('Actualización recibida de Health Connect Service:', data);
+    
+    if (data.type === 'today-steps') {
+      setTodaySteps(data.steps);
+    } else if (data.type === 'heart-rate') {
+      setHeartRate(data.heartRate);
+    } else if (data.type === 'calories') {
+      // Las calorías de Health Connect se mostrarán como complementarias
+      // Las calorías totales del backend siguen siendo la fuente primaria
+    } else if (data.type === 'new-activities') {
+      // Recargar actividades y calorías cuando se creen nuevas actividades
+      loadActivities(true);
+      loadTotalCalories();
     }
-  };
+  }, [loadActivities, loadTotalCalories]);
 
-  // Efecto para guardar nuevas actividades de Health Connect
+  // Asegurar limpieza del listener al desmontar
   useEffect(() => {
-    if (healthConnectData.exercises && healthConnectData.exercises.length > 0 && activities.length >= 0) {
-      // Identificar actividades nuevas que no estén guardadas aún
-      const newExercises = healthConnectData.exercises.filter(exercise => {
-        const exerciseId = exercise.metadata ? exercise.metadata.id : null;
-        // Si no tiene ID o ya está en la lista de guardados, ignorar
-        if (!exerciseId || savedHealthConnectIds.includes(exerciseId)) {
-          return false;
-        }
-        
-        // Verificar que no exista ya en las actividades guardadas (doble verificación)
-        const alreadyExists = activities.some(activity => 
-          activity.externalId === exerciseId && activity.source === 'Health Connect'
-        );
-        
-        return !alreadyExists;
-      });
-      
-      // Guardar las nuevas actividades en el backend
-      saveNewHealthConnectActivities(newExercises);
-    }
-  }, [healthConnectData.exercises, activities, token]);
-  
-  // Función para guardar nuevas actividades en el backend
-  const saveNewHealthConnectActivities = async (newExercises) => {
-    if (!token || newExercises.length === 0) return;
-    
-    const idsToSave = [];
-    
-    for (const exercise of newExercises) {
-      try {
-        const exerciseId = exercise.metadata ? exercise.metadata.id : null;
-        if (!exerciseId) continue;
-        
-        // Obtener el tipo de actividad para el backend
-        const backendType = exercise.exerciseType ? 
-          getBackendActivityType(exercise.exerciseType) : 
-          'RUNNING'; // Valor por defecto
+    return () => {
+      // Eliminar el listener cuando el componente se desmonta
+      if (healthConnectAvailable) {
+        healthConnectService.removeListener(handleHealthConnectUpdate);
+      }
+    };
+  }, [healthConnectAvailable]);
 
-        // Obtener el nombre legible para la descripción
-        const readableName = exercise.exerciseType ? 
-          getExerciseTypeName(exercise.exerciseType) : 
-          'Ejercicio';
-        
-        // Calcular duración en minutos
-        let durationMinutes = null;
-        if (exercise.duration && !isNaN(exercise.duration)) {
-          durationMinutes = Math.round(exercise.duration / 60000000); // nanosegundos a minutos
-        } else if (exercise.startTime && exercise.endTime) {
-          const start = new Date(exercise.startTime);
-          const end = new Date(exercise.endTime);
-          durationMinutes = Math.round((end - start) / 60000); // milisegundos a minutos
-        }
-        
-        // Descripción de la actividad
-        const description = exercise.notes && exercise.notes.trim() !== '' 
-          ? exercise.notes 
-          : `Sesión de ${readableName.toLowerCase()} registrada con Health Connect`;
-        
-        // Crear objeto para enviar al backend
-        const activityToSave = {
-          type: backendType, // Usar el tipo mapeado para el backend
-          duration: durationMinutes,
-          date: exercise.startTime,
-          description: description,
-          origin: 'HEALTH_CONNECT',
-          externalId: exerciseId // Guardar ID externo para evitar duplicados
-        };
-        
-        // Llamar al endpoint para guardar
-        await createActivity(token, activityToSave);
-        
-        // Agregar ID a la lista de IDs guardados
-        idsToSave.push(exerciseId);
-        
-      } catch (error) {
-        console.error('Error al guardar actividad de Health Connect:', error);
-      }
-    }
+  // Añadir función para cargar calorías totales
+  const loadTotalCalories = useCallback(async () => {
+    if (!token) return;
     
-    // Actualizar la lista de IDs guardados
-    if (idsToSave.length > 0) {
-      setSavedHealthConnectIds(prev => [...prev, ...idsToSave]);
-      
-      // Opcional: recargar actividades para reflejar las nuevas adiciones
-      if (token) {
-        getActivities(token)
-          .then(data => {
-            setActivities(data);
-          })
-          .catch(error => {
-            console.error('Error fetching activities after save:', error);
-          });
+    try {
+      setIsLoadingCalories(true);
+      const today = getCurrentDateFormatted();
+      const calories = await getTotalCalories(token, today);
+      setTotalCalories(calories);
+    } catch (error) {
+      console.error('Error al cargar calorías totales:', error);
+      // Manejar errores de token similar a otras funciones
+      if (error.message?.includes('expirado') || error.response?.status === 401) {
+        await handleTokenExpiration();
       }
+    } finally {
+      setIsLoadingCalories(false);
     }
-  };
+  }, [token, handleTokenExpiration]);
+
+  // Añadir llamada a loadTotalCalories junto con loadActivities
+  useEffect(() => {
+    if (!initialLoadDone) {
+      loadActivities();
+      loadTotalCalories();
+    }
+  }, [initialLoadDone, loadActivities, loadTotalCalories]);
+
+  // Añadir este useEffect para manejar la navegación desde CreateActivityScreen
+  useEffect(() => {
+    if (route.params?.activityCreated) {
+      console.log('Actualizando después de crear una actividad');
+      loadActivities(true);
+      loadTotalCalories();
+      // Limpiar el parámetro para evitar actualizaciones adicionales
+      navigation.setParams({ activityCreated: undefined });
+    }
+  }, [route.params?.activityCreated, loadActivities, loadTotalCalories]);
 
   // Renderiza el contenido de Health Connect
   const renderHealthConnectDataCard = () => {
     if (!healthConnectAvailable) {
       return (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="fitness-outline" size={24} color="#61dafb" />
-            <Text style={styles.cardTitle}>Health Connect</Text>
-          </View>
+        <Card style={styles.card}>
+          <Text style={styles.cardTitle}>Health Connect</Text>
           <Text style={styles.cardText}>
-            Para ver tus datos de actividad, instala Health Connect desde Google Play.
+            Para sincronizar automáticamente tus actividades, activa Health Connect desde los ajustes de tu dispositivo.
           </Text>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => {/* Código para abrir Google Play */}}
-          >
-            <View style={styles.buttonContent}>
-              <Text style={styles.buttonText}>Abrir Google Play</Text>
-              <Icon name="arrow-forward-outline" size={18} color="#fff" />
-            </View>
-          </TouchableOpacity>
-        </View>
+          <Button
+            title="Entendido"
+            onPress={() => setHealthConnectAvailable(false)}
+          />
+        </Card>
       );
     }
 
     return (
-      <View style={styles.card}>
+      <Card style={styles.card}>
         <View style={styles.cardHeader}>
-          <Icon name="pulse-outline" size={24} color="#61dafb" />
-          <Text style={styles.cardTitle}>Resumen de Salud</Text>
+          <Icon name="analytics-outline" size={20} color="#61dafb" />
+          <Text style={styles.cardTitle}>Resumen de Actividad</Text>
         </View>
         
-        {isLoadingHealthData ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#61dafb" />
-            <Text style={styles.loadingText}>Cargando datos...</Text>
+        {/* Sección de métricas principales */}
+        <View style={styles.metricsContainer}>
+          {/* Pasos */}
+          <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+            <Icon name="footsteps-outline" size={28} color="#4a69bd" />
+            <Text style={[styles.metricValue, { color: '#ffffff' }]}>{todaySteps}</Text>
+            <Text style={[styles.metricLabel, { color: '#cccccc' }]}>Pasos</Text>
+            {objectiveLoaded && (
+              <View style={styles.progressContainer}>
+                <Progress.Bar
+                  progress={Math.min(todaySteps / dailyObjective, 1)}
+                  width={null}
+                  height={6}
+                  borderRadius={3}
+                  color="#4a69bd"
+                  unfilledColor="rgba(255,255,255,0.1)"
+                  borderWidth={0}
+                  animated={true}
+                  style={styles.progressBar}
+                />
+                <Text style={[styles.progressText, { color: '#8a8a8a' }]}>
+                  {Math.round((todaySteps / dailyObjective) * 100)}% de {dailyObjective}
+                </Text>
+              </View>
+            )}
           </View>
-        ) : (
-          <View style={styles.metricsContainer}>
-            <View style={styles.metricItem}>
-              <Icon name="footsteps-outline" size={30} color="#4a69bd" />
-              <Text style={styles.metricValue}>
-                {todaySteps}
-              </Text>
-              <Text style={styles.metricLabel}>Pasos hoy</Text>
-              
-              {objectiveLoaded && (
-                <View style={styles.progressContainer}>
-                  <Progress.Bar
-                    progress={Math.min(todaySteps / dailyObjective, 1)}
-                    width={null}
-                    height={8}
-                    borderRadius={4}
-                    color="#4a69bd"
-                    unfilledColor="rgba(255,255,255,0.2)"
-                    borderWidth={0}
-                    animated={true}
-                    style={styles.progressBar}
-                  />
-                  <Text style={styles.progressText}>
-                    {Math.round((todaySteps / dailyObjective) * 100)}% de {dailyObjective}
-                  </Text>
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.metricItem}>
-              <Icon name="flame-outline" size={30} color="#ff6b6b" />
-              <Text style={styles.metricValue}>
-                {healthConnectData.calories.length > 0 ? 
-                  Math.round(healthConnectData.calories.reduce((sum, cal) => sum + cal.energy.inKilocalories, 0)) : 
-                  '--'}
-              </Text>
-              <Text style={styles.metricLabel}>Calorías</Text>
-            </View>
-            
-            <View style={styles.metricItem}>
-              <Icon name="bicycle-outline" size={30} color="#1dd1a1" />
-              <Text style={styles.metricValue}>
-                {allActivities.length || '--'}
-              </Text>
-              <Text style={styles.metricLabel}>Ejercicios</Text>
-            </View>
+
+          {/* Calorías */}
+          <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+            <Icon name="flame-outline" size={28} color="#ff6b6b" />
+            <Text style={[styles.metricValue, { color: '#ffffff' }]}>
+              {isLoadingCalories ? '...' : totalCalories}
+            </Text>
+            <Text style={[styles.metricLabel, { color: '#cccccc' }]}>Calorías</Text>
           </View>
-        )}
-      </View>
+          
+          {/* Actividades */}
+          <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+            <Icon name="bicycle-outline" size={28} color="#1dd1a1" />
+            <Text style={[styles.metricValue, { color: '#ffffff' }]}>
+              {activities.length || '0'}
+            </Text>
+            <Text style={[styles.metricLabel, { color: '#cccccc' }]}>Ejercicios</Text>
+          </View>
+        </View>
+        
+        {/* Botón de sincronización */}
+        <TouchableOpacity 
+          style={[styles.button, { marginTop: 16 }]}
+          onPress={forceRefreshExercises}
+          disabled={isLoadingHealthData}
+        >
+          <View style={styles.buttonContent}>
+            <Text style={styles.buttonText}>
+              {isLoadingHealthData ? 'Sincronizando...' : 'Actualizar datos de actividad'}
+            </Text>
+            {isLoadingHealthData ? (
+              <ActivityIndicator size="small" color="#fff" style={{marginLeft: 8}} />
+            ) : (
+              <Icon name="refresh-outline" size={18} color="#fff" style={{marginLeft: 8}} />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Card>
     );
   };
 
@@ -503,6 +608,11 @@ const ActivityScreen = ({ navigation }) => {
     const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
     const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Determinar si proviene de Health Connect
+    const isFromHealthConnect = 
+      activity.source === 'Health Connect' || 
+      activity.externalId !== undefined;
+
     return (
       <View 
         key={activity.id || index}
@@ -538,12 +648,10 @@ const ActivityScreen = ({ navigation }) => {
               </View>
             )}
             
-            {activity.source && (
-              <View style={styles.activityStat}>
-                <Icon name="cloud-outline" size={16} color="#feca57" />
-                <Text style={styles.activityStatText}>
-                  {activity.source}
-                </Text>
+            {/* Indicador de origen */}
+            {isFromHealthConnect && (
+              <View style={styles.healthConnectBadge}>
+                <Text style={styles.healthConnectText}>Health Connect</Text>
               </View>
             )}
           </View>
@@ -556,6 +664,33 @@ const ActivityScreen = ({ navigation }) => {
     );
   };
 
+  const renderLoadingState = () => {
+    // Eliminar esta función por completo o simplemente retornar null
+    // Ya que el RefreshControl es suficiente feedback visual
+    return null;
+    
+    // Alternativa: Solo mostrar en carga inicial, nunca en refreshes
+    // if (initialLoadDone || refreshing) return null;
+    // 
+    // return (
+    //   <View style={styles.loadingContainer}>
+    //     <ActivityIndicator size="large" color="#61dafb" />
+    //     <Text style={styles.loadingText}>Cargando actividades...</Text>
+    //   </View>
+    // );
+  };
+
+  // Función para cambiar la fecha seleccionada
+  const onDateChange = (event, date) => {
+    setShowDatePicker(false);
+    if (date) {
+      const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      setSelectedDate(formattedDate);
+      // Cargar actividades de la nueva fecha
+      loadActivities(true, formattedDate);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
@@ -566,15 +701,38 @@ const ActivityScreen = ({ navigation }) => {
           <Icon name="arrow-back-outline" size={24} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Actividad Física</Text>
-        <TouchableOpacity onPress={fetchHealthData} style={styles.refreshButton}>
+        <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
           <Icon name="refresh-outline" size={22} color="#ffffff" />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
+          <Icon name="calendar-outline" size={22} color="#ffffff" />
+        </TouchableOpacity>
       </View>
+      
+      {/* DatePicker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date(selectedDate)}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+          maximumDate={new Date()}
+        />
+      )}
       
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={["#61dafb"]}
+            tintColor="#61dafb"
+          />
+        }
       >
+        {renderLoadingState()}
         {renderHealthConnectDataCard()}
         
         <View style={styles.sectionContainer}>
@@ -583,12 +741,12 @@ const ActivityScreen = ({ navigation }) => {
               <Icon name="fitness-outline" size={20} color="#61dafb" /> Mis Actividades
             </Text>
             <Text style={styles.sectionSubtitle}>
-              {allActivities.length} registros
+              {activities.length} registros
             </Text>
           </View>
           
-          {allActivities.length > 0 ? (
-            allActivities.map(renderActivityItem)
+          {activities.length > 0 ? (
+            activities.map(renderActivityItem)
           ) : (
             <View style={styles.emptyState}>
               <Icon name="fitness-outline" size={50} color="#4a69bd" />
