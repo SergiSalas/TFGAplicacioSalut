@@ -96,7 +96,7 @@ const SetUserProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Perfil de Usuario" />
+      <Header title="Configura tu perfil" />
       
       <View style={styles.content}>
         <Card style={styles.card}>
