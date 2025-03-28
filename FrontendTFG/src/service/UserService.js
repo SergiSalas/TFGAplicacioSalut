@@ -37,4 +37,27 @@ export async function getGenderTypes(token) {
     console.error('Error al obtener tipos de género:', error);
     throw error;
   }
+}
+
+/**
+ * Obtiene los datos del perfil del usuario
+ * @param {string} token - Token de autorización
+ * @returns {Promise} - Datos del perfil del usuario
+ */
+export async function getUserProfile(token) {
+  try {
+    const response = await axios.get(
+      `${API_URL}/user/getDataProfile`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener perfil de usuario:', error);
+    throw error;
+  }
 } 

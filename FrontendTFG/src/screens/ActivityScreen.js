@@ -772,6 +772,9 @@ const ActivityScreen = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
       </ScrollView>
+      
+      {/* Agregar el Footer */}
+      <Footer activeScreen="activity" />
     </View>
   );
 };

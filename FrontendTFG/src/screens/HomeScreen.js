@@ -236,9 +236,15 @@ const HomeScreen = ({ navigation }) => {
             Revisa tu actividad física diaria y mantente en forma.
           </Text>
         </Card>
+        
+        <Button
+          title="Ver Perfil"
+          onPress={() => navigation.navigate('UserProfileScreen')}
+          style={styles.profileButton}
+        />
       </ScrollView>
       
-      <Footer />
+      <Footer activeScreen="home" />
     </View>
   );
 };

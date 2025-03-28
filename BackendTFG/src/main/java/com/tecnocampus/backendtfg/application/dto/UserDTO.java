@@ -2,6 +2,7 @@ package com.tecnocampus.backendtfg.application.dto;
 
 
 import com.tecnocampus.backendtfg.domain.Gender;
+import com.tecnocampus.backendtfg.domain.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,7 +17,7 @@ public class UserDTO {
     private Double weight;
     private int height;
     private int age;
-    private Gender gender;
+    private String gender;
 
 
 
@@ -30,7 +31,7 @@ public class UserDTO {
         this.password = password;
         this.weight = weight;
         this.height = height;
-        this.gender = gender;
+        this.gender = gender.name();
     }
 
     public UserDTO(String name, String email, String password) {
@@ -42,6 +43,15 @@ public class UserDTO {
     public UserDTO(String email, String password) {
         this.email = email;
         this.password = password;
+    }
+
+    public UserDTO(User user){
+        this.name = user.getName();
+        this.email = user.getEmail();
+        this.weight = user.getWeight();
+        this.height = user.getHeight();
+        this.age = user.getAge();
+        this.gender = user.getGender() != null ? user.getGender().name() : null;
     }
 
 }
