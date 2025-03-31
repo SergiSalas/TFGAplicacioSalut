@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, ScrollView, Text } from 'react-native';
 import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
@@ -6,8 +6,11 @@ import Button from '../components/common/Button';
 import Footer from '../components/layout/Footer';
 import styles from '../styles/screens/ProfileScreen.styles';
 import healthConnectService from '../service/HealthConnectService';
+import { AuthContext } from '../contexts/AuthContext';
+import { FOOTER_SCREENS } from '../constants/navigation';
 
 const ProfileScreen = ({ navigation }) => {
+  const { token } = useContext(AuthContext);
   const [healthData, setHealthData] = useState(null);
 
   useEffect(() => {
@@ -29,7 +32,7 @@ const ProfileScreen = ({ navigation }) => {
     return () => {
       healthConnectService.removeListener(handleHealthUpdate);
     };
-  }, []);
+  }, [token]);
   
   const handleHealthUpdate = (data) => {
     if (data.type === 'today-steps' || data.type === 'heart-rate') {
@@ -46,9 +49,10 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Perfil" onBackPress={() => navigation.goBack()} />
+      <Header title="Perfil" />
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={styles.card}>
+          <Text style={styles.metricTitle}>Mi Perfil</Text>
           <Text style={styles.label}>Nombre:</Text>
           <Text style={styles.value}>Juan Pérez</Text>
         </Card>
@@ -67,7 +71,11 @@ const ProfileScreen = ({ navigation }) => {
           }}
         />
       </ScrollView>
-      <Footer />
+      <Footer 
+        activeScreen="profile"
+        navigation={navigation}
+        screens={FOOTER_SCREENS}
+      />
     </View>
   );
 };

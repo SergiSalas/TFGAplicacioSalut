@@ -774,7 +774,16 @@ const ActivityScreen = ({ navigation, route }) => {
       </ScrollView>
       
       {/* Agregar el Footer */}
-      <Footer activeScreen="activity" />
+      <Footer 
+        activeScreen="activity"
+        navigation={navigation}
+        screens={[
+          { name: 'home', icon: 'home-outline', label: 'Inicio' },
+          { name: 'activity', icon: 'fitness-outline', label: 'Actividad' },
+          { name: 'sleep', icon: 'bed-outline', label: 'Sueño' },
+          { name: 'profile', icon: 'person-outline', label: 'Perfil' }
+        ]}
+      />
     </View>
   );
 };

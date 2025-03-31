@@ -8,6 +8,7 @@ import { getUserProfile } from '../service/UserService';
 import styles from '../styles/screens/UserProfileScreen.styles';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Footer from '../components/layout/Footer';
+import { FOOTER_SCREENS } from '../constants/navigation';
 
 const UserProfileScreen = ({ navigation }) => {
   const [userProfile, setUserProfile] = useState(null);
@@ -172,8 +173,11 @@ const UserProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
       </ScrollView>
       
-      {/* Agregar el Footer */}
-      <Footer activeScreen="profile" />
+      <Footer 
+        activeScreen="profile"
+        navigation={navigation}
+        screens={FOOTER_SCREENS}
+      />
     </View>
   );
 };

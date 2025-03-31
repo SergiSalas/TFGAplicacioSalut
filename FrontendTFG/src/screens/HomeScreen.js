@@ -9,6 +9,7 @@ import healthConnectService from '../service/HealthConnectService';
 import { getDailyObjective } from '../service/ActivityService';
 import { AuthContext } from '../contexts/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useSleepData } from '../hooks/useSleepData';
 
 // En lugar de useMemo, crear un componente separado
 const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => {
@@ -60,6 +61,9 @@ const HomeScreen = ({ navigation }) => {
   const [dailyObjective, setDailyObjective] = useState(10000);
   const [objectiveLoaded, setObjectiveLoaded] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
+  const [healthData, setHealthData] = useState(null);
+  const [isLoadingHealthData, setIsLoadingHealthData] = useState(true);
+  const { sleepData, loading: sleepLoading } = useSleepData();
 
   useEffect(() => {
     initializeHealthConnect();
@@ -96,6 +100,15 @@ const HomeScreen = ({ navigation }) => {
       console.log('HomeScreen: Actualizando ritmo cardíaco a:', data.heartRate);
       setHeartRate(data.heartRate);
     }
+
+    if (data) {
+      setHealthData(prevData => ({
+        ...prevData,
+        steps: data.steps,
+        heartRate: data.heartRate,
+        sleep: data.sleep
+      }));
+    }
   }, [todaySteps, heartRate]);
 
   // Inicializar Health Connect solo una vez
@@ -119,6 +132,12 @@ const HomeScreen = ({ navigation }) => {
           }
           if (currentData.heartRate !== undefined) {
             setHeartRate(currentData.heartRate);
+          }
+          if (currentData.sleep !== undefined) {
+            setHealthData(prevData => ({
+              ...prevData,
+              sleep: currentData.sleep
+            }));
           }
         }
       }
@@ -190,11 +209,59 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [healthConnectAvailable, appState]);
 
+  // Modificar el renderSleepCard para usar los nuevos datos
+  const renderSleepCard = () => {
+    return (
+      <TouchableOpacity 
+        onPress={() => navigation.navigate('SleepScreen')}
+        style={styles.statsCard}
+        activeOpacity={0.7}
+      >
+        <View style={styles.statsContainer}>
+          <View style={styles.cardHeader}>
+            <Icon name="bed-outline" size={20} color="#61dafb" />
+            <Text style={styles.statsTitle}>Calidad del Sueño</Text>
+          </View>
+          
+          <View style={styles.metricsContainer}>
+            {/* Horas de sueño */}
+            <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+              <Icon name="moon-outline" size={28} color="#4a69bd" />
+              <Text style={styles.metricValue}>
+                {sleepLoading ? '...' : (sleepData?.durationHours || '--')}
+              </Text>
+              <Text style={styles.metricLabel}>Horas</Text>
+            </View>
+            
+            {/* Calidad del sueño */}
+            <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
+              <Icon name="star-outline" size={28} color="#ff6b6b" />
+              <Text style={styles.metricValue}>
+                {sleepLoading ? '...' : (sleepData?.quality || '--')}
+              </Text>
+              <Text style={styles.metricLabel}>Calidad</Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.button}
+            onPress={() => navigation.navigate('SleepScreen')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonText}>Ver detalles</Text>
+              <Icon name="arrow-forward-outline" size={18} color="#fff" style={{marginLeft: 8}} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
       
-      {/* Header con nuevo estilo */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Inicio</Text>
         <TouchableOpacity onPress={() => refreshHealthData()} style={styles.refreshButton}>
@@ -203,6 +270,7 @@ const HomeScreen = ({ navigation }) => {
       </View>
       
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Activity Card */}
         <TouchableOpacity 
           style={styles.statsCard} 
           onPress={() => navigation.navigate('ActivityScreen')}
@@ -214,37 +282,21 @@ const HomeScreen = ({ navigation }) => {
             navigation={navigation}
           />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, {marginBottom: 20}]} 
-          onPress={() => navigation.navigate('ActivityScreen')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.buttonContent}>
-            <Text style={styles.buttonText}>Ir a Actividad Física</Text>
-            <Icon name="fitness-outline" size={20} color="#fff" style={{marginLeft: 8}} />
-          </View>
-        </TouchableOpacity>
-        
-        {/* Aquí puedes añadir más cards o secciones */}
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="information-circle-outline" size={20} color="#61dafb" />
-            <Text style={styles.cardTitle}>Bienvenido</Text>
-          </View>
-          <Text style={styles.cardText}>
-            Revisa tu actividad física diaria y mantente en forma.
-          </Text>
-        </Card>
-        
-        <Button
-          title="Ver Perfil"
-          onPress={() => navigation.navigate('UserProfileScreen')}
-          style={styles.profileButton}
-        />
+
+        {/* Sleep Card - Ahora justo después de Activity */}
+        {renderSleepCard()}
       </ScrollView>
       
-      <Footer activeScreen="home" />
+      <Footer 
+        activeScreen="home" 
+        navigation={navigation}
+        screens={[
+          { name: 'home', icon: 'home-outline', label: 'Inicio' },
+          { name: 'activity', icon: 'fitness-outline', label: 'Actividad' },
+          { name: 'sleep', icon: 'bed-outline', label: 'Sueño' },
+          { name: 'profile', icon: 'person-outline', label: 'Perfil' }
+        ]}
+      />
     </View>
   );
 };
