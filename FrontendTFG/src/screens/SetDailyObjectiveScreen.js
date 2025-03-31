@@ -95,7 +95,6 @@ const SetDailyObjectiveScreen = ({ navigation }) => {
           />
         </Card>
       </View>
-      <Footer />
     </View>
   );
 };

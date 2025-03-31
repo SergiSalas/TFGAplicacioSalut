@@ -3,6 +3,7 @@ package com.tecnocampus.backendtfg.api;
 import com.tecnocampus.backendtfg.application.UserService;
 import com.tecnocampus.backendtfg.application.dto.DataProfileDTO;
 import com.tecnocampus.backendtfg.application.dto.UserDTO;
+import com.tecnocampus.backendtfg.domain.User;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,13 @@ public class UserRestController {
         String token = getTokenAuthFromRequest(request);
         userService.setDataProfile(token,dataProfileDTO);
         return ResponseEntity.ok("Data profile updated");
+    }
+
+    @GetMapping("/getDataProfile")
+    public ResponseEntity<UserDTO> getDataProfile(HttpServletRequest request) {
+        String token = getTokenAuthFromRequest(request);
+        UserDTO userDTO = userService.getDataProfile(token);
+        return ResponseEntity.ok(userDTO);
     }
 
     @GetMapping("/getGenderData")

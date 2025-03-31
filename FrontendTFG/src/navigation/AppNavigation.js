@@ -25,6 +25,7 @@ import { StackActions } from '@react-navigation/native';
 // Añadir la importación de la nueva pantalla
 import SetDailyObjectiveScreen from '../screens/SetDailyObjectiveScreen';
 import SetUserProfileScreen from '../screens/SetUserProfileScreen';
+import UserProfileScreen from '../screens/UserProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -55,6 +56,7 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
               <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
               <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
+              <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
             </>
           )}
         </>

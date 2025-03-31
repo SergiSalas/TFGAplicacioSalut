@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { AuthContext } from '../contexts/AuthContext';
 import { createActivity, getActivityTypes } from '../service/ActivityService';
+import { CommonActions } from '@react-navigation/native';
 
 const CreateActivityScreen = ({ navigation }) => {
   const { token } = useContext(AuthContext);
@@ -47,11 +48,16 @@ const CreateActivityScreen = ({ navigation }) => {
         [{ 
           text: 'OK', 
           onPress: () => {
-            // Navegar de vuelta con un parámetro para actualizar calorías
-            navigation.navigate('ActivityScreen', { 
-              activityCreated: true,
-              timestamp: Date.now() // Para asegurar que el parámetro siempre cambia
-            });
+            // Establecer una pila de navegación con HomeScreen y ActivityScreen
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 1, // Índice 1 para que ActivityScreen sea la pantalla activa
+                routes: [
+                  { name: 'HomeScreen' },  // HomeScreen como base
+                  { name: 'ActivityScreen', params: { activityCreated: true } } // ActivityScreen como pantalla actual
+                ],
+              })
+            );
           } 
         }]
       );

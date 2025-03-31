@@ -65,4 +65,13 @@ public class UserService {
     private String getEmailFromToken(String token) {
         return jwtUtils.extractEmail(token);
     }
+
+    public UserDTO getDataProfile(String token) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+        return new UserDTO(user);
+    }
 }
