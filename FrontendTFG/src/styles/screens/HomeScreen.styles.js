@@ -139,4 +139,20 @@ export default StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  cardContainer: {
+    marginBottom: 16,
+  },
+  cardContent: {
+    marginTop: 8,
+  },
+  metricSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  noDataText: {
+    fontSize: 16,
+    color: '#666',
+    fontStyle: 'italic',
+  },
 });

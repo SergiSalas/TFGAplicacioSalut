@@ -14,6 +14,18 @@ let syncInProgress = false;
 let lastSyncTime = 0;
 const SYNC_INTERVAL = 30 * 60 * 1000; // 30 minutos
 
+// Actualizar las constantes para que coincidan exactamente con la documentación oficial
+export const SLEEP_STAGES = {
+  UNKNOWN: 0,
+  AWAKE: 1,
+  SLEEPING: 2,
+  OUT_OF_BED: 3,
+  LIGHT: 4,
+  DEEP: 5,
+  REM: 6,
+  AWAKE_IN_BED: 7
+};
+
 /**
  * Servicio singleton para manejar la sincronización con Health Connect
  */
@@ -36,6 +48,9 @@ class HealthConnectService {
     // Añadir estas propiedades
     this.savedExerciseIds = [];
     this.savedStepIds = [];
+    
+    // Añadir BehaviorSubject para los datos del sueño
+    this.sleepDataSubject = new BehaviorSubject(null);
   }
   
   /**
@@ -655,6 +670,181 @@ class HealthConnectService {
         setTimeout(() => this.processUpdateQueue(), 500);
       }
     }
+  }
+
+  // Método para obtener el observable de datos del sueño
+  getSleepDataObservable() {
+    return this.sleepDataSubject.asObservable();
+  }
+
+  // Modificar el método readSleepData para que actualice el subject
+  async readSleepData() {
+    try {
+      if (!this.healthConnectAvailable) {
+        return null;
+      }
+      
+      const now = new Date();
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const timeFilter = {
+        timeRangeFilter: {
+          operator: 'between',
+          startTime: yesterday.toISOString(),
+          endTime: now.toISOString(),
+        }
+      };
+      
+      const sleepResponse = await readRecords('SleepSession', timeFilter);
+      console.log('Sleep Response:', JSON.stringify(sleepResponse, null, 2));
+      
+      if (sleepResponse?.records?.length > 0) {
+        const lastSleepSession = sleepResponse.records[0];
+        
+        // Calcular duración total
+        const startTime = new Date(lastSleepSession.startTime);
+        const endTime = new Date(lastSleepSession.endTime);
+        const durationHours = (endTime - startTime) / (1000 * 60 * 60);
+
+        const stages = lastSleepSession.stages || [];
+        
+        // Inicializar resumen de etapas
+        const stagesSummary = {
+          deepSleep: 0,
+          lightSleep: 0,
+          remSleep: 0,
+          awake: 0,
+          totalSleep: 0
+        };
+
+        // Procesar las etapas
+        const processedStages = stages.map(stage => {
+          const stageStartTime = new Date(stage.startTime);
+          const stageEndTime = new Date(stage.endTime);
+          const stageDuration = (stageEndTime - stageStartTime) / (1000 * 60 * 60);
+          const stageType = parseInt(stage.stage || stage.type, 10);
+
+          // Actualizar resumen según el tipo
+          switch (stageType) {
+            case SLEEP_STAGES.DEEP:
+              stagesSummary.deepSleep += stageDuration;
+              break;
+            case SLEEP_STAGES.LIGHT:
+              stagesSummary.lightSleep += stageDuration;
+              break;
+            case SLEEP_STAGES.REM:
+              stagesSummary.remSleep += stageDuration;
+              break;
+            case SLEEP_STAGES.AWAKE:
+            case SLEEP_STAGES.AWAKE_IN_BED:
+              stagesSummary.awake += stageDuration;
+              break;
+            case SLEEP_STAGES.SLEEPING:
+              stagesSummary.lightSleep += stageDuration; // Consideramos sueño genérico como ligero
+              break;
+          }
+
+          // Actualizar tiempo total de sueño
+          if (stageType !== SLEEP_STAGES.AWAKE && stageType !== SLEEP_STAGES.OUT_OF_BED) {
+            stagesSummary.totalSleep += stageDuration;
+          }
+
+          return {
+            stage: this.getStageName(stageType),
+            startTime: stageStartTime,
+            endTime: stageEndTime,
+            duration: stageEndTime - stageStartTime,
+            originalType: stageType
+          };
+        });
+
+        // Calcular calidad del sueño
+        const quality = this.calculateSleepQuality(stagesSummary, durationHours);
+
+        const sleepData = {
+          durationHours: parseFloat(durationHours.toFixed(1)),
+          startTime,
+          endTime,
+          stages: processedStages,
+          stagesSummary,
+          quality,
+          hasDetailedStages: stages.some(stage => {
+            const type = parseInt(stage.stage || stage.type, 10);
+            return type === SLEEP_STAGES.DEEP || type === SLEEP_STAGES.LIGHT || type === SLEEP_STAGES.REM;
+          })
+        };
+
+        // Actualizar el subject con los nuevos datos
+        this.sleepDataSubject.next(sleepData);
+        return sleepData;
+      }
+      
+      this.sleepDataSubject.next(null);
+      return null;
+    } catch (error) {
+      console.error('Error al leer datos de sueño:', error);
+      this.sleepDataSubject.next(null);
+      return null;
+    }
+  }
+
+  calculateBasicSleepQuality(durationHours, hasREM) {
+    let quality = 70; // Base quality
+
+    // Ajustar por duración
+    if (durationHours >= 7 && durationHours <= 9) quality += 15;
+    else if (durationHours < 6 || durationHours > 10) quality -= 15;
+    
+    // Bonus por tener datos REM
+    if (hasREM) quality += 10;
+
+    return Math.min(Math.max(Math.round(quality), 0), 100);
+  }
+
+  getStageName(stageType) {
+    // Asegurarnos de que stageType es un número
+    const stage = parseInt(stageType, 10);
+    
+    switch (stage) {
+      case SLEEP_STAGES.AWAKE:
+      case SLEEP_STAGES.AWAKE_IN_BED:
+        return 'Despierto';
+      case SLEEP_STAGES.SLEEPING:
+        return 'Dormido';
+      case SLEEP_STAGES.OUT_OF_BED:
+        return 'Fuera de cama';
+      case SLEEP_STAGES.LIGHT:
+        return 'Sueño ligero';
+      case SLEEP_STAGES.DEEP:
+        return 'Sueño profundo';
+      case SLEEP_STAGES.REM:
+        return 'REM';
+      case SLEEP_STAGES.UNKNOWN:
+      default:
+        return 'Sueño no especificado';
+    }
+  }
+
+  calculateSleepQuality(stagesSummary, totalSleepTime) {
+    if (totalSleepTime === 0) return 0;
+
+    // Porcentajes ideales aproximados
+    const deepSleepPercent = (stagesSummary.deepSleep / totalSleepTime) * 100;
+    const remSleepPercent = (stagesSummary.remSleep / totalSleepTime) * 100;
+    const awakePenalty = (stagesSummary.awake / totalSleepTime) * 100;
+
+    // Base score
+    let quality = 70;
+
+    // Bonificaciones por sueño profundo y REM
+    if (deepSleepPercent >= 20) quality += 15;
+    if (remSleepPercent >= 20) quality += 15;
+
+    // Penalización por tiempo despierto
+    quality -= Math.min(awakePenalty, 30);
+
+    return Math.min(Math.max(Math.round(quality), 0), 100);
   }
 }
 
