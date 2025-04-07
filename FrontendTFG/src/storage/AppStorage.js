@@ -8,7 +8,7 @@ export const activityStorage = new MMKV({ id: 'activity-storage' });
 export const STORAGE_KEYS = {
   // Auth keys
   AUTH_TOKEN: 'auth_token',
-  TOKEN: 'auth_token',     // Mantener para compatibilidad
+  TOKEN: 'auth_token',     
   USER_DATA: 'user_data',
   IS_NEW_USER: 'is_new_user',
   

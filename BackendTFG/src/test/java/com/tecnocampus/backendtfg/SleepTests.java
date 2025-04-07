@@ -4,7 +4,6 @@ import com.tecnocampus.backendtfg.application.SleepService;
 import com.tecnocampus.backendtfg.application.dto.SleepDTO;
 import com.tecnocampus.backendtfg.domain.Sleep;
 import com.tecnocampus.backendtfg.domain.SleepProfile;
-import com.tecnocampus.backendtfg.domain.TypeQuality;
 import com.tecnocampus.backendtfg.domain.User;
 import com.tecnocampus.backendtfg.persistence.SleepProfileRepository;
 import com.tecnocampus.backendtfg.persistence.SleepRepository;
@@ -15,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -44,19 +44,25 @@ public class SleepTests {
     public void testCreateSleep() {
         // Arrange
         String email = "test@example.com";
+        Date startTime = new Date();
+        Date endTime = new Date(startTime.getTime() + 28800000); // 8 hours later
+
         SleepDTO sleepDTO = new SleepDTO();
         sleepDTO.setHours(8);
-        sleepDTO.setDate(new Date());
-        sleepDTO.setStartTime(new Date());
-        sleepDTO.setEndTime(new Date());
-        sleepDTO.setQuality(TypeQuality.GOOD);
+        sleepDTO.setStartTime(startTime);
+        sleepDTO.setEndTime(endTime);
+        sleepDTO.setQuality(3); // GOOD quality value
+        sleepDTO.setRemSleep(120);
         sleepDTO.setComment("Good sleep");
 
         User user = new User();
         SleepProfile sleepProfile = new SleepProfile();
         user.setSleepProfile(sleepProfile);
+        sleepProfile.setSleeps(new ArrayList<>());
 
+        when(userRepository.existsByEmail(email)).thenReturn(true);
         when(userRepository.findByEmail(email)).thenReturn(user);
+        when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(new ArrayList<>());
 
         // Act
         sleepService.createSleep(sleepDTO, email);
@@ -70,17 +76,27 @@ public class SleepTests {
     public void testDeleteSleep() {
         // Arrange
         String email = "test@example.com";
+        Date startTime = new Date();
+        Date endTime = new Date(startTime.getTime() + 28800000); // 8 hours later
+
         SleepDTO sleepDTO = new SleepDTO();
+        sleepDTO.setStartTime(startTime);
+        sleepDTO.setEndTime(endTime);
+
         User user = new User();
-        user.setSleepProfile(new SleepProfile());
-        Date date = new Date();
-        sleepDTO.setDate(date);
-        Sleep sleep = new Sleep(sleepDTO, user.getSleepProfile());
-        sleep.setDate(date);
-        user.getSleepProfile().getSleeps().add(sleep);
+        SleepProfile sleepProfile = new SleepProfile();
+        user.setSleepProfile(sleepProfile);
+
+        Sleep sleep = new Sleep();
+        sleep.setStartTime(startTime);
+        sleep.setEndTime(endTime);
+        sleep.setSleepProfile(sleepProfile);
+
+        List<Sleep> sleeps = new ArrayList<>();
+        sleeps.add(sleep);
 
         when(userRepository.findByEmail(email)).thenReturn(user);
-        when(sleepRepository.findByDate(date)).thenReturn(sleep);
+        when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(sleeps);
 
         // Act
         sleepService.deleteSleep(sleepDTO, email);
@@ -93,12 +109,15 @@ public class SleepTests {
     public void testUpdateSleep() {
         // Arrange
         String email = "test@example.com";
+        Date startTime = new Date();
+        Date endTime = new Date(startTime.getTime() + 28800000); // 8 hours later
+
         SleepDTO sleepDTO = new SleepDTO();
         sleepDTO.setHours(7);
-        sleepDTO.setDate(new Date());
-        sleepDTO.setStartTime(new Date());
-        sleepDTO.setEndTime(new Date());
-        sleepDTO.setQuality(TypeQuality.AVERAGE);
+        sleepDTO.setStartTime(startTime);
+        sleepDTO.setEndTime(endTime);
+        sleepDTO.setQuality(2); // AVERAGE quality value
+        sleepDTO.setRemSleep(90);
         sleepDTO.setComment("Average sleep");
 
         User user = new User();
@@ -106,10 +125,15 @@ public class SleepTests {
         user.setSleepProfile(sleepProfile);
 
         Sleep existingSleep = new Sleep();
-        existingSleep.setDate(sleepDTO.getDate());
+        existingSleep.setStartTime(startTime);
+        existingSleep.setEndTime(endTime);
+        existingSleep.setSleepProfile(sleepProfile);
+
+        List<Sleep> sleeps = new ArrayList<>();
+        sleeps.add(existingSleep);
 
         when(userRepository.findByEmail(email)).thenReturn(user);
-        when(sleepRepository.findByDate(sleepDTO.getDate())).thenReturn(existingSleep);
+        when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(sleeps);
 
         // Act
         sleepService.updateSleep(sleepDTO, email);
@@ -127,12 +151,12 @@ public class SleepTests {
         SleepProfile sleepProfile = new SleepProfile();
         user.setSleepProfile(sleepProfile);
 
-        Sleep sleep1 = new Sleep(8, new Date(), new Date(), new Date(), TypeQuality.GOOD, "Good sleep", sleepProfile);
-        Sleep sleep2 = new Sleep(6, new Date(), new Date(), new Date(), TypeQuality.AVERAGE, "Average sleep", sleepProfile);
-        sleepProfile.setSleeps(List.of(sleep1, sleep2));
+        Sleep sleep1 = new Sleep(8, new Date(), new Date(), 3, 120, "Good sleep", sleepProfile);
+        Sleep sleep2 = new Sleep(6, new Date(), new Date(), 2, 90, "Average sleep", sleepProfile);
+        List<Sleep> sleepList = List.of(sleep1, sleep2);
 
         when(userRepository.findByEmail(email)).thenReturn(user);
-        when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(List.of(sleep1, sleep2));
+        when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(sleepList);
 
         // Act
         List<SleepDTO> sleeps = sleepService.getSleeps(email);

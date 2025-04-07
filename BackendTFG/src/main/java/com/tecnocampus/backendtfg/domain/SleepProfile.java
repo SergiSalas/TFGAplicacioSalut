@@ -22,7 +22,7 @@ public class SleepProfile {
     @OneToOne
     private User user;
 
-    @OneToMany
+    @OneToMany(mappedBy = "sleepProfile", cascade = CascadeType.ALL)
     private List<Sleep> sleeps = new ArrayList<>();
 
     public SleepProfile(User user) {
@@ -36,5 +36,10 @@ public class SleepProfile {
 
     public void addObjective(double dailyObjectiveSleep) {
         this.dailyObjectiveSleep = dailyObjectiveSleep;
+    }
+
+    public void addSleep(Sleep sleep) {
+        sleeps.add(sleep);
+        sleep.setSleepProfile(this);
     }
 }

@@ -8,6 +8,7 @@ import { createActivity } from './ActivityService';
 import { getBackendActivityType, getExerciseTypeName } from '../utils/ExerciseTypeMapper';
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
 import { BehaviorSubject } from 'rxjs';
+import { saveSleepData } from './SleepService';
 
 // Control de sincronización
 let syncInProgress = false;
@@ -681,7 +682,8 @@ class HealthConnectService {
   async readSleepData() {
     try {
       if (!this.healthConnectAvailable) {
-        return null;
+        console.log('Health Connect no está disponible');
+        return;
       }
       
       const now = new Date();
@@ -775,7 +777,18 @@ class HealthConnectService {
           })
         };
 
-        // Actualizar el subject con los nuevos datos
+        // Guardar los datos en el backend
+        if (this.token) {
+          try {
+            await saveSleepData(this.token, sleepData);
+            console.log('Datos de sueño guardados exitosamente');
+          } catch (error) {
+            console.error('Error al guardar datos de sueño:', error);
+            // No interrumpimos el flujo si falla el guardado
+          }
+        }
+
+        // Emitir los datos a través del BehaviorSubject
         this.sleepDataSubject.next(sleepData);
         return sleepData;
       }
@@ -851,4 +864,4 @@ class HealthConnectService {
 // Crear una instancia única del servicio
 const healthConnectService = new HealthConnectService();
 
-export default healthConnectService; 
+export default healthConnectService;

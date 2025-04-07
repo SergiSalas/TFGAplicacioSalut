@@ -2,6 +2,7 @@ package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.SleepService;
 import com.tecnocampus.backendtfg.application.dto.SleepDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,8 +17,9 @@ public class SleepRestController {
     }
 
     @PostMapping("/createSleep")
-    public ResponseEntity<String> createSleep(@RequestBody SleepDTO sleepDTO, String email) {
-        sleepService.createSleep(sleepDTO,email);
+    public ResponseEntity<String> createSleep(HttpServletRequest request, @RequestBody SleepDTO sleepDTO) {
+        String token = getTokenAuthFromRequest(request);
+        sleepService.createSleep(sleepDTO,token);
         return ResponseEntity.ok("Sleep created");
     }
 
@@ -43,5 +45,8 @@ public class SleepRestController {
         sleepService.addObjective(dailyObjectiveSleep,email);
         return ResponseEntity.ok("Objective added");
     }
-
+    private String getTokenAuthFromRequest(HttpServletRequest request) {
+        return request.getHeader("Authorization");
+    }
 }
+

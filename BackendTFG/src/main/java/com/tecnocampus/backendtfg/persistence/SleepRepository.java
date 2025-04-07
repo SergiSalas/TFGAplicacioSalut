@@ -10,9 +10,8 @@ import java.util.List;
 
 @Repository
 public interface SleepRepository extends JpaRepository<Sleep, Long> {
-
-    Sleep findByDate (Date date);
-
     List<Sleep> findBySleepProfile(SleepProfile sleepProfile);
+
+    Sleep findByStartTimeAndEndTime(Date startTime, Date endTime);
 
 }

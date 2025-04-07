@@ -12,28 +12,42 @@ import java.util.Date;
 @Getter
 @Setter
 public class SleepDTO {
-    private double hours;
-    private Date date;
     private Date startTime;
     private Date endTime;
-    private TypeQuality quality;
+    private double hours;
+    private int quality;
+    private int remSleep;
     private String comment;
 
-    public SleepDTO(double hours, Date date, Date startTime, Date endTime, TypeQuality quality, String comment) {
-        this.hours = hours;
-        this.date = date;
+    public SleepDTO(Sleep sleep) {
+        this.startTime = sleep.getStartTime();
+        this.endTime = sleep.getEndTime();
+        this.hours = sleep.getHours();
+        this.quality = sleep.getQuality();
+        this.remSleep = sleep.getRemSleep();
+        this.comment = sleep.getComment();
+    }
+
+    public SleepDTO(Date startTime, Date endTime, double hours, int quality, int remSleep) {
         this.startTime = startTime;
         this.endTime = endTime;
+        this.hours = hours;
         this.quality = quality;
+        this.remSleep = remSleep;
+    }
+
+    public SleepDTO(Date startTime, Date endTime, double hours, int quality, int remSleep, String comment) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.hours = hours;
+        this.quality = quality;
+        this.remSleep = remSleep;
         this.comment = comment;
     }
 
-    public SleepDTO (Sleep sleep) {
-        this.hours = sleep.getHours();
-        this.date = sleep.getDate();
-        this.startTime = sleep.getStartTime();
-        this.endTime = sleep.getEndTime();
-        this.quality = sleep.getQuality();
-        this.comment = sleep.getComment();
-    }
+
+
+
+
+
 }
