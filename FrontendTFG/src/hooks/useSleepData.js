@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import healthConnectService from '../service/HealthConnectService';
+import { getSleepHistory } from '../service/SleepService';
+import { AuthContext } from '../contexts/AuthContext';
 
-export const useSleepData = () => {
+export const useSleepData = (includeHistory = false) => {
   const [sleepData, setSleepData] = useState(null);
+  const [sleepHistory, setSleepHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     setLoading(true);
@@ -13,8 +17,24 @@ export const useSleepData = () => {
       .getSleepDataObservable()
       .subscribe(data => {
         setSleepData(data);
-        setLoading(false);
+        if (!includeHistory) {
+          setLoading(false);
+        }
       });
+
+    // Si se solicita el historial, obtenerlo
+    if (includeHistory && token) {
+      getSleepHistory(token)
+        .then(history => {
+          setSleepHistory(history);
+        })
+        .catch(error => {
+          console.error('Error loading sleep history:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
 
     // Solicitar una actualización inicial de los datos
     healthConnectService.readSleepData().catch(error => {
@@ -22,14 +42,17 @@ export const useSleepData = () => {
       setLoading(false);
     });
 
-    // Limpieza de la suscripción
     return () => subscription.unsubscribe();
-  }, []);
+  }, [token, includeHistory]);
 
   const refreshSleepData = async () => {
     setLoading(true);
     try {
       await healthConnectService.readSleepData();
+      if (includeHistory && token) {
+        const history = await getSleepHistory(token);
+        setSleepHistory(history);
+      }
     } catch (error) {
       console.error('Error refreshing sleep data:', error);
     } finally {
@@ -39,6 +62,7 @@ export const useSleepData = () => {
 
   return {
     sleepData,
+    sleepHistory,
     loading,
     refreshSleepData
   };
