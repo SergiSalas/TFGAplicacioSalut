@@ -1,7 +1,7 @@
 // Update imports to use modular API
 import { Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import notifee from '@notifee/react-native'; // You'll need to install this package
+import notifee, { AndroidImportance, AndroidStyle, AndroidVisibility } from '@notifee/react-native';
 import firebase from '@react-native-firebase/app';
 
 class NotificationService {
@@ -61,50 +61,96 @@ class NotificationService {
       const { notification, data } = remoteMessage;
       
       if (notification) {
-        // Display a local notification to the user
-        this.displayLocalNotification(notification.title, notification.body, data);
+        // Display a local notification to the user with enhanced settings
+        this.displayLocalNotification(
+          notification.title, 
+          notification.body, 
+          data,
+          remoteMessage.messageId
+        );
       }
     });
   }
   
-  // Add this new method to display local notifications
-  async displayLocalNotification(title, body, data = {}) {
+  // Enhanced method to display local notifications
+  async displayLocalNotification(title, body, data = {}, messageId = '') {
     try {
-      // For displaying notifications when app is in foreground, we need to use notifee
-      // First, create a channel for Android
-      let channelId = 'default';
+      // Create a channel with higher importance for Android
+      let channelId = 'high-priority';
       
       if (Platform.OS === 'android') {
+        // Create a channel with maximum importance - fix visibility issue
         channelId = await notifee.createChannel({
-          id: 'default',
-          name: 'Default Channel',
-          importance: 4, // max importance
+          id: 'high-priority',
+          name: 'High Priority Notifications',
+          importance: AndroidImportance.HIGH,
+          sound: 'default',
           vibration: true,
+          // Removed visibility property that was causing issues
         });
+        
+        console.log('Created notification channel with ID:', channelId);
       }
       
-      // Display the notification
-      await notifee.displayNotification({
+      // Display the notification with enhanced settings but with simpler configuration
+      const notificationId = await notifee.displayNotification({
+        id: messageId || Date.now().toString(),
         title,
         body,
         data,
         android: {
           channelId,
-          smallIcon: 'ic_launcher', // Use your app's icon
-          color: '#4CAF50', // Notification color (green)
+          smallIcon: 'ic_launcher', // Use the app icon that definitely exists
+          ongoing: false,
+          showTimestamp: true,
+          autoCancel: true,
+          color: '#4CAF50',
+          importance: AndroidImportance.HIGH,
           pressAction: {
             id: 'default',
           },
+          // Remove defaults array that's causing issues
+          vibrationPattern: [300, 500],
         },
         ios: {
-          // iOS specific options
           badgeCount: 1,
+          sound: 'default',
         },
       });
       
-      console.log('Local notification displayed:', { title, body });
+      console.log('Local notification displayed with ID:', notificationId);
+      console.log('Notification content:', { title, body });
     } catch (error) {
       console.error('Error displaying local notification:', error);
+      console.error('Error details:', error.message);
+      // Try an even simpler notification as fallback
+      this.showFallbackNotification(title, body);
+    }
+  }
+
+  // Add a new fallback method
+  async showFallbackNotification(title, body) {
+    try {
+      // Create a default channel first
+      const defaultChannelId = await notifee.createChannel({
+        id: 'default',
+        name: 'Default Channel',
+        importance: AndroidImportance.DEFAULT,
+        // No visibility setting in the fallback to avoid errors
+      });
+      
+      // Try with absolute minimal configuration
+      await notifee.displayNotification({
+        title: title || 'New Notification',
+        body: body || 'You have a new notification',
+        android: {
+          channelId: defaultChannelId,
+          smallIcon: 'ic_launcher', // Use the app icon which should definitely exist
+        },
+      });
+      console.log('Fallback notification displayed');
+    } catch (fallbackError) {
+      console.error('Even fallback notification failed:', fallbackError.message);
     }
   }
 
