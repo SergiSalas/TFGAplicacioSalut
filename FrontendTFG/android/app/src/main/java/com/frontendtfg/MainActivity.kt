@@ -1,6 +1,10 @@
 package com.frontendtfg
 
 import android.os.Bundle
+import android.os.Build
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -17,8 +21,22 @@ class MainActivity : ReactActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    
     // In order to handle permission contract results, we need to set the permission delegate.
     HealthConnectPermissionDelegate.setPermissionDelegate(this)
+    
+    // Create notification channel for Android 8.0+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val channel = NotificationChannel(
+        "default_channel",
+        "Default Channel",
+        NotificationManager.IMPORTANCE_HIGH
+      )
+      channel.description = "Default Notification Channel"
+      
+      val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      notificationManager.createNotificationChannel(channel)
+    }
   }
 
   /**
