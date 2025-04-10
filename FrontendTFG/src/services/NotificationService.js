@@ -206,6 +206,87 @@ class NotificationService {
       };
     }
   }
+
+  // Añadir este nuevo método para verificar objetivos de pasos
+  async checkStepGoals(currentSteps, dailyGoal, userId) {
+    try {
+      // Si los pasos actuales son menores que el objetivo diario
+      if (currentSteps < dailyGoal) {
+        const stepsRemaining = dailyGoal - currentSteps;
+        
+        // Crear un mensaje personalizado
+        const title = '¡Objetivo de pasos pendiente!';
+        const body = `Te faltan ${stepsRemaining} pasos para alcanzar tu objetivo diario de ${dailyGoal} pasos. ¡Ánimo!`;
+        
+        // Generar un ID único para esta notificación
+        const messageId = `steps_reminder_${userId}_${Date.now()}`;
+        
+        // Mostrar la notificación
+        await this.displayLocalNotification(title, body, { type: 'step_goal', userId }, messageId);
+        
+        console.log(`Notificación de recordatorio de pasos enviada a usuario ${userId}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error al verificar objetivos de pasos:', error);
+      return false;
+    }
+  }
+  
+  // Método para programar verificaciones diarias
+  scheduleStepGoalCheck(checkTime = '20:00') {
+    // Obtener la hora actual
+    const now = new Date();
+    const [hours, minutes] = checkTime.split(':').map(Number);
+    
+    // Configurar la hora de verificación para hoy
+    const checkDate = new Date();
+    checkDate.setHours(hours, minutes, 0, 0);
+    
+    // Si la hora ya pasó hoy, programar para mañana
+    if (now > checkDate) {
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+    
+    // Calcular el tiempo hasta la verificación en milisegundos
+    const timeUntilCheck = checkDate.getTime() - now.getTime();
+    
+    console.log(`Verificación de pasos programada para ${checkDate.toLocaleString()}`);
+    
+    // Programar la verificación
+    setTimeout(() => {
+      this.performStepGoalCheck();
+      // Volver a programar para el día siguiente
+      this.scheduleStepGoalCheck(checkTime);
+    }, timeUntilCheck);
+  }
+  
+  // Método que realiza la verificación (debes implementar la lógica para obtener los datos)
+  async performStepGoalCheck() {
+    try {
+      // Aquí deberías obtener los datos de los usuarios desde tu API o base de datos
+      // Este es un ejemplo, necesitarás adaptarlo a tu estructura de datos
+      
+      // Ejemplo: obtener usuarios y sus datos de pasos
+      // const usersData = await fetchUsersStepData();
+      
+      // Para pruebas, usamos datos de ejemplo
+      const usersData = [
+        { userId: '1', currentSteps: 5000, dailyGoal: 10000 },
+        { userId: '2', currentSteps: 9000, dailyGoal: 8000 }
+      ];
+      
+      // Verificar cada usuario
+      for (const user of usersData) {
+        await this.checkStepGoals(user.currentSteps, user.dailyGoal, user.userId);
+      }
+      
+      console.log('Verificación de objetivos de pasos completada');
+    } catch (error) {
+      console.error('Error al realizar verificación de pasos:', error);
+    }
+  }
 }
 
 export default new NotificationService();

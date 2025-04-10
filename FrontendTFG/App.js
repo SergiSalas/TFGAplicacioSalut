@@ -57,6 +57,10 @@ function App() {
     };
     
     setupNotifications();
+    
+    // Programar verificación de objetivos de pasos a las 8 PM
+    NotificationService.scheduleStepGoalCheck('20:00');
+    
   }, []);
   
   return (
