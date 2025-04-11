@@ -3,6 +3,9 @@ import { Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, AndroidStyle, AndroidVisibility } from '@notifee/react-native';
 import firebase from '@react-native-firebase/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getDailySteps } from '../service/StepService';
+import { getDailyObjective } from '../service/ActivityService';
 
 class NotificationService {
   // Ensure Firebase is initialized
@@ -235,7 +238,7 @@ class NotificationService {
   }
   
   // Método para programar verificaciones diarias
-  scheduleStepGoalCheck(checkTime = '20:00') {
+  scheduleStepGoalCheck(checkTime = '14:00') {
     // Obtener la hora actual
     const now = new Date();
     const [hours, minutes] = checkTime.split(':').map(Number);
@@ -262,29 +265,65 @@ class NotificationService {
     }, timeUntilCheck);
   }
   
-  // Método que realiza la verificación (debes implementar la lógica para obtener los datos)
+  // Método que realiza la verificación
   async performStepGoalCheck() {
     try {
-      // Aquí deberías obtener los datos de los usuarios desde tu API o base de datos
-      // Este es un ejemplo, necesitarás adaptarlo a tu estructura de datos
+      console.log('Iniciando verificación de objetivos de pasos...');
       
-      // Ejemplo: obtener usuarios y sus datos de pasos
-      // const usersData = await fetchUsersStepData();
-      
-      // Para pruebas, usamos datos de ejemplo
-      const usersData = [
-        { userId: '1', currentSteps: 5000, dailyGoal: 10000 },
-        { userId: '2', currentSteps: 9000, dailyGoal: 8000 }
-      ];
-      
-      // Verificar cada usuario
-      for (const user of usersData) {
-        await this.checkStepGoals(user.currentSteps, user.dailyGoal, user.userId);
+      // Obtener el token del almacenamiento
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        console.log('No hay usuario autenticado para verificar objetivos');
+        return;
       }
       
-      console.log('Verificación de objetivos de pasos completada');
+      try {
+        // Obtener los pasos actuales del día
+        const currentStepsData = await getDailySteps(token);
+        const currentSteps = currentStepsData?.steps || 0;
+        
+        // Obtener el objetivo diario de pasos
+        const dailyGoalData = await getDailyObjective(token);
+        const dailyGoal = dailyGoalData?.steps || 10000; // Valor predeterminado si no hay objetivo
+        
+        console.log(`Pasos actuales: ${currentSteps}, Objetivo: ${dailyGoal}`);
+        
+        // Verificar si se ha alcanzado el objetivo - no pasamos el userId
+        await this.checkStepGoals(currentSteps, dailyGoal);
+        
+        console.log('Verificación de objetivos de pasos completada');
+      } catch (error) {
+        console.error('Error al obtener datos para verificación de pasos:', error);
+      }
     } catch (error) {
       console.error('Error al realizar verificación de pasos:', error);
+    }
+  }
+
+  // Modificar el método checkStepGoals para que no requiera userId
+  async checkStepGoals(currentSteps, dailyGoal) {
+    try {
+      // Si los pasos actuales son menores que el objetivo diario
+      if (currentSteps < dailyGoal) {
+        const stepsRemaining = dailyGoal - currentSteps;
+        
+        // Crear un mensaje personalizado
+        const title = '¡Objetivo de pasos pendiente!';
+        const body = `Te faltan ${stepsRemaining} pasos para alcanzar tu objetivo diario de ${dailyGoal} pasos. ¡Ánimo!`;
+        
+        // Generar un ID único para esta notificación
+        const messageId = `steps_reminder_${Date.now()}`;
+        
+        // Mostrar la notificación
+        await this.displayLocalNotification(title, body, { type: 'step_goal' }, messageId);
+        
+        console.log(`Notificación de recordatorio de pasos enviada`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error al verificar objetivos de pasos:', error);
+      return false;
     }
   }
 }
