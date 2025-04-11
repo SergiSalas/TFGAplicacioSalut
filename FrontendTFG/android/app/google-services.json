@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "931102378335",
+    "project_id": "tfgaplicaciosaludsergi",
+    "storage_bucket": "tfgaplicaciosaludsergi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:931102378335:android:b07e8cec7a94ed08db8eea",
+        "android_client_info": {
+          "package_name": "com.frontendtfg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuJkksoyPB_jAdXFw5oD9BRNZRYI1HKaY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

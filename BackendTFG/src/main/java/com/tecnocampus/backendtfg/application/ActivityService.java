@@ -154,12 +154,34 @@ public class ActivityService {
         String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         ActivityProfile activityProfile = user.getActivityProfile();
-        DailySteps dailySteps = new DailySteps(dailyStepsDTO);
-        activityProfile.addDailySteps(dailySteps);
-        activityProfileRepository.save(activityProfile);
-        userRepository.save(user);
-        dailyStepsRepository.save(dailySteps);
+        DailySteps existingDailySteps = dailyStepsRepository.findByDay(dailyStepsDTO.getDate());
+
+        if (existingDailySteps != null) {
+            // Actualizar solo si los nuevos pasos son mayores
+            if (existingDailySteps.getSteps() < dailyStepsDTO.getSteps()) {
+                existingDailySteps.setSteps(dailyStepsDTO.getSteps());
+                existingDailySteps.setDuration(dailyStepsDTO.getDuration());
+                dailyStepsRepository.save(existingDailySteps);
+            }
+        } else {
+            DailySteps dailySteps = new DailySteps(dailyStepsDTO);
+            activityProfile.addDailySteps(dailySteps);
+            activityProfileRepository.save(activityProfile);
+            dailyStepsRepository.save(dailySteps);
+        }
     }
+
+    public DailyStepsDTO getDailySteps(String token, Date date) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        ActivityProfile activityProfile = user.getActivityProfile();
+        DailyStepsDTO dailyStepsDTO = dailyStepsRepository.getDailyStepsDTOByDateAndActivityProfile(date, activityProfile);
+        if (dailyStepsDTO == null ) {
+            throw new IllegalArgumentException("No daily steps found for the given date");
+        }
+        return dailyStepsDTO;
+    }
+
 
     public int getObjective(String token) {
         String email = getEmailFromToken(token);
@@ -181,6 +203,16 @@ public class ActivityService {
                                 Math.abs(existingActivity.getDate().getTime() - activityDTO.getDate().getTime()) < 60000 && // Within 1 minute
                                 Math.abs(existingActivity.getDuration() - activityDTO.getDuration()) < 0.1 && // Similar duration
                                 existingActivity.getOrigin() == activityDTO.getOrigin());
+    }
+
+    private boolean isDuplicateDailySteps(DailyStepsDTO dailyStepsDTO, ActivityProfile activityProfile) {
+        if (dailyStepsDTO == null || activityProfile == null || dailyStepsDTO.getDate() == null) {
+            return false;
+        }
+
+        // Usar el repositorio para búsqueda por día
+        DailySteps existingDailySteps = dailyStepsRepository.findByDay(dailyStepsDTO.getDate());
+        return existingDailySteps != null;
     }
 
     public double getTotalCalories(String token, Date date) {
