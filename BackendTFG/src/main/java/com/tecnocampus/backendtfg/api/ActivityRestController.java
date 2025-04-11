@@ -77,6 +77,13 @@ public class ActivityRestController {
         return ResponseEntity.ok("Daily steps added");
     }
 
+    @GetMapping("/getDailySteps")
+    public ResponseEntity<?> getDailySteps(
+            HttpServletRequest request,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
+        return ResponseEntity.ok(activityService.getDailySteps(getTokenAuthFromRequest(request), date));
+    }
+
     @GetMapping("/getTotalCalories")
     public ResponseEntity<?> getTotalCalories(
             HttpServletRequest request,

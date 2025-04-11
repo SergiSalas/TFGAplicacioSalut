@@ -26,16 +26,21 @@ public class DailySteps {
 
     private Date date;
 
+    private int duration;
+
     @ManyToOne
     private ActivityProfile activityProfile;
 
-    public DailySteps(int steps, Date date) {
+    public DailySteps(int steps, Date date,int duration, ActivityProfile activityProfile) {
         this.steps = steps;
         this.date = date;
+        this.duration = duration;
+        this.activityProfile = activityProfile;
     }
 
     public DailySteps (DailyStepsDTO dailySteps) {
         this.steps = dailySteps.getSteps();
         this.date = dailySteps.getDate();
+        this.duration = dailySteps.getDuration();
     }
 }
