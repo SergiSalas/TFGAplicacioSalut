@@ -15,12 +15,13 @@ public interface DailyStepsRepository extends JpaRepository<DailySteps, Long> {
 
     DailySteps findByDate(Date date);
 
-    @Query("SELECT ds FROM DailySteps ds WHERE FUNCTION('DATE', ds.date) = FUNCTION('DATE', :date)")
+    // Usando FORMATDATETIME para H2
+    @Query("SELECT ds FROM DailySteps ds WHERE FORMATDATETIME(ds.date, 'yyyy-MM-dd') = FORMATDATETIME(:date, 'yyyy-MM-dd')")
     DailySteps findByDay(@Param("date") Date date);
 
-
+    // Consulta para DTO usando el mismo enfoque
     @Query("SELECT new com.tecnocampus.backendtfg.application.dto.DailyStepsDTO(ds.steps, ds.date, ds.duration) " +
-            "FROM DailySteps ds WHERE FUNCTION('DATE', ds.date) = FUNCTION('DATE', :date) AND ds.activityProfile = :activityProfile")
+            "FROM DailySteps ds WHERE FORMATDATETIME(ds.date, 'yyyy-MM-dd') = FORMATDATETIME(:date, 'yyyy-MM-dd') " +
+            "AND ds.activityProfile = :activityProfile")
     DailyStepsDTO getDailyStepsDTOByDateAndActivityProfile(@Param("date") Date date, @Param("activityProfile") ActivityProfile activityProfile);
-
 }

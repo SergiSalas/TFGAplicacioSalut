@@ -9,6 +9,7 @@ import { getBackendActivityType, getExerciseTypeName } from '../utils/ExerciseTy
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
 import { BehaviorSubject } from 'rxjs';
 import { saveSleepData } from './SleepService';
+import { saveDailySteps } from './StepService';
 
 // Control de sincronización
 let syncInProgress = false;
@@ -209,13 +210,16 @@ class HealthConnectService {
   /**
    * Notifica a todos los listeners con los datos
    */
+  // In the notifyListeners method, update to include step data properly
   notifyListeners(data) {
     this.listeners.forEach(callback => {
       try {
         if (data.steps !== undefined) {
           callback({
             type: 'today-steps',
-            steps: data.steps
+            steps: data.steps,
+            date: new Date(),  // Add date for consistency
+            duration: 0        // Add duration for consistency
           });
         }
         
@@ -609,69 +613,130 @@ class HealthConnectService {
     }
   }
 
-  // Procesar cola de actualizaciones
-  async processUpdateQueue() {
-    if (this.isProcessingQueue || this.updateQueue.length === 0) {
-      return;
+// Modify the processUpdateQueue method to save steps when updated
+async processUpdateQueue() {
+  if (this.isProcessingQueue || this.updateQueue.length === 0) {
+    return;
+  }
+  
+  try {
+    this.isProcessingQueue = true;
+    
+    // Ordenar por prioridad
+    this.updateQueue.sort((a, b) => {
+      if (a.priority === 'high' && b.priority !== 'high') return -1;
+      if (a.priority !== 'high' && b.priority === 'high') return 1;
+      return 0;
+    });
+    
+    // Obtener y eliminar la primera solicitud
+    const request = this.updateQueue.shift();
+    
+    // Comprobar tiempo desde última actualización
+    const now = Date.now();
+    const timeSinceLastStepsUpdate = now - this.lastUpdate.steps;
+    const timeSinceLastHeartRateUpdate = now - this.lastUpdate.heartRate;
+    
+    let updatedData = {};
+    
+    // Actualizar pasos solo si han pasado al menos 30 segundos
+    if (timeSinceLastStepsUpdate > 30000) {
+      const steps = await this.readStepsData();
+      if (steps !== this.stepsSubject.getValue()) {
+        this.stepsSubject.next(steps);
+        this.lastUpdate.steps = now;
+        updatedData.steps = steps;
+        
+        // Guardar los pasos en el backend si hay token disponible
+        if (this.token) {
+          try {
+            // Crear objeto de datos de pasos
+            const stepData = {
+              steps: steps,
+              date: new Date(),
+              duration: 0 // Podemos establecer duración a 0 ya que son pasos acumulados
+            };
+            
+            // Guardar en el backend
+            await saveDailySteps(this.token, stepData);
+            console.log('Datos de pasos guardados en el backend:', steps);
+          } catch (saveError) {
+            console.error('Error al guardar datos de pasos en el backend:', saveError);
+          }
+        }
+      }
     }
     
-    try {
-      this.isProcessingQueue = true;
-      
-      // Ordenar por prioridad
-      this.updateQueue.sort((a, b) => {
-        if (a.priority === 'high' && b.priority !== 'high') return -1;
-        if (a.priority !== 'high' && b.priority === 'high') return 1;
-        return 0;
-      });
-      
-      // Obtener y eliminar la primera solicitud
-      const request = this.updateQueue.shift();
-      
-      // Comprobar tiempo desde última actualización
-      const now = Date.now();
-      const timeSinceLastStepsUpdate = now - this.lastUpdate.steps;
-      const timeSinceLastHeartRateUpdate = now - this.lastUpdate.heartRate;
-      
-      let updatedData = {};
-      
-      // Actualizar pasos solo si han pasado al menos 30 segundos
-      if (timeSinceLastStepsUpdate > 30000) {
-        const steps = await this.readStepsData();
-        if (steps !== this.stepsSubject.getValue()) {
-          this.stepsSubject.next(steps);
-          this.lastUpdate.steps = now;
-          updatedData.steps = steps;
-        }
-      }
-      
-      // Actualizar frecuencia cardíaca solo si han pasado al menos 30 segundos
-      if (timeSinceLastHeartRateUpdate > 30000) {
-        const heartRate = await this.readHeartRateData();
-        if (heartRate !== this.heartRateSubject.getValue()) {
-          this.heartRateSubject.next(heartRate);
-          this.lastUpdate.heartRate = now;
-          updatedData.heartRate = heartRate;
-        }
-      }
-      
-      // Notificar a los listeners sobre los cambios
-      if (Object.keys(updatedData).length > 0) {
-        this.notifyListeners(updatedData);
-      }
-      
-      return updatedData;
-    } catch (error) {
-      console.error('Error al procesar cola de actualizaciones:', error);
-    } finally {
-      this.isProcessingQueue = false;
-      
-      // Procesar siguiente solicitud si existe
-      if (this.updateQueue.length > 0) {
-        setTimeout(() => this.processUpdateQueue(), 500);
+    // Actualizar frecuencia cardíaca solo si han pasado al menos 30 segundos
+    if (timeSinceLastHeartRateUpdate > 30000) {
+      const heartRate = await this.readHeartRateData();
+      if (heartRate !== this.heartRateSubject.getValue()) {
+        this.heartRateSubject.next(heartRate);
+        this.lastUpdate.heartRate = now;
+        updatedData.heartRate = heartRate;
       }
     }
+    
+    // Notificar a los listeners sobre los cambios
+    if (Object.keys(updatedData).length > 0) {
+      this.notifyListeners(updatedData);
+    }
+    
+    return updatedData;
+  } catch (error) {
+    console.error('Error al procesar cola de actualizaciones:', error);
+  } finally {
+    this.isProcessingQueue = false;
+    
+    // Procesar siguiente solicitud si existe
+    if (this.updateQueue.length > 0) {
+      setTimeout(() => this.processUpdateQueue(), 500);
+    }
   }
+}
+
+// Also update the loadInitialData method to save initial step data
+async loadInitialData() {
+  try {
+    // Implementa tu lógica para cargar datos
+    // Por ejemplo:
+    const steps = await this.readStepsData();
+    const heartRate = await this.readHeartRateData();
+    
+    // Actualizar solo si hay cambios reales
+    if (steps !== this.stepsSubject.getValue()) {
+      this.stepsSubject.next(steps);
+      
+      // Guardar los pasos iniciales en el backend si hay token disponible
+      if (this.token && steps > 0) {
+        try {
+          const stepData = {
+            steps: steps,
+            date: new Date(),
+            duration: 0
+          };
+          
+          await saveDailySteps(this.token, stepData);
+          console.log('Datos iniciales de pasos guardados en el backend:', steps);
+        } catch (saveError) {
+          console.error('Error al guardar datos iniciales de pasos:', saveError);
+        }
+      }
+    }
+    
+    if (heartRate !== this.heartRateSubject.getValue()) {
+      this.heartRateSubject.next(heartRate);
+    }
+    
+    return {
+      steps,
+      heartRate
+    };
+  } catch (error) {
+    console.error('Error al cargar datos iniciales:', error);
+    return null;
+  }
+}
 
   // Método para obtener el observable de datos del sueño
   getSleepDataObservable() {

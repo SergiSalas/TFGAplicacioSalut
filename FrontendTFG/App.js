@@ -31,36 +31,40 @@ function App() {
           console.log('Firebase already initialized');
         }
         
-        // Now that Firebase is initialized, we can request permissions
-        const hasPermission = await NotificationService.requestUserPermission();
-        console.log('Notification permission granted:', hasPermission);
-        
-        if (hasPermission) {
-          const token = await NotificationService.getToken();
-          console.log('FCM Token:', token);
-          setFcmToken(token);
-          
-          // Register handlers
-          const unsubscribeForeground = NotificationService.registerForegroundHandler();
-          NotificationService.registerBackgroundHandler();
-          const unsubscribeOpened = NotificationService.registerNotificationOpenedApp();
-          NotificationService.checkInitialNotification();
-          
-          return () => {
-            if (unsubscribeForeground) unsubscribeForeground();
-            if (unsubscribeOpened) unsubscribeOpened();
-          };
+        // Try to initialize with error handling for missing methods
+        try {
+          // Check if the method exists before calling it
+          if (typeof NotificationService.initialize === 'function') {
+            const initialized = await NotificationService.initialize();
+            console.log('Notification service initialized:', initialized ? 'success' : 'failed');
+            
+            if (initialized) {
+              const token = await NotificationService.getToken();
+              console.log('FCM Token:', token);
+              setFcmToken(token);
+            }
+          } else {
+            console.log('NotificationService.initialize is not a function');
+            
+            // Fallback: Try to request permissions and get token directly
+            if (typeof NotificationService.requestUserPermission === 'function') {
+              const hasPermission = await NotificationService.requestUserPermission();
+              if (hasPermission && typeof NotificationService.getToken === 'function') {
+                const token = await NotificationService.getToken();
+                console.log('FCM Token (fallback):', token);
+                setFcmToken(token);
+              }
+            }
+          }
+        } catch (notificationError) {
+          console.error('Notification initialization error:', notificationError);
         }
       } catch (error) {
-        console.error('Notification setup error:', error);
+        console.error('Firebase setup error:', error);
       }
     };
     
     setupNotifications();
-    
-    // Programar verificación de objetivos de pasos a las 8 PM
-    NotificationService.scheduleStepGoalCheck('20:00');
-    
   }, []);
   
   return (

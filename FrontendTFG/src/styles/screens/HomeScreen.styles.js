@@ -155,4 +155,11 @@ export default StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
   },
+  notificationText: {
+    color: '#e0e0e0',
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 10,
+    lineHeight: 20,
+  },
 });
