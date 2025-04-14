@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
-import { View, ScrollView, Text, ActivityIndicator, TouchableOpacity, AppState, StatusBar } from 'react-native';
+import { View, ScrollView, Text, ActivityIndicator, TouchableOpacity, AppState, StatusBar, Alert } from 'react-native';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Card from '../components/common/Card';
@@ -10,6 +10,9 @@ import { getDailyObjective } from '../service/ActivityService';
 import { AuthContext } from '../contexts/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSleepData } from '../hooks/useSleepData';
+// Add back the NotificationService import
+import NotificationService from '../services/NotificationService';
+
 
 // En lugar de useMemo, crear un componente separado
 const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => {
@@ -52,6 +55,7 @@ const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => {
   );
 };
 
+// In the HomeScreen component, add the testNotifications function back:
 const HomeScreen = ({ navigation }) => {
   const { token, user } = useContext(AuthContext);
   const [healthConnectAvailable, setHealthConnectAvailable] = useState(false);
@@ -64,6 +68,18 @@ const HomeScreen = ({ navigation }) => {
   const [healthData, setHealthData] = useState(null);
   const [isLoadingHealthData, setIsLoadingHealthData] = useState(true);
   const { sleepData, loading: sleepLoading } = useSleepData();
+
+  // Add this function back to fix the error
+  const testNotifications = async () => {
+    try {
+      Alert.alert(
+        'Información',
+        'La función de prueba de notificaciones ha sido desactivada.'
+      );
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   useEffect(() => {
     initializeHealthConnect();
@@ -285,6 +301,8 @@ const HomeScreen = ({ navigation }) => {
 
         {/* Sleep Card - Ahora justo después de Activity */}
         {renderSleepCard()}
+        
+        {/* Remove the entire notifications test card */}
       </ScrollView>
       
       <Footer 
