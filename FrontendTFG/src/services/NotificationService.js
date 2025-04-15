@@ -18,22 +18,58 @@ import { getDailyObjective } from '../service/ActivityService';
  * Esto se ejecuta cuando la notificación programada dispara el trigger
  * (se debe configurar a nivel de módulo, antes de cualquier otra inicialización).
  */
+// In the onBackgroundEvent handler at the top of the file
 notifee.onBackgroundEvent(async ({ type, detail }) => {
-  console.log('Evento en background recibido:', type);
-  
-  // Se verifica que el evento sea del tipo TRIGGER y que la notificación contenga el dato "step_goal_check"
-  if (type === EventType.TRIGGER && detail.notification?.data?.type === 'step_goal_check') {
-    console.log('Trigger de verificación de pasos recibido en background');
-    try {
-      // Se invoca la notificación de fallback; alternativamente podrías llamar a performStepGoalCheck()
-      await NotificationService.showFallbackNotification(
-        '¡Recordatorio de actividad!',
-        'Recuerda completar tu objetivo diario de pasos.'
-      );
-      console.log('Notificación enviada desde background correctamente');
-    } catch (error) {
-      console.error('Error en el handler de background:', error);
+  // Skip empty DELIVERED events
+  if (type === 4 && !detail?.notification?.id && !detail?.notification?.data) {
+    console.log('Skipping empty DELIVERED event');
+    return Promise.resolve();
+  }
+
+  // Verificar si ya procesamos este evento
+  const eventId = `${type}_${detail?.notification?.id || Date.now()}`;
+  try {
+    console.log('🔍 BACKGROUND EVENT RECEIVED:', {
+      type,
+      notificationId: detail?.notification?.id,
+      notificationTitle: detail?.notification?.title,
+      notificationData: detail?.notification?.data,
+      eventId
+    });
+    
+    const processedEvents = await AsyncStorage.getItem('processedBackgroundEvents') || '[]';
+    const processedIds = JSON.parse(processedEvents);
+    
+    if (processedIds.includes(eventId)) {
+      console.log('⚠️ DUPLICATE EVENT DETECTED:', eventId);
+      return Promise.resolve();
     }
+    
+    console.log('Evento en background recibido:', type);
+    
+    // Se verifica que el evento sea del tipo TRIGGER y que la notificación contenga el dato "step_goal_check"
+    if (type === EventType.TRIGGER && detail.notification?.data?.type === 'step_goal_check') {
+      console.log('Trigger de verificación de pasos recibido en background');
+      try {
+        // Se invoca la notificación de fallback; alternativamente podrías llamar a performStepGoalCheck()
+        await NotificationService.showFallbackNotification(
+          '¡Recordatorio de actividad!',
+          'Recuerda completar tu objetivo diario de pasos.'
+        );
+        console.log('Notificación enviada desde background correctamente');
+      } catch (error) {
+        console.error('Error en el handler de background:', error);
+      }
+    }
+    
+    // Guardar ID como procesado
+    processedIds.push(eventId);
+    // Mantener solo los últimos 20 IDs
+    while (processedIds.length > 20) processedIds.shift();
+    await AsyncStorage.setItem('processedBackgroundEvents', JSON.stringify(processedIds));
+    
+  } catch (error) {
+    console.error('Error procesando evento background:', error);
   }
   return Promise.resolve();
 });
@@ -178,12 +214,42 @@ class NotificationServiceClass {
 
   // Registra un handler para notificaciones en background (además del onBackgroundEvent global)
   registerBackgroundHandler() {
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('Notificación en background:', remoteMessage);
-      // Aquí puedes manejar datos adicionales si es necesario
-    });
+    if (!this.backgroundHandlerRegistered) {
+      messaging().setBackgroundMessageHandler(async remoteMessage => {
+        // Verificar si ya procesamos este mensaje
+        const messageId = remoteMessage.messageId || `${Date.now()}`;
+        console.log('📱 FCM BACKGROUND MESSAGE:', {
+          messageId,
+          title: remoteMessage.notification?.title,
+          body: remoteMessage.notification?.body,
+          data: remoteMessage.data,
+          sentTime: remoteMessage.sentTime,
+          from: remoteMessage.from
+        });
+        
+        const processedMessages = await AsyncStorage.getItem('processedNotifications') || '[]';
+        const processedIds = JSON.parse(processedMessages);
+        
+        if (processedIds.includes(messageId)) {
+          console.log('⚠️ DUPLICATE MESSAGE DETECTED:', messageId);
+          return;
+        }
+        
+        console.log('Notificación en background:', remoteMessage);
+        
+        // Guardar ID como procesado
+        processedIds.push(messageId);
+        // Mantener solo los últimos 20 IDs para no crecer indefinidamente
+        while (processedIds.length > 20) processedIds.shift();
+        await AsyncStorage.setItem('processedNotifications', JSON.stringify(processedIds));
+      });
+      this.backgroundHandlerRegistered = true;
+      console.log('Handler de background registrado');
+    } else {
+      console.log('Handler de background ya estaba registrado');
+    }
   }
-
+  
   // Registra el handler cuando el usuario abre la notificación y se inicia la app
   registerNotificationOpenedApp() {
     return messaging().onNotificationOpenedApp(remoteMessage => {
@@ -406,9 +472,14 @@ class NotificationServiceClass {
       this.registerBackgroundHandler();
       this.registerNotificationOpenedApp();
       
+      // Marcar como inicializado
+      await AsyncStorage.setItem('notification_service_initialized', 'true');
+      
       // Programa una verificación de pasos para las 14:00
       await this.scheduleStepGoalCheck();
       
+      // Debug info
+      await this.debugNotificationHandlers();
       
       console.log('NotificationService inicializado correctamente');
       return true;
@@ -428,6 +499,46 @@ class NotificationServiceClass {
     }
     console.log(`Próximo trigger programado para: ${triggerDate.toLocaleString()}`);
     return triggerDate.getTime();
+  }
+
+  // Debug method to check notification handlers and processed events
+  async debugNotificationHandlers() {
+    try {
+      const isInitialized = await AsyncStorage.getItem('notification_service_initialized');
+      const triggerId = await AsyncStorage.getItem('step_goal_check_trigger_id');
+      const processedEvents = await AsyncStorage.getItem('processedBackgroundEvents');
+      const processedMessages = await AsyncStorage.getItem('processedNotifications');
+      
+      console.log('📊 NOTIFICATION DEBUG INFO:');
+      console.log('- Service initialized:', isInitialized);
+      console.log('- Background handler registered:', this.backgroundHandlerRegistered);
+      console.log('- Current trigger ID:', triggerId);
+      console.log('- Processed background events:', processedEvents);
+      console.log('- Processed FCM messages:', processedMessages);
+      
+      return {
+        isInitialized,
+        backgroundHandlerRegistered: this.backgroundHandlerRegistered,
+        triggerId,
+        processedEvents: JSON.parse(processedEvents || '[]'),
+        processedMessages: JSON.parse(processedMessages || '[]')
+      };
+    } catch (error) {
+      console.error('Error in debug method:', error);
+      return { error: error.message };
+    }
+  }
+  
+  // Log Notifee event type constants for debugging
+  async logEventTypeNames() {
+    console.log('Notifee Event Types:');
+    console.log('- UNKNOWN:', EventType.UNKNOWN);
+    console.log('- FOREGROUND_ACTION:', EventType.FOREGROUND_ACTION);
+    console.log('- PRESS:', EventType.PRESS);
+    console.log('- DISMISSED:', EventType.DISMISSED);
+    console.log('- DELIVERED:', EventType.DELIVERED);
+    console.log('- TRIGGER_NOTIFICATION_CREATED:', EventType.TRIGGER_NOTIFICATION_CREATED);
+    console.log('- TRIGGER:', EventType.TRIGGER);
   }
 }
 

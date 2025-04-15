@@ -26,6 +26,7 @@ import { StackActions } from '@react-navigation/native';
 import SetDailyObjectiveScreen from '../screens/SetDailyObjectiveScreen';
 import SetUserProfileScreen from '../screens/SetUserProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import TrendsScreen from '../screens/TrendsScreen';
 
 const Stack = createStackNavigator();
 
@@ -57,6 +58,7 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
               <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
               <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="TrendsScreen" component={TrendsScreen} />
             </>
           )}
         </>
@@ -67,6 +69,7 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
           <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
         </>
       )}
+      {/* Remove this line: <Stack.Screen name="TrendsScreen" component={TrendsScreen} /> */}
     </Stack.Navigator>
   );
 };
