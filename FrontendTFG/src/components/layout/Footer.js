@@ -1,42 +1,46 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import styles from '../../styles/components/Footer.styles';
+import { FOOTER_SCREENS } from '../../constants/navigation';
 
-const Footer = ({ activeScreen, navigation, screens }) => {
-  const handleNavigation = (screenName) => {
-    switch (screenName) {
-      case 'home':
-        navigation.navigate('HomeScreen');
-        break;
-      case 'activity':
-        navigation.navigate('ActivityScreen');
-        break;
-      case 'sleep':
-        navigation.navigate('SleepScreen');
-        break;
-      case 'profile':
-        navigation.navigate('UserProfileScreen');
-        break;
-    }
+const Footer = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  
+  const getScreenName = (name) => {
+    return `${name.charAt(0).toUpperCase()}${name.slice(1)}Screen`;
+  };
+
+  const isActive = (name) => {
+    const screenName = getScreenName(name);
+    return route.name === screenName;
+  };
+
+  const navigateTo = (name) => {
+    const screenName = getScreenName(name);
+    console.log(`Navigating to: ${screenName}`);
+    navigation.navigate(screenName);
   };
 
   return (
     <View style={styles.footer}>
-      {screens.map((screen) => (
+      {FOOTER_SCREENS.map((screen) => (
         <TouchableOpacity
           key={screen.name}
           style={styles.footerItem}
-          onPress={() => handleNavigation(screen.name)}
+          onPress={() => navigateTo(screen.name)}
         >
           <Icon
-            name={screen.icon}
+            name={isActive(screen.name) ? screen.icon.replace('-outline', '') : screen.icon}
             size={24}
-            color={activeScreen === screen.name ? '#61dafb' : '#8e8e93'}
+            color={isActive(screen.name) ? '#61dafb' : '#ffffff'}
           />
           <Text
             style={[
-              styles.footerLabel,
-              { color: activeScreen === screen.name ? '#61dafb' : '#8e8e93' }
+              styles.footerText,
+              isActive(screen.name) && styles.footerTextActive,
             ]}
           >
             {screen.label}
@@ -46,26 +50,5 @@ const Footer = ({ activeScreen, navigation, screens }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#1a1a2e',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#2a2a4a',
-  },
-  footerItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 8,
-  },
-  footerLabel: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
 
 export default Footer;

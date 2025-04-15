@@ -1,47 +1,32 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-  container: {
+  footer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
     backgroundColor: '#1a1a2e',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#333',
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#2a2a3e',
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
-  navButton: {
-    padding: 10,
-    borderRadius: 24,
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
+  footerItem: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
   },
-  activeNavButton: {
-    backgroundColor: 'rgba(76, 110, 245, 0.2)',
-    transform: [{ translateY: -4 }],
+  footerText: {
+    color: '#ffffff',
+    fontSize: 10, // Reduced from 12
+    marginTop: 2, // Reduced from 4
   },
-  navIcon: {
-    width: 24,
-    height: 24,
-  },
-  navText: {
-    color: '#757575',
-    marginTop: 4,
-    fontSize: 12,
-  },
-  activeNavText: {
-    color: '#4c6ef5',
+  footerTextActive: {
+    color: '#61dafb',
     fontWeight: 'bold',
   },
 });
