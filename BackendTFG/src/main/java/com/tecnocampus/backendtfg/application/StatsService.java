@@ -1,22 +1,16 @@
 package com.tecnocampus.backendtfg.application;
 
+import com.tecnocampus.backendtfg.application.dto.SleepStatsDTO;
 import com.tecnocampus.backendtfg.application.dto.StatsDTO;
 import com.tecnocampus.backendtfg.component.JwtUtils;
-import com.tecnocampus.backendtfg.domain.ActivityProfile;
-import com.tecnocampus.backendtfg.domain.DailySteps;
-import com.tecnocampus.backendtfg.domain.User;
-import com.tecnocampus.backendtfg.domain.AbstractActivity;
+import com.tecnocampus.backendtfg.domain.*;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.*;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class StatsService {
@@ -488,5 +482,216 @@ public class StatsService {
         }
 
         return values;
+    }
+
+    public SleepStatsDTO getSleepStats(String token) {
+        // 1. Extraer usuario
+        String email = jwtUtils.extractEmail(token);
+        User user = userRepository.findByEmail(email);
+        List<Sleep> sleeps = user.getSleepProfile().getSleeps();
+
+        if (sleeps.isEmpty()) {
+            // Devuelve un DTO con ceros si no hay datos
+            return new SleepStatsDTO(0.0, 0.0, 0, "", "", "00:00", "00:00");
+        }
+
+        int n = sleeps.size();
+
+        // 2. Media de horas de sueño
+        double totalHours = sleeps.stream()
+                .mapToDouble(Sleep::getHours)
+                .sum();
+        double averageDuration = Math.round((totalHours / n) * 10) / 10.0;
+
+        // 3. Media de calidad
+        double totalQuality = sleeps.stream()
+                .mapToInt(Sleep::getQuality)
+                .sum();
+        double averageQuality = Math.round((totalQuality / n) * 10) / 10.0;
+
+        // 4. Media de REM
+        int totalRem = sleeps.stream()
+                .mapToInt(Sleep::getRemSleep)
+                .sum();
+        int averageRem = (int) Math.round((double) totalRem / n);
+
+        // 5. Mejor y peor día (por día de la semana de endTime)
+        Map<DayOfWeek, List<Double>> byDay = new EnumMap<>(DayOfWeek.class);
+        for (Sleep s : sleeps) {
+            Instant inst = s.getEndTime().toInstant();
+            DayOfWeek dow = inst.atZone(ZoneId.systemDefault()).getDayOfWeek();
+            byDay.computeIfAbsent(dow, d -> new ArrayList<>()).add(s.getHours());
+        }
+        // Calcular media por día
+        Map<DayOfWeek, Double> avgByDay = new EnumMap<>(DayOfWeek.class);
+        byDay.forEach((dow, list) -> {
+            double sum = list.stream().mapToDouble(Double::doubleValue).sum();
+            avgByDay.put(dow, sum / list.size());
+        });
+        DayOfWeek bestDow = Collections.max(avgByDay.entrySet(),
+                Map.Entry.comparingByValue()).getKey();
+        DayOfWeek worstDow = Collections.min(avgByDay.entrySet(),
+                Map.Entry.comparingByValue()).getKey();
+        String[] dias = {"Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"};
+        String bestSleepDay = dias[bestDow.getValue() - 1];
+        String worstSleepDay = dias[worstDow.getValue() - 1];
+
+        // 6. Hora media de acostarse (startTime), con wrap‑around
+        int totalBedMins = 0;
+        for (Sleep s : sleeps) {
+            LocalTime t = s.getStartTime().toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime();
+            int mins = t.getHour() * 60 + t.getMinute();
+            if (mins < 12 * 60) mins += 24 * 60;
+            totalBedMins += mins;
+        }
+        int avgBed = totalBedMins / n;
+        if (avgBed >= 24 * 60) avgBed -= 24 * 60;
+        String averageBedtime = String.format("%02d:%02d", avgBed / 60, avgBed % 60);
+
+        // 7. Hora media de despertar (endTime)
+        int totalWakeMins = sleeps.stream()
+                .mapToInt(s -> {
+                    LocalTime t = s.getEndTime().toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalTime();
+                    return t.getHour() * 60 + t.getMinute();
+                })
+                .sum();
+        int avgWake = totalWakeMins / n;
+        String averageWakeTime = String.format("%02d:%02d", avgWake / 60, avgWake % 60);
+
+        // 8. Devolver DTO
+        return new SleepStatsDTO(
+                averageDuration,
+                averageQuality,
+                averageRem,
+                bestSleepDay,
+                worstSleepDay,
+                averageBedtime,
+                averageWakeTime
+        );
+    }
+
+    public SleepStatsDTO getSleepStats(String token, String period) {
+        // 1. Extraer usuario y sleeps
+        String email = jwtUtils.extractEmail(token);
+        User user = userRepository.findByEmail(email);
+        List<Sleep> allSleeps = user.getSleepProfile().getSleeps();
+
+        // 2. Validar periodo
+        if (!Arrays.asList("week","month","year").contains(period.toLowerCase())) {
+            throw new IllegalArgumentException("Período inválido: debe ser week, month o year");
+        }
+
+        // 3. Calcular startDate según periodo
+        Calendar cal = Calendar.getInstance();
+        switch (period.toLowerCase()) {
+            case "week": {
+                int dow = cal.get(Calendar.DAY_OF_WEEK);
+                int back = (dow == Calendar.SUNDAY) ? 6 : (dow - Calendar.MONDAY);
+                cal.add(Calendar.DAY_OF_MONTH, -back);
+                break;
+            }
+            case "month":
+                cal.set(Calendar.DAY_OF_MONTH, 1);
+                break;
+            case "year":
+                cal.set(Calendar.MONTH, Calendar.JANUARY);
+                cal.set(Calendar.DAY_OF_MONTH, 1);
+                break;
+        }
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date startDate = cal.getTime();
+
+        // 4. Filtrar sleeps cuyo endTime >= startDate
+        List<Sleep> sleeps = allSleeps.stream()
+                .filter(s -> !s.getEndTime().before(startDate))
+                .collect(Collectors.toList());
+
+        // 5. Si no hay datos, devolver ceros
+        if (sleeps.isEmpty()) {
+            return new SleepStatsDTO(0.0, 0.0, 0, "", "", "00:00", "00:00");
+        }
+
+        int n = sleeps.size();
+
+        // 6. Media de horas de sueño
+        double totalHours = sleeps.stream()
+                .mapToDouble(Sleep::getHours)
+                .sum();
+        double avgDuration = Math.round((totalHours / n) * 10) / 10.0;
+
+        // 7. Media de calidad
+        double totalQuality = sleeps.stream()
+                .mapToInt(Sleep::getQuality)
+                .sum();
+        double avgQuality = Math.round((totalQuality / n) * 10) / 10.0;
+
+        // 8. Media de REM
+        int totalRem = sleeps.stream()
+                .mapToInt(Sleep::getRemSleep)
+                .sum();
+        int avgRem = (int) Math.round((double) totalRem / n);
+
+        // 9. Mejor y peor día (por día de la semana de endTime)
+        Map<DayOfWeek, List<Double>> byDay = new EnumMap<>(DayOfWeek.class);
+        for (Sleep s : sleeps) {
+            DayOfWeek dow = s.getEndTime().toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .getDayOfWeek();
+            byDay.computeIfAbsent(dow, d -> new ArrayList<>()).add(s.getHours());
+        }
+        Map<DayOfWeek, Double> avgByDay = new EnumMap<>(DayOfWeek.class);
+        byDay.forEach((dow, list) -> {
+            double sum = list.stream().mapToDouble(Double::doubleValue).sum();
+            avgByDay.put(dow, sum / list.size());
+        });
+        DayOfWeek bestDow = Collections.max(avgByDay.entrySet(), Map.Entry.comparingByValue()).getKey();
+        DayOfWeek worstDow = Collections.min(avgByDay.entrySet(), Map.Entry.comparingByValue()).getKey();
+        String[] dias = {"Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"};
+        String bestSleepDay = dias[bestDow.getValue() - 1];
+        String worstSleepDay = dias[worstDow.getValue() - 1];
+
+        // 10. Media de hora de acostarse (startTime) con wrap‑around
+        int totalBedMins = 0;
+        for (Sleep s : sleeps) {
+            LocalTime t = s.getStartTime().toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime();
+            int mins = t.getHour() * 60 + t.getMinute();
+            if (mins < 12 * 60) mins += 24 * 60;
+            totalBedMins += mins;
+        }
+        int avgBed = totalBedMins / n;
+        if (avgBed >= 24 * 60) avgBed -= 24 * 60;
+        String averageBedtime = String.format("%02d:%02d", avgBed / 60, avgBed % 60);
+
+        // 11. Media de hora de despertar (endTime)
+        int totalWakeMins = sleeps.stream()
+                .mapToInt(s -> {
+                    LocalTime t = s.getEndTime().toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalTime();
+                    return t.getHour() * 60 + t.getMinute();
+                })
+                .sum();
+        int avgWake = totalWakeMins / n;
+        String averageWakeTime = String.format("%02d:%02d", avgWake / 60, avgWake % 60);
+
+        // 12. Devolver DTO
+        return new SleepStatsDTO(
+                avgDuration,
+                avgQuality,
+                avgRem,
+                bestSleepDay,
+                worstSleepDay,
+                averageBedtime,
+                averageWakeTime
+        );
     }
 }

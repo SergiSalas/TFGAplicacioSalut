@@ -1,6 +1,15 @@
+// src/screens/TrendsScreen.js
+
 import React, { useState, useEffect, useContext } from 'react';
-import { View, ScrollView, Text, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
-import Header from '../components/layout/Header';
+import {
+  View,
+  ScrollView,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+  RefreshControl,
+  StatusBar,
+} from 'react-native';
 import Footer from '../components/layout/Footer';
 import Card from '../components/common/Card';
 import styles from '../styles/screens/TrendsScreen.styles';
@@ -8,7 +17,6 @@ import { AuthContext } from '../contexts/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
-import { useSleepData } from '../hooks/useSleepData';
 import TrendsService from '../service/TrendsService';
 import StatsService from '../service/StatsService';
 
@@ -17,221 +25,535 @@ const screenWidth = Dimensions.get('window').width;
 const TrendsScreen = ({ navigation }) => {
   const { token } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
-  const [activityData, setActivityData] = useState(null);
-  const [period, setPeriod] = useState('week'); // 'week', 'month', 'year'
-  const { sleepData, sleepHistory } = useSleepData(true); // true to include history
-  const [activeTab, setActiveTab] = useState('activity'); // 'activity' or 'sleep'
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [activeTab, setActiveTab] = useState('activity'); // 'activity' | 'sleep'
+  const [period, setPeriod] = useState('week'); // 'week' | 'month' | 'year'
+
+  const [activityData, setActivityData] = useState(null);
+  const [sleepData, setSleepData] = useState(null);
 
   useEffect(() => {
     loadData();
-  }, [token, period]);
+  }, [token, activeTab, period]);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      // Load real activity data from your API
-      const [trendsData, statsData] = await Promise.all([
-        TrendsService.getStepsTrends(token, period),
-        StatsService.getActivityStatsByPeriod(token, period)
-      ]);
-      
-      // Format the data for the charts
-      setActivityData({
-        steps: {
-          labels: trendsData.labels || [],
-          data: trendsData.values || []
-        },
-        weeklyAverage: statsData.averageSteps || 0,
-        monthlyTrend: statsData.trend || '0%',
-        bestDay: statsData.bestDay || 'N/A'
-      });
-    } catch (error) {
-      console.error('Error loading trends data:', error);
+      if (activeTab === 'activity') {
+        // Llamamos a ambos endpoints
+        const [actTrends, stepsTrends, stats] = await Promise.all([
+          TrendsService.getActivityTrends(token, period),
+          TrendsService.getStepsTrends(token, period),
+          StatsService.getActivityStatsByPeriod(token, period),
+        ]);
+
+        setActivityData({
+          duration: {
+            labels: actTrends.labels,
+            values: actTrends.values,
+          },
+          steps: {
+            labels: stepsTrends.labels,
+            values: stepsTrends.values,
+          },
+          weeklyAverage: stats.averageSteps,
+          trend: stats.trend,
+          bestDay: stats.bestDay,
+        });
+      } else {
+        const [durTrends, qualTrends, stageTrends, stats] = await Promise.all([
+          TrendsService.getSleepTrends(token, period),
+          TrendsService.getSleepQualityTrends(token, period),
+          TrendsService.getSleepStagesTrends(token, period),
+          StatsService.getSleepStatsByPeriod(token, period),
+        ]);
+
+        // Extraer los datos de REM del objeto stageTrends
+        const remDataset = stageTrends.datasets.find(dataset => dataset.label === "REM");
+        const remValues = remDataset ? remDataset.values : [20, 22, 25, 23, 24, 26, 28]; // Valores por defecto si no hay datos
+
+        // Calcular el promedio de REM
+        const validRemValues = remValues.filter(value => value > 0);
+        const remAverage = validRemValues.length > 0 
+          ? Math.round(validRemValues.reduce((sum, value) => sum + value, 0) / validRemValues.length) 
+          : 0;
+
+        setSleepData({
+          labels: durTrends.labels,
+          durationValues: durTrends.values.map(value => value / 10), // Dividir entre 10
+          qualityValues: qualTrends.values,
+          remValues: remValues,
+          remAverage: remAverage,
+          remUnit: stageTrends.unit || 'minutos',
+          averageDuration: stats.averageSleepDuration,
+          averageQuality: stats.averageQuality,
+          bestDay: stats.bestSleepDay,
+        });
+      }
+    } catch (err) {
+      console.error('Error cargando datos:', err);
       setError('No se pudieron cargar los datos. Inténtalo de nuevo.');
-      
-      // Fallback to placeholder data for development
-      setActivityData({
-        steps: {
-          labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-          data: [8000, 9500, 7200, 10500, 9800, 12000, 8500]
-        },
-        weeklyAverage: 9357,
-        monthlyTrend: '+12%',
-        bestDay: 'Sábado'
-      });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handlePeriodChange = (newPeriod) => {
-    setPeriod(newPeriod);
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
   };
 
-  const renderTabSelector = () => {
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  const renderTabs = () => (
+    <View style={styles.tabContainer}>
+      {['activity','sleep'].map(tab => (
+        <TouchableOpacity
+          key={tab}
+          style={[styles.tab, activeTab===tab && styles.activeTab]}
+          onPress={()=>setActiveTab(tab)}>
+          <Icon
+            name={tab==='activity' ? 'fitness-outline' : 'moon-outline'}
+            size={20}
+            color={activeTab===tab ? '#61dafb':'#cccccc'}
+          />
+          <Text style={[styles.tabText,activeTab===tab&&styles.activeTabText]}>
+            {tab==='activity' ? 'Actividad':'Sueño'}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderPeriodSelector = () => (
+    <View style={styles.periodSelector}>
+      {['week','month','year'].map(p=>(
+        <TouchableOpacity
+          key={p}
+          style={[styles.periodButton,period===p&&styles.activePeriod]}
+          onPress={()=>setPeriod(p)}>
+          <Text style={[styles.periodText,period===p&&styles.activePeriodText]}>
+            {p==='week'?'Semana':p==='month'?'Mes':'Año'}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderActivityCharts = () => {
+    if (!activityData) return null;
+    
+    // Función auxiliar para formatear las etiquetas en el eje X
+    const formatLabels = (labels) => {
+      if (period === 'month') {
+        // Para el mes, mostrar solo algunas etiquetas pero con mejor formato
+        return labels.map((label, index) => {
+          // Mostrar día 1, 5, 10, 15, 20, 25, 30
+          if (index % 5 === 0 || index === labels.length - 1) {
+            return label;
+          }
+          return '';
+        });
+      } else if (period === 'year') {
+        // Para el año, mostrar solo algunos meses
+        return labels.map((label, index) => index % 3 === 0 ? label : '');
+      }
+      return labels;
+    };
+    
+    // Configuración personalizada para los gráficos
+    const activityChartConfig = {
+      ...styles.chartConfig,
+      horizontalLabelRotation: period === 'month' ? 45 : 0,
+      propsForLabels: {
+        fontSize: period === 'month' ? 12 : 10,
+        fontWeight: 'bold',
+        fill: '#ffffff',
+      },
+      propsForVerticalLabels: {
+        fontSize: 12,
+        fontWeight: 'bold',
+      },
+      // Aumentar el espacio entre las etiquetas y el gráfico
+      yAxisSuffix: ' min', // Añadir unidades de minutos
+      formatYLabel: (value) => `${value}`,
+    };
+    
+    // Calcular el ancho del gráfico basado en el período
+    const chartWidth = period === 'month' 
+      ? Math.max(screenWidth * 2, activityData.duration.labels.length * 35) 
+      : screenWidth - 40;
+    
     return (
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
-          onPress={() => setActiveTab('activity')}
-        >
-          <Icon name="fitness-outline" size={20} color={activeTab === 'activity' ? '#61dafb' : '#ffffff'} />
-          <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>Actividad</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'sleep' && styles.activeTab]}
-          onPress={() => setActiveTab('sleep')}
-        >
-          <Icon name="moon-outline" size={20} color={activeTab === 'sleep' ? '#61dafb' : '#ffffff'} />
-          <Text style={[styles.tabText, activeTab === 'sleep' && styles.activeTabText]}>Sueño</Text>
-        </TouchableOpacity>
+      <View>
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIcon, styles.timeIconContainer]}>
+              <Icon name="time-outline" size={24} color="#3498db" />
+            </View>
+            <Text style={styles.cardTitle}>Duración de actividad</Text>
+          </View>
+          <View style={styles.scrollableChartContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <LineChart
+                data={{
+                  labels: formatLabels(activityData.duration.labels),
+                  datasets: [{ data: activityData.duration.values }]
+                }}
+                width={chartWidth}
+                height={200}
+                chartConfig={activityChartConfig}
+                bezier
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLines={false}
+                withHorizontalLines={true}
+                fromZero={true}
+                yAxisInterval={2}
+                yAxisSuffix=" min"
+              />
+            </ScrollView>
+          </View>
+        </Card>
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIcon, styles.stepsIconContainer]}>
+              <Icon name="footsteps-outline" size={24} color="#2ecc71" />
+            </View>
+            <Text style={styles.cardTitle}>Pasos</Text>
+          </View>
+          <View style={styles.scrollableChartContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <BarChart
+                data={{
+                  labels: formatLabels(activityData.steps.labels),
+                  datasets: [{ data: activityData.steps.values }]
+                }}
+                width={chartWidth}
+                height={200}
+                chartConfig={activityChartConfig}
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLines={false}
+                withHorizontalLines={true}
+                fromZero={true}
+                showValuesOnTopOfBars={true}
+                showBarTops={true}
+              />
+            </ScrollView>
+          </View>
+        </Card>
       </View>
     );
   };
 
-  const renderActivityTrends = () => {
-    if (!activityData) return null;
-
+  const renderSleepCharts = () => {
+    if (!sleepData) return null;
+    
+    // Función auxiliar para formatear las etiquetas en el eje X
+    const formatLabels = (labels) => {
+      if (period === 'month') {
+        // Para el mes, mostrar solo algunas etiquetas pero con mejor formato
+        return labels.map((label, index) => {
+          // Mostrar día 1, 5, 10, 15, 20, 25, 30
+          if (index % 5 === 0 || index === labels.length - 1) {
+            return label;
+          }
+          return '';
+        });
+      } else if (period === 'year') {
+        // Para el año, mostrar solo algunos meses
+        return labels.map((label, index) => index % 3 === 0 ? label : '');
+      }
+      return labels;
+    };
+  
+    // Configuración personalizada para cada gráfico
+    const durationChartConfig = {
+      ...styles.chartConfig,
+      propsForLabels: {
+        fontSize: period === 'month' ? 12 : 10,
+        fontWeight: 'bold',
+        fill: '#ffffff',
+      },
+      propsForVerticalLabels: {
+        fontSize: 12,
+        fontWeight: 'bold',
+      },
+      formatYLabel: (value) => `${value}h`,
+      horizontalLabelRotation: period === 'month' ? 45 : 0,
+      // Aumentar el espacio entre las etiquetas y el gráfico
+      yAxisSuffix: ' h',
+    };
+  
+    const qualityChartConfig = {
+      ...styles.chartConfig,
+      propsForLabels: {
+        fontSize: period === 'month' ? 12 : 10,
+        fontWeight: 'bold',
+        fill: '#ffffff',
+      },
+      propsForVerticalLabels: {
+        fontSize: 12,
+        fontWeight: 'bold',
+      },
+      formatYLabel: (value) => `${value}`, // Quitar el % aquí
+      horizontalLabelRotation: period === 'month' ? 45 : 0,
+      // Mantener solo un símbolo de porcentaje
+      yAxisSuffix: '%',
+    };
+  
+    // Configuración para el gráfico de sueño REM
+    const remChartConfig = {
+      ...styles.chartConfig,
+      propsForLabels: {
+        fontSize: period === 'month' ? 12 : 10,
+        fontWeight: 'bold',
+        fill: '#ffffff',
+      },
+      propsForVerticalLabels: {
+        fontSize: 12,
+        fontWeight: 'bold',
+      },
+      formatYLabel: (value) => `${value}`,
+      horizontalLabelRotation: period === 'month' ? 45 : 0,
+      // Especificar claramente que son minutos
+      yAxisSuffix: ' min',
+    };
+  
+    // Calcular el ancho del gráfico basado en el período
+    const chartWidth = period === 'month' 
+      ? Math.max(screenWidth * 2, sleepData.labels.length * 35) 
+      : screenWidth - 40;
+  
     return (
-      <>
+      <View>
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
-            <Icon name="trending-up-outline" size={22} color="#61dafb" />
-            <Text style={styles.cardTitle}>Tendencias de Actividad</Text>
+            <View style={[styles.cardIcon, styles.sleepIconContainer]}>
+              <Icon name="bed-outline" size={24} color="#6a5acd" />
+            </View>
+            <Text style={styles.cardTitle}>Duración del sueño</Text>
           </View>
-          
-          <View style={styles.periodSelector}>
-            <TouchableOpacity 
-              style={[styles.periodButton, period === 'week' && styles.activePeriod]}
-              onPress={() => handlePeriodChange('week')}
-            >
-              <Text style={[styles.periodText, period === 'week' && styles.activePeriodText]}>
-                Semana
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.periodButton, period === 'month' && styles.activePeriod]}
-              onPress={() => handlePeriodChange('month')}
-            >
-              <Text style={[styles.periodText, period === 'month' && styles.activePeriodText]}>
-                Mes
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.periodButton, period === 'year' && styles.activePeriod]}
-              onPress={() => handlePeriodChange('year')}
-            >
-              <Text style={[styles.periodText, period === 'year' && styles.activePeriodText]}>
-                Año
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{activityData.weeklyAverage}</Text>
-              <Text style={styles.statLabel}>Promedio semanal de pasos</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{activityData.monthlyTrend}</Text>
-              <Text style={styles.statLabel}>Tendencia mensual</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{activityData.bestDay}</Text>
-              <Text style={styles.statLabel}>Mejor día</Text>
-            </View>
+          <View style={styles.scrollableChartContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <LineChart
+                data={{
+                  labels: formatLabels(sleepData.labels),
+                  datasets: [{ data: sleepData.durationValues }]
+                }}
+                width={chartWidth}
+                height={220}
+                chartConfig={durationChartConfig}
+                bezier
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLines={false}
+                withHorizontalLines={true}
+                fromZero={true}
+                yAxisInterval={2}
+                yAxisSuffix="h"
+              />
+            </ScrollView>
           </View>
         </Card>
-
+        
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
-            <Icon name="bar-chart-outline" size={22} color="#61dafb" />
-            <Text style={styles.cardTitle}>Pasos Diarios</Text>
-          </View>
-          
-          {activityData.steps.data.length > 0 ? (
-            <LineChart
-              data={{
-                labels: activityData.steps.labels,
-                datasets: [{ data: activityData.steps.data }]
-              }}
-              width={screenWidth - 64}
-              height={220}
-              chartConfig={{
-                backgroundColor: '#232342',
-                backgroundGradientFrom: '#232342',
-                backgroundGradientTo: '#3a3a5a',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(97, 218, 251, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: { borderRadius: 16 },
-                propsForDots: {
-                  r: '6',
-                  strokeWidth: '2',
-                  stroke: '#61dafb'
-                }
-              }}
-              bezier
-              style={styles.chart}
-            />
-          ) : (
-            <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No hay datos disponibles para este período</Text>
+            <View style={[styles.cardIcon, styles.starIconContainer]}>
+              <Icon name="star-outline" size={24} color="#9b59b6" />
             </View>
-          )}
+            <Text style={styles.cardTitle}>Calidad del sueño</Text>
+          </View>
+          <View style={styles.scrollableChartContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <BarChart
+                data={{
+                  labels: formatLabels(sleepData.labels),
+                  datasets: [{ data: sleepData.qualityValues }]
+                }}
+                width={chartWidth}
+                height={220}
+                chartConfig={qualityChartConfig}
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLines={false}
+                withHorizontalLines={true}
+                fromZero={true}
+                yAxisInterval={20}
+                yAxisSuffix="%"
+                showValuesOnTopOfBars={true}
+                showBarTops={true}
+              />
+            </ScrollView>
+          </View>
         </Card>
-      </>
+        
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIcon, styles.sleepIconContainer]}>
+              <Icon name="pulse-outline" size={24} color="#6a5acd" />
+            </View>
+            <Text style={styles.cardTitle}>Sueño REM</Text>
+          </View>
+          <View style={styles.scrollableChartContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+              <LineChart
+                data={{
+                  labels: formatLabels(sleepData.labels),
+                  datasets: [{ data: sleepData.remValues || [20, 22, 25, 23, 24, 26, 28] }]
+                }}
+                width={chartWidth}
+                height={220}
+                chartConfig={remChartConfig}
+                bezier
+                style={styles.chart}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLines={false}
+                withHorizontalLines={true}
+                fromZero={true}
+                yAxisInterval={5}
+                yAxisSuffix=" min"
+              />
+            </ScrollView>
+          </View>
+        </Card>
+      </View>
     );
   };
 
-  const renderSleepTrends = () => {
-    // Implement sleep trends visualization here
-    // This would be similar to the activity trends but with sleep data
+  // También mejorar los resúmenes con iconos
+  const renderActivitySummary = () => {
+    if (!activityData) return null;
     return (
-      <Card style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Icon name="moon-outline" size={22} color="#61dafb" />
-          <Text style={styles.cardTitle}>Tendencias de Sueño</Text>
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryItem}>
+            <View style={[styles.summaryIcon, styles.stepsIconContainer]}>
+              <Icon name="stats-chart-outline" size={20} color="#2ecc71" />
+            </View>
+            <Text style={styles.summaryValue}>
+              {activityData.weeklyAverage}
+            </Text>
+            <Text style={styles.summaryLabel}>Prom. pasos</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <View style={[styles.summaryIcon, styles.trendIconContainer]}>
+              <Icon name="trending-up-outline" size={20} color="#e74c3c" />
+            </View>
+            <Text style={styles.summaryValue}>
+              {activityData.trend}
+            </Text>
+            <Text style={styles.summaryLabel}>Tendencia</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <View style={[styles.summaryIcon, styles.trophyIconContainer]}>
+              <Icon name="trophy-outline" size={20} color="#f1c40f" />
+            </View>
+            <Text style={styles.summaryValue}>
+              {activityData.bestDay}
+            </Text>
+            <Text style={styles.summaryLabel}>Mejor día</Text>
+          </View>
         </View>
-        <Text style={styles.noDataText}>Datos de sueño en desarrollo</Text>
-      </Card>
+      </View>
+    );
+  };
+
+  const renderSleepSummary = () => {
+    if (!sleepData) return null;
+    return (
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryItem}>
+            <View style={[styles.summaryIcon, styles.timeIconContainer]}>
+              <Icon name="time-outline" size={20} color="#3498db" />
+            </View>
+            <Text style={styles.summaryValue}>
+              {sleepData.averageDuration}h
+            </Text>
+            <Text style={styles.summaryLabel}>Prom. sueño</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <View style={[styles.summaryIcon, styles.starIconContainer]}>
+              <Icon name="star-outline" size={20} color="#9b59b6" />
+            </View>
+            <Text style={styles.summaryValue}>
+              {sleepData.averageQuality}%
+            </Text>
+            <Text style={styles.summaryLabel}>Calidad</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <View style={[styles.summaryIcon, styles.sleepIconContainer]}>
+              <Icon name="pulse-outline" size={20} color="#6a5acd" />
+            </View>
+            <Text style={styles.summaryValue}>
+              {sleepData.remAverage}
+            </Text>
+            <Text style={styles.summaryLabel}>REM (min)</Text>
+          </View>
+        </View>
+        
+        {/* Se ha eliminado todo el contenedor remContainer */}
+      </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Header title="Tendencias" />
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
       
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#61dafb" />
-          <Text style={styles.loadingText}>Cargando datos...</Text>
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Icon name="alert-circle-outline" size={50} color="#ff6b6b" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadData}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          {renderTabSelector()}
-          <ScrollView 
-            contentContainerStyle={styles.content}
-            refreshControl={
-              <RefreshControl refreshing={loading} onRefresh={loadData} />
-            }
-          >
-            {activeTab === 'activity' ? renderActivityTrends() : renderSleepTrends()}
-          </ScrollView>
-        </>
-      )}
-      
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Tendencias</Text>
+        <TouchableOpacity onPress={onRefresh} style={styles.headerRefreshButton}>
+          <Icon name="refresh-outline" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView 
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {renderTabs()}
+        {renderPeriodSelector()}
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4c6ef5" />
+            <Text style={styles.loadingText}>Cargando datos...</Text>
+          </View>
+        ) : error ? (
+          <Card style={styles.errorCard}>
+            <Text style={styles.errorText}>{error}</Text>
+          </Card>
+        ) : activeTab === 'activity' ? (
+          <>
+            {renderActivitySummary()}
+            {renderActivityCharts()}
+          </>
+        ) : (
+          <>
+            {renderSleepSummary()}
+            {renderSleepCharts()}
+          </>
+        )}
+      </ScrollView>
       <Footer />
     </View>
   );

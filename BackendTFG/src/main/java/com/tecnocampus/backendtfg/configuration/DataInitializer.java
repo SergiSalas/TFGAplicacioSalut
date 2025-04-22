@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Random;
 
@@ -74,6 +75,13 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("DailySteps generados correctamente: " +
                     user.getActivityProfile().getDailySteps().size());
         }
+
+        if (user.getSleepProfile().getSleeps().size() < 10) {
+            generateSleepDataForOneYear(user);
+            userRepository.save(user);
+            System.out.println("Datos de sueño generados correctamente: " +
+                    user.getSleepProfile().getSleeps().size());
+        }
     }
 
     private User createUser() {
@@ -102,9 +110,11 @@ public class DataInitializer implements CommandLineRunner {
 
     private void generateActivitiesForOneYear(User user) {
         LocalDate startDate = LocalDate.now().minusYears(1);
+        LocalDate endDate = LocalDate.now();
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Cálculo correcto de días
         ActivityProfile profile = user.getActivityProfile();
 
-        for (int i = 0; i < 365; i++) {
+        for (int i = 0; i < days; i++) {
             LocalDate currentDate = startDate.plusDays(i);
             Date date = Date.from(currentDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -125,12 +135,13 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-
     private void generateDailyStepsForOneYear(User user) {
         LocalDate startDate = LocalDate.now().minusYears(1);
+        LocalDate endDate = LocalDate.now();
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Cálculo correcto de días
         ActivityProfile profile = user.getActivityProfile();
 
-        for (int i = 0; i < 365; i++) {
+        for (int i = 0; i < days; i++) {
             LocalDate currentDate = startDate.plusDays(i);
             Date date = Date.from(currentDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
@@ -140,6 +151,55 @@ public class DataInitializer implements CommandLineRunner {
 
             DailySteps dailySteps = new DailySteps(steps, date, duration, profile);
             profile.addDailySteps(dailySteps);
+        }
+    }
+
+    private void generateSleepDataForOneYear(User user) {
+        LocalDate startDate = LocalDate.now().minusYears(1);
+        LocalDate endDate = LocalDate.now();
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Cálculo correcto de días
+        SleepProfile sleepProfile = user.getSleepProfile();
+
+        for (int i = 0; i < days; i++) {
+            LocalDate currentDate = startDate.plusDays(i);
+
+            // Hora de finalización: entre 5:00 AM y 9:00 AM
+            int wakeHour = 5 + random.nextInt(4);
+            int wakeMinute = random.nextInt(60);
+
+            // Convertir a Date para la hora de despertar (endTime)
+            Date endTime = Date.from(currentDate.atTime(wakeHour, wakeMinute)
+                    .atZone(ZoneId.systemDefault()).toInstant());
+
+            // Duración del sueño: entre 5 y 9 horas (con un decimal)
+            double hoursSlept = 5.0 + random.nextDouble() * 4.0;
+            hoursSlept = Math.round(hoursSlept * 10.0) / 10.0;
+
+            // Calcular startTime restando las horas dormidas
+            long sleepMillis = (long)(hoursSlept * 60 * 60 * 1000);
+            Date startTime = new Date(endTime.getTime() - sleepMillis);
+
+            // Calidad del sueño (1-10)
+            int quality = random.nextInt(10) + 1;
+
+            // Sueño REM (15-25% del tiempo total dormido en minutos)
+            int remSleep = (int)(hoursSlept * 60 * (15 + random.nextInt(11)) / 100);
+
+            // Comentario descriptivo
+            String comment = "Sesión de sueño - Día " + (days - i);
+
+            // Crear el registro de sueño
+            Sleep sleep = new Sleep(
+                    hoursSlept,
+                    startTime,
+                    endTime,
+                    quality,
+                    remSleep,
+                    comment,
+                    sleepProfile
+            );
+
+            sleepProfile.addSleep(sleep);
         }
     }
 }

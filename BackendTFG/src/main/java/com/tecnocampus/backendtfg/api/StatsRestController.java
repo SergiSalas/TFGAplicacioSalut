@@ -1,6 +1,7 @@
 package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.StatsService;
+import com.tecnocampus.backendtfg.application.dto.SleepStatsDTO;
 import com.tecnocampus.backendtfg.application.dto.StatsDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -37,5 +38,21 @@ public class StatsRestController {
         String token = getTokenAuthFromRequest(request);
         StatsDTO statsDTO = statsService.getActivityStats(token, period);
         return ResponseEntity.ok(statsDTO);
+    }
+
+    @GetMapping("/sleep")
+    public ResponseEntity<SleepStatsDTO> getSleepStats(HttpServletRequest request) {
+        String token = getTokenAuthFromRequest(request);
+        SleepStatsDTO dto = statsService.getSleepStats(token);
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/sleep/{period}")
+    public ResponseEntity<SleepStatsDTO> getSleepStatsByPeriod(
+            HttpServletRequest request,
+            @PathVariable String period) {
+        String token = getTokenAuthFromRequest(request);
+        SleepStatsDTO dto = statsService.getSleepStats(token, period);
+        return ResponseEntity.ok(dto);
     }
 }

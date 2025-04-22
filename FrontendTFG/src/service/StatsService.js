@@ -66,6 +66,65 @@ class StatsService {
       throw error;
     }
   }
+
+  /**
+   * Obtiene estadísticas generales de sueño
+   * @param {string} token - Token de autenticación
+   * @returns {Promise<Object>} - Datos de estadísticas de sueño
+   */
+  async getSleepStats(token) {
+    try {
+      if (!token) {
+        const storedToken = await AsyncStorage.getItem('userToken');
+        if (!storedToken) {
+          throw new Error('No authentication token available');
+        }
+        token = storedToken;
+      }
+
+      const response = await axios.get(`${API_URL}/stats/sleep`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sleep stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene estadísticas de sueño para un período específico
+   * @param {string} token - Token de autenticación
+   * @param {string} period - Período de tiempo (week, month, year)
+   * @returns {Promise<Object>} - Datos de estadísticas de sueño
+   */
+  async getSleepStatsByPeriod(token, period = 'week') {
+    try {
+      if (!token) {
+        const storedToken = await AsyncStorage.getItem('userToken');
+        if (!storedToken) {
+          throw new Error('No authentication token available');
+        }
+        token = storedToken;
+      }
+
+      const response = await axios.get(`${API_URL}/stats/sleep/${period}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching sleep stats by period:', error);
+      throw error;
+    }
+  }
 }
 
 export default new StatsService();
