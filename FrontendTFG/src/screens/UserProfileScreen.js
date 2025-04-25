@@ -69,6 +69,10 @@ const UserProfileScreen = ({ navigation }) => {
     navigation.navigate('SetUserProfileScreen');
   };
 
+  const handleChallenges = () => {
+    navigation.navigate('ChallengesScreen');
+  };
+
   const handleBackPress = () => {
     navigation.goBack();
   };
@@ -219,25 +223,25 @@ const UserProfileScreen = ({ navigation }) => {
             <Text style={styles.emptyText}>No hay información de perfil disponible</Text>
           )}
         </Card>
-        
-        {/* Botón con estilo similar a HomeScreen */}
-        <TouchableOpacity 
-          style={styles.editProfileButton} 
-          onPress={handleEditProfile}
-          activeOpacity={0.7}
-        >
-          <View style={styles.buttonContent}>
-            <Text style={styles.buttonText}>Editar Perfil</Text>
-            <Icon name="create-outline" size={20} color="#fff" style={{marginLeft: 8}} />
-          </View>
-        </TouchableOpacity>
+
+        {/* Botones de acción */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+            <View style={styles.buttonContent}>
+              <Icon name="create-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
+              <Text style={styles.buttonText}>Editar Perfil</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.editProfileButton} onPress={handleChallenges}>
+            <View style={styles.buttonContent}>
+              <Icon name="trophy-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
+              <Text style={styles.buttonText}>Mis Desafíos</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-      
-      <Footer 
-        activeScreen="profile"
-        navigation={navigation}
-        screens={FOOTER_SCREENS}
-      />
+      <Footer />
     </View>
   );
 };

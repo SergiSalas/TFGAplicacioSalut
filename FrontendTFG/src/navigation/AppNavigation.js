@@ -16,6 +16,7 @@ import WorkoutListScreen from '../screens/WorkoutListScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import CreateActivityScreen from '../screens/CreateActivityScreen';
+import ChallengesScreen from '../screens/ChallengesScreen';
 
 // Importación de pantallas de autenticación
 import LoginScreen from '../screens/LoginScreen';
@@ -58,7 +59,8 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
               <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
               <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="TrendsScreen" component={TrendsScreen} />
+              <Stack.Screen name="TrendsScreen" component={TrendsScreen}/>
+              <Stack.Screen name="ChallengesScreen" component={ChallengesScreen} />
             </>
           )}
         </>

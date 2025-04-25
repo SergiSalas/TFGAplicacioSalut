@@ -202,33 +202,16 @@ export default StyleSheet.create({
     shadowRadius: 3,
     elevation: 5,
   },
-  progressText: {
-    fontSize: 14,
-    color: '#61dafb', // Mantenemos el color turquesa para el texto de progreso
-    fontWeight: '500',
-  },
-  editProfileButton: {
-  backgroundColor: '#4c6ef5', // Color azul para el botón de editar perfil
-  borderRadius: 10,
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-  marginTop: 20,
-  marginBottom: 30,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 3,
-  elevation: 3,
-  },
   levelNumber: {
-    fontSize: 28,
-    fontWeight: 'bold',
     color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   levelInfoContainer: {
     flex: 1,
   },
   levelProgressContainer: {
+    width: '100%',
     marginBottom: 8,
   },
   progressBar: {
@@ -237,24 +220,24 @@ export default StyleSheet.create({
   expInfoContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  expText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#61dafb',
-    fontWeight: '500',
-  },
-  levelLoadingContainer: {
-    padding: 15,
     alignItems: 'center',
   },
-  levelLoadingText: {
-    marginTop: 8,
-    color: '#CCCCCC',
-    fontSize: 14,
+  expText: {
+    color: '#AAAAAA',
+    fontSize: 12,
   },
+  progressText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  levelLoadingContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  levelLoadingText: {
+    color: '#AAAAAA',
+    marginTop: 8,
+    fontSize: 14,
+  }
 });
