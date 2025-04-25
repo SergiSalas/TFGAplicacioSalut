@@ -4,20 +4,23 @@ import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { AuthContext } from '../contexts/AuthContext';
-import { getUserProfile } from '../service/UserService';
+import { getUserProfile, getUserLevel } from '../service/UserService';
 import styles from '../styles/screens/UserProfileScreen.styles';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Footer from '../components/layout/Footer';
 import { FOOTER_SCREENS } from '../constants/navigation';
+import * as Progress from 'react-native-progress';
 
 const UserProfileScreen = ({ navigation }) => {
   const [userProfile, setUserProfile] = useState(null);
+  const [userLevel, setUserLevel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useContext(AuthContext);
 
   useEffect(() => {
     loadUserProfile();
+    loadUserLevel();
   }, [token]);
 
   const loadUserProfile = async () => {
@@ -34,6 +37,17 @@ const UserProfileScreen = ({ navigation }) => {
       Alert.alert('Error', 'No se pudo cargar la información del perfil');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUserLevel = async () => {
+    if (!token) return;
+    
+    try {
+      const levelData = await getUserLevel(token);
+      setUserLevel(levelData);
+    } catch (error) {
+      console.error('Error al cargar nivel del usuario:', error);
     }
   };
 
@@ -89,7 +103,10 @@ const UserProfileScreen = ({ navigation }) => {
           <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mi Perfil</Text>
-        <TouchableOpacity onPress={loadUserProfile} style={styles.refreshButton}>
+        <TouchableOpacity onPress={() => {
+          loadUserProfile();
+          loadUserLevel();
+        }} style={styles.refreshButton}>
           <Icon name="refresh-outline" size={22} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -111,10 +128,53 @@ const UserProfileScreen = ({ navigation }) => {
           )}
         </Card>
 
+        {/* Tarjeta de Nivel de Usuario */}
+        <Card style={styles.infoCard}>
+          <View style={styles.cardHeader}>
+            <Icon name="trophy-outline" size={20} color="#ffd700" />
+            <Text style={styles.cardTitle}>Nivel de Usuario</Text>
+          </View>
+          
+          {userLevel ? (
+            <View style={styles.levelContainer}>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelNumber}>{userLevel.currentLevel}</Text>
+              </View>
+              <View style={styles.levelInfoContainer}>
+                <View style={styles.levelProgressContainer}>
+                  <Progress.Bar 
+                    progress={userLevel.progressPercentage / 100} 
+                    width={null} 
+                    height={12}
+                    color="#4c6ef5"
+                    unfilledColor="#232342"
+                    borderWidth={0}
+                    borderRadius={6}
+                    style={styles.progressBar}
+                  />
+                </View>
+                <View style={styles.expInfoContainer}>
+                  <Text style={styles.expText}>
+                    {userLevel.currentExp} / {userLevel.expToNextLevel} XP
+                  </Text>
+                  <Text style={styles.progressText}>
+                    {Math.round(userLevel.progressPercentage)}% completado
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.levelLoadingContainer}>
+              <ActivityIndicator size="small" color="#4c6ef5" />
+              <Text style={styles.levelLoadingText}>Cargando nivel...</Text>
+            </View>
+          )}
+        </Card>
+
         {/* Tarjeta de Información Personal - Estilo similar a HomeScreen */}
         <Card style={styles.infoCard}>
           <View style={styles.cardHeader}>
-            <Icon name="person-outline" size={20} color="#61dafb" />
+            <Icon name="person-outline" size={20} color="#ff7f50" />
             <Text style={styles.cardTitle}>Información Personal</Text>
           </View>
           
@@ -182,4 +242,4 @@ const UserProfileScreen = ({ navigation }) => {
   );
 };
 
-export default UserProfileScreen; 
+export default UserProfileScreen;

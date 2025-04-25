@@ -49,7 +49,7 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
               <Stack.Screen name="HomeScreen" component={HomeScreen} />
               <Stack.Screen name="ActivityScreen" component={ActivityScreen} />
               <Stack.Screen name="SleepScreen" component={SleepScreen} />
-              <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+              <Stack.Screen name="ProfileScreen" component={UserProfileScreen} />
               <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
               <Stack.Screen name="WorkoutDetailScreen" component={WorkoutDetailScreen} />
               <Stack.Screen name="WorkoutListScreen" component={WorkoutListScreen} />

@@ -105,6 +105,13 @@ public class DataInitializer implements CommandLineRunner {
         sleepProfile.setId("550e8400-e29b-41d4-a716-446655440002");
         sleepProfile.setDailyObjectiveSleep(8);
         user.setSleepProfile(sleepProfile);
+
+        Level level = new Level();
+        level.setCurrentLevel(5);
+        level.setCurrentExp(50);
+        level.setExpToNextLevel(300);
+        user.setLevel(level);
+
         return userRepository.save(user);
     }
 

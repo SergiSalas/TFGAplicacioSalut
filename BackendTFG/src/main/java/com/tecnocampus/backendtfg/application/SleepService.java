@@ -2,6 +2,7 @@ package com.tecnocampus.backendtfg.application;
 
 import com.tecnocampus.backendtfg.application.dto.SleepDTO;
 import com.tecnocampus.backendtfg.component.JwtUtils;
+import com.tecnocampus.backendtfg.domain.ChallengeType;
 import com.tecnocampus.backendtfg.domain.Sleep;
 import com.tecnocampus.backendtfg.domain.SleepProfile;
 import com.tecnocampus.backendtfg.domain.User;
@@ -22,14 +23,18 @@ public class SleepService {
 
     private final UserRepository userRepository;
 
+    private final ChallengeService challengeService;
+
     private final JwtUtils jwtUtils;
 
     public SleepService(SleepProfileRepository sleepProfileRepository, SleepRepository sleepRepository,
-                        UserRepository userRepository, JwtUtils jwtUtils) {
+                        UserRepository userRepository, JwtUtils jwtUtils,
+                        ChallengeService challengeService) {
         this.sleepProfileRepository = sleepProfileRepository;
         this.sleepRepository = sleepRepository;
         this.userRepository = userRepository;
         this.jwtUtils = jwtUtils;
+        this.challengeService = challengeService;
     }
 
     public void createSleep(SleepDTO sleepDTO, String token) {
@@ -47,6 +52,8 @@ public class SleepService {
             throw new IllegalArgumentException("Duplicate sleep record with the same time range");
         }
         Sleep sleep = new Sleep(sleepDTO, sleepProfile);
+        challengeService.updateChallengeProgress(token, ChallengeType.SLEEP_HOURS,
+                (int)(sleepDTO.getHours() * 60));
         sleepProfile.addSleep(sleep);
         sleepProfileRepository.save(sleepProfile);
     }
