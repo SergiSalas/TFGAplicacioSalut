@@ -41,7 +41,7 @@ public class User implements UserDetails {
     private SleepProfile sleepProfile;
 
     @OneToOne(cascade = CascadeType.ALL)
-    private HidratationProfile hidratationProfile;
+    private HydrationProfile hydrationProfile;
 
     //ConfigurationClass?
     //private Configuration configuration;
@@ -63,7 +63,7 @@ public class User implements UserDetails {
         this.gender = gender;
         this.activityProfile = new ActivityProfile(this);
         this.sleepProfile = new SleepProfile(this);
-        this.hidratationProfile = new HidratationProfile(this);
+        this.hydrationProfile = new HydrationProfile(this);
     }
 
     public User(String name,String email, String password) {
@@ -72,7 +72,7 @@ public class User implements UserDetails {
         this.password = password;
         this.activityProfile = new ActivityProfile(this);
         this.sleepProfile = new SleepProfile(this);
-        this.hidratationProfile = new HidratationProfile(this);
+        this.hydrationProfile = new HydrationProfile(this);
     }
 
     public User(UserDTO userDTO) {
@@ -84,7 +84,7 @@ public class User implements UserDetails {
         this.age = userDTO.getAge();
         this.activityProfile = new ActivityProfile(this);
         this.sleepProfile = new SleepProfile(this);
-        this.hidratationProfile = new HidratationProfile(this);
+        this.hydrationProfile = new HydrationProfile(this);
     }
 
     public void update(UserDTO userDTO) {

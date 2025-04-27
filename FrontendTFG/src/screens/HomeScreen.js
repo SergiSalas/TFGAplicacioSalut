@@ -22,6 +22,8 @@ import { AuthContext } from '../contexts/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSleepData } from '../hooks/useSleepData';
 import NotificationService from '../services/NotificationService';
+import HydrationBottleCard from '../components/HydrationBottleCard';
+import { getHydrationStatus, updateHydration } from '../service/HydrationService';
 
 const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => (
   <View style={styles.statsCard}>
@@ -76,6 +78,53 @@ const HomeScreen = ({ navigation }) => {
   const { sleepData, loading: sleepLoading } = useSleepData();
   const [userProfile, setUserProfile] = useState(null);
   const [userLevel, setUserLevel] = useState(null);
+  const [hydration, setHydration] = useState(0);
+  const [dailyObjectiveHydration, setDailyObjectiveHydration] = useState(2000);
+  const [hydrationLoading, setHydrationLoading] = useState(true);
+
+  // Función para cargar datos de hidratación
+  const loadHydrationData = useCallback(async () => {
+    if (!token) return;
+    try {
+      setHydrationLoading(true);
+      const hydrationStatus = await getHydrationStatus(token);
+      setHydration(hydrationStatus.currentAmount);
+      setDailyObjectiveHydration(hydrationStatus.dailyTarget);
+    } catch (error) {
+      console.error('Error al cargar datos de hidratación:', error);
+    } finally {
+      setHydrationLoading(false);
+    }
+  }, [token]);
+
+  // Función para manejar la adición de agua
+  const handleAddHydration = async (hydrationData) => {
+    try {
+      await updateHydration(token, hydrationData);
+      // Actualizar el estado local inmediatamente para mejor UX
+      setHydration(prev => prev + hydrationData.amount);
+      // Recargar datos para asegurar sincronización con el servidor
+      loadHydrationData();
+    } catch (error) {
+      console.error('Error al actualizar hidratación:', error);
+      Alert.alert('Error', 'No se pudo actualizar la hidratación. Inténtalo de nuevo.');
+    }
+  };
+
+  // Añadir carga de hidratación al efecto inicial
+  useEffect(() => {
+    loadUserProfile();
+    loadUserLevel();
+    loadHydrationData();
+  }, [token, loadHydrationData]);
+
+  // Actualizar la función de refresco
+  const handleRefresh = () => {
+    refreshHealthData();
+    loadUserProfile();
+    loadUserLevel();
+    loadHydrationData();
+  };
 
   const handleHealthConnectUpdate = useCallback((data) => {
     if (data.type === 'today-steps' && data.steps !== undefined) {
@@ -93,6 +142,21 @@ const HomeScreen = ({ navigation }) => {
       }));
     }
   }, []);
+
+  // Elimina esta segunda declaración o renómbrala
+  // const handleAddHydration = () => {
+  //   // aquí luego llamaremos al service para persistir
+  //   Alert.prompt(
+  //     'Añadir agua',
+  //     'Introduce la cantidad en ml:',
+  //     text => {
+  //       const amount = parseInt(text, 10);
+  //       if (!isNaN(amount)) setHydration(prev => prev + amount);
+  //     },
+  //     'plain-text',
+  //     '250'
+  //   );
+  // };
 
   const initializeHealthConnect = useCallback(async () => {
     try {
@@ -187,11 +251,12 @@ const HomeScreen = ({ navigation }) => {
     loadUserLevel();
   }, [token]);
 
-  const handleRefresh = () => {
-    refreshHealthData();
-    loadUserProfile();
-    loadUserLevel();
-  };
+  // Eliminar esta función duplicada
+  // const handleRefresh = () => {
+  //   refreshHealthData();
+  //   loadUserProfile();
+  //   loadUserLevel();
+  // };
 
   const renderSleepCard = () => (
     <TouchableOpacity
@@ -263,6 +328,11 @@ const HomeScreen = ({ navigation }) => {
           navigation={navigation}
         />
         {renderSleepCard()}
+        <HydrationBottleCard
+          hydration={hydration}
+          dailyObjective={dailyObjectiveHydration}
+          onAdd={handleAddHydration}
+        />
       </ScrollView>
 
       {/* Footer */}

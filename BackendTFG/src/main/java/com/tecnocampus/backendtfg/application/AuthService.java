@@ -24,7 +24,6 @@ public class AuthService {
     }
 
     public JwtDTO registerUser (UserDTO userDTO) {
-        System.out.println("llego aqui ");
         if (checkUserExist(userDTO.getEmail())) {
             throw new RuntimeException("User already exists");
         }
