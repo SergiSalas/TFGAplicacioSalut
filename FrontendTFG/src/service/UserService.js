@@ -60,4 +60,19 @@ export async function getUserProfile(token) {
     console.error('Error al obtener perfil de usuario:', error);
     throw error;
   }
-} 
+}
+
+export const getUserLevel = async (token) => {
+  try {
+    const response = await axios.get(`${API_URL}/challenges/getLevel`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener el nivel del usuario:', error);
+    throw error;
+  }
+};

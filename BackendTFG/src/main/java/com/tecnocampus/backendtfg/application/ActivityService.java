@@ -29,16 +29,20 @@ public class ActivityService {
 
     private final DailyStepsRepository dailyStepsRepository;
 
+    private final ChallengeService challengeService;
+
     private final JwtUtils jwtUtils;
 
     public ActivityService(ActivityRepository activityRepository, UserRepository userRepository,
                            ActivityProfileRepository activityProfileRepository, JwtUtils jwtUtils,
-                           DailyStepsRepository dailyStepsRepository) {
+                           DailyStepsRepository dailyStepsRepository,
+                           ChallengeService challengeService) {
         this.activityRepository = activityRepository;
         this.userRepository = userRepository;
         this.activityProfileRepository = activityProfileRepository;
         this.jwtUtils = jwtUtils;
         this.dailyStepsRepository = dailyStepsRepository;
+        this.challengeService = challengeService;
     }
 
     public void createActivity(ActivityDTO activityDTO, String token) {
@@ -74,6 +78,8 @@ public class ActivityService {
             activity.setOrigin(ActivityOrigin.APP);
         }
         activity.calculateCalories();
+        challengeService.updateChallengeProgress(token, ChallengeType.ACTIVITY_DURATION,
+                (int)activityDTO.getDuration());
         activityProfile.addActivity(activity);
         activityProfileRepository.save(activityProfile);
     }
@@ -166,6 +172,7 @@ public class ActivityService {
         } else {
             DailySteps dailySteps = new DailySteps(dailyStepsDTO);
             activityProfile.addDailySteps(dailySteps);
+            challengeService.updateChallengeProgress(token, ChallengeType.STEPS, dailyStepsDTO.getSteps());
             activityProfileRepository.save(activityProfile);
             dailyStepsRepository.save(dailySteps);
         }

@@ -19,6 +19,8 @@ import { LineChart, BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import TrendsService from '../service/TrendsService';
 import StatsService from '../service/StatsService';
+import { getUserProfile, getUserLevel } from '../service/UserService';
+import Header from '../components/layout/Header';   
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -34,9 +36,22 @@ const TrendsScreen = ({ navigation }) => {
   const [activityData, setActivityData] = useState(null);
   const [sleepData, setSleepData] = useState(null);
 
+  const [userProfile, setUserProfile] = useState(null);
+  const [userLevel,   setUserLevel]   = useState(null);
+
   useEffect(() => {
     loadData();
   }, [token, activeTab, period]);
+  
+  useEffect(() => {
+    if (!token) return;
+    getUserProfile(token)
+      .then(setUserProfile)
+      .catch(console.error);
+    getUserLevel(token)
+      .then(setUserLevel)
+      .catch(console.error);
+  }, [token]);
 
   const loadData = async () => {
     setLoading(true);
@@ -514,15 +529,13 @@ const TrendsScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
       
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tendencias</Text>
-        <TouchableOpacity onPress={onRefresh} style={styles.headerRefreshButton}>
-          <Icon name="refresh-outline" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      <Header
+      title="Tendencias"
+      navigation={navigation}
+      userProfile={userProfile}
+      userLevel={userLevel}
+      onRefresh={onRefresh}
+      />
 
       <ScrollView 
         contentContainerStyle={styles.content}

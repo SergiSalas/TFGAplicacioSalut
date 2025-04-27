@@ -32,18 +32,25 @@ export default StyleSheet.create({
     padding: 16,
     paddingBottom: 80,
   },
+
+  // --- Card de Resumen ---
   card: {
     marginBottom: 20,
     borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 8,
     backgroundColor: '#1a1a2e',
     padding: 16,
+    elevation: 8,
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // reparte espacio
     marginBottom: 12,
+  },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardTitle: {
     color: '#ffffff',
@@ -51,12 +58,17 @@ export default StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
+  dateIcon: {
+    padding: 4,
+  },
   cardText: {
     color: '#cccccc',
     fontSize: 14,
     marginBottom: 16,
     lineHeight: 20,
   },
+
+  // --- Botones ---
   button: {
     backgroundColor: '#4c6ef5',
     borderRadius: 8,
@@ -65,22 +77,23 @@ export default StyleSheet.create({
     marginTop: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
   },
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
+
+  // --- Loading ---
   loadingContainer: {
     alignItems: 'center',
     padding: 20,
@@ -89,6 +102,8 @@ export default StyleSheet.create({
     color: '#cccccc',
     marginTop: 12,
   },
+
+  // --- Métricas ---
   metricsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -99,24 +114,29 @@ export default StyleSheet.create({
     padding: 12,
     width: '31%',
     alignItems: 'center',
+    backgroundColor: '#232342',
   },
   metricIcon: {
     marginBottom: 5,
-  },
-  metricTitle: {
-    color: '#AAAAAA',
-    fontSize: 12,
-    marginTop: 4,
   },
   metricValue: {
     color: '#FFFFFF',
     fontSize: 22,
     fontWeight: 'bold',
   },
+  metricTitle: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  // --- Sync Button override ---
   syncButton: {
     marginTop: 10,
     backgroundColor: '#4169E1',
   },
+
+  // --- Badge HealthConnect ---
   healthConnectBadge: {
     backgroundColor: '#E0F7FA',
     paddingHorizontal: 8,
@@ -130,6 +150,8 @@ export default StyleSheet.create({
     color: '#006064',
     fontWeight: '500',
   },
+
+  // --- Progress ---
   progressContainer: {
     width: '100%',
     marginTop: 8,
@@ -143,6 +165,8 @@ export default StyleSheet.create({
     marginTop: 2,
     textAlign: 'center',
   },
+
+  // --- Sección de Actividades ---
   sectionContainer: {
     marginBottom: 16,
   },
@@ -162,6 +186,8 @@ export default StyleSheet.create({
     color: '#8a8a8a',
     fontSize: 14,
   },
+
+  // --- Item de Actividad ---
   activityItem: {
     marginBottom: 16,
     borderRadius: 12,
@@ -169,9 +195,9 @@ export default StyleSheet.create({
     elevation: 5,
   },
   activityContent: {
+    backgroundColor: '#1a1a2e',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#1a1a2e',
   },
   activityHeader: {
     flexDirection: 'row',
@@ -203,10 +229,10 @@ export default StyleSheet.create({
   activityDetails: {
     flexDirection: 'row',
     paddingVertical: 10,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-    borderBottomWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
     borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(255,255,255,0.1)',
     marginBottom: 10,
   },
   activityStat: {
@@ -222,14 +248,16 @@ export default StyleSheet.create({
   activityDescription: {
     color: '#cccccc',
     fontSize: 14,
-    marginTop: 4,
     lineHeight: 20,
+    marginTop: 4,
   },
+
+  // --- Empty State ---
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
-    backgroundColor: 'rgba(30, 30, 50, 0.8)',
+    backgroundColor: 'rgba(30,30,50,0.8)',
     borderRadius: 12,
   },
   emptyStateText: {
@@ -244,59 +272,28 @@ export default StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+
+  // --- FAB ---
   fabButton: {
-    width: '70%',
-    height: 50,
-    borderRadius: 25,
-    overflow: 'hidden',
     position: 'absolute',
     bottom: 30,
     alignSelf: 'center',
-    elevation: 8,
+    width: '70%',
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#4a69bd',
+    overflow: 'hidden',
+    elevation: 8,
   },
   fabContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
     height: '100%',
   },
   fabText: {
     color: '#ffffff',
     fontWeight: 'bold',
     marginLeft: 8,
-  },
-  healthSummaryCard: {
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4a90e2',
-  },
-  heartRateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f5ff',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  heartRateLabel: {
-    fontSize: 14,
-    color: '#555',
-    marginLeft: 6,
-  },
-  heartRateValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ff6b6b',
-    marginLeft: 6,
   },
 });

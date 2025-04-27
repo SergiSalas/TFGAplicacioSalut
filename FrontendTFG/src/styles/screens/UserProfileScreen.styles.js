@@ -179,5 +179,65 @@ export default StyleSheet.create({
     borderRadius: 20,
     padding: 8,
     elevation: 2,
+  },
+  
+  levelContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  // Modificar estos estilos para los colores de los iconos
+  levelBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#4c6ef5", // Color azul para el badge de nivel
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  levelNumber: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  levelInfoContainer: {
+    flex: 1,
+  },
+  levelProgressContainer: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  progressBar: {
+    width: '100%',
+  },
+  expInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expText: {
+    color: '#AAAAAA',
+    fontSize: 12,
+  },
+  progressText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  levelLoadingContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  levelLoadingText: {
+    color: '#AAAAAA',
+    marginTop: 8,
+    fontSize: 14,
   }
-}); 
+});

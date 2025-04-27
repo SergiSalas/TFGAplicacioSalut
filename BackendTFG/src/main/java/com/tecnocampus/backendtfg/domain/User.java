@@ -10,8 +10,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -44,8 +46,12 @@ public class User implements UserDetails {
     //ConfigurationClass?
     //private Configuration configuration;
 
-    //Rewards class?
-    //private Rewards rewards;
+    @OneToOne(cascade = CascadeType.ALL)
+    private Level level = new Level();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Challenge> challenges = new ArrayList<>();
+
 
     public User(String name, String email, String password, Double weight, int height, int age, Gender gender) {
         this.name = name;
@@ -93,6 +99,11 @@ public class User implements UserDetails {
         this.weight = dataProfileDTO.getWeight();
         this.height = dataProfileDTO.getHeight();
         this.age = dataProfileDTO.getAge();
+    }
+
+    public void addChallenge(Challenge challenge) {
+        this.challenges.add(challenge);
+        challenge.setUser(this);
     }
 
     @Override
