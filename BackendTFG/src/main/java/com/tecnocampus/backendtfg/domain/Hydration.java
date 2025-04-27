@@ -9,30 +9,26 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Entity
 @Table(name = "Hidratations")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Hidratation {
+public class Hydration {
 
     @Id
     private String id = java.util.UUID.randomUUID().toString();
     private double quantity;
-    private String date;
-
-    //Enum?
-    private String type;
-    private String description;
+    private Date date;
 
     @ManyToOne
-    private HidratationProfile hidratationProfile;
+    private HydrationProfile hydrationProfile;
 
-    public Hidratation(double quantity, String date, String type, String description, String user, HidratationProfile hidratationProfile) {
+    public Hydration(double quantity, Date date, HydrationProfile hydrationProfile) {
         this.quantity = quantity;
         this.date = date;
-        this.type = type;
-        this.description = description;
-        this.hidratationProfile = hidratationProfile;
+        this.hydrationProfile = hydrationProfile;
     }
 }

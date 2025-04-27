@@ -2,6 +2,8 @@ package com.tecnocampus.backendtfg.configuration;
 
 import com.tecnocampus.backendtfg.domain.*;
 import com.tecnocampus.backendtfg.persistence.ActivityProfileRepository;
+import com.tecnocampus.backendtfg.persistence.HydrationProfileRepository;
+import com.tecnocampus.backendtfg.persistence.HydrationRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -9,8 +11,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
 
@@ -19,6 +23,8 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ActivityProfileRepository activityProfileRepository;
+    private final HydrationRepository hydrationRepository;
+    private final HydrationProfileRepository hydrationProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final Random random = new Random();
     private final TypeActivity[] allTypes = TypeActivity.values();
@@ -26,10 +32,14 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     public DataInitializer(UserRepository userRepository,
                            ActivityProfileRepository activityProfileRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           HydrationRepository hydrationRepository,
+                           HydrationProfileRepository hydrationProfileRepository) {
         this.userRepository = userRepository;
         this.activityProfileRepository = activityProfileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.hydrationRepository = hydrationRepository;
+        this.hydrationProfileRepository = hydrationProfileRepository;
     }
 
     @Override
@@ -61,6 +71,15 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Perfil de sueño creado correctamente");
         }
 
+        if (user.getHydrationProfile() == null) {
+            HydrationProfile hydrationProfile = new HydrationProfile(user);
+            hydrationProfile.setDailyObjectiveWater(2.5);
+            user.setHydrationProfile(hydrationProfile);
+            hydrationProfileRepository.save(hydrationProfile);
+            userRepository.save(user);
+            System.out.println("Perfil de hidratación creado correctamente");
+        }
+
         // Generar actividades solo si hay menos de 10
         if (user.getActivityProfile().getActivities().size() < 10) {
             generateActivitiesForOneYear(user);
@@ -81,6 +100,14 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(user);
             System.out.println("Datos de sueño generados correctamente: " +
                     user.getSleepProfile().getSleeps().size());
+        }
+
+        // Generar datos de hidratación solo si hay menos de 10
+        if (user.getHydrationProfile().getHydrations().size() < 10) {
+            generateHydrationDataForOneYear(user);
+            userRepository.save(user);
+            System.out.println("Datos de hidratación generados correctamente: " +
+                    user.getHydrationProfile().getHydrations().size());
         }
     }
 
@@ -105,6 +132,11 @@ public class DataInitializer implements CommandLineRunner {
         sleepProfile.setId("550e8400-e29b-41d4-a716-446655440002");
         sleepProfile.setDailyObjectiveSleep(8);
         user.setSleepProfile(sleepProfile);
+
+        HydrationProfile hydrationProfile = new HydrationProfile(user);
+        hydrationProfile.setId("550e8400-e29b-41d4-a716-446655440003");
+        hydrationProfile.setDailyObjectiveWater(2.5);
+        user.setHydrationProfile(hydrationProfile);
 
         Level level = new Level();
         level.setCurrentLevel(5);
@@ -207,6 +239,57 @@ public class DataInitializer implements CommandLineRunner {
             );
 
             sleepProfile.addSleep(sleep);
+        }
+    }
+
+    private void generateHydrationDataForOneYear(User user) {
+        HydrationProfile profile = user.getHydrationProfile();
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusYears(1);
+
+        Random random = new Random();
+
+        for (LocalDate date = startDate; date.isBefore(endDate) || date.isEqual(endDate); date = date.plusDays(1)) {
+            // Genera entre 0-5 registros por día
+            int recordsForDay = random.nextInt(6);
+
+            for (int i = 0; i < recordsForDay; i++) {
+                // Generar una cantidad aleatoria de agua (en litros, entre 0.1 y 0.5)
+                double amount = 0.1 + random.nextDouble() * 0.4;
+                amount = Math.round(amount * 100) / 100.0; // Redondear a 2 decimales
+
+                // Convertir LocalDate a Date
+                Date recordDate = Date.from(date.atStartOfDay()
+                        .plusHours(random.nextInt(16) + 7) // Entre 7am y 11pm
+                        .plusMinutes(random.nextInt(60))
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant());
+
+                Hydration hydration = new Hydration(amount, recordDate, profile);
+                profile.addHydration(hydration);
+            }
+        }
+
+        // Actualizar el total del día actual
+        updateCurrentDayHydration(profile);
+    }
+
+    private void updateCurrentDayHydration(HydrationProfile profile) {
+        // Establecer currentAmount a 0
+        profile.resetDailyAmount();
+
+        // Calcular el inicio del día actual
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        // Sumar las hidrataciones del día actual
+        for (Hydration hydration : profile.getHydrations()) {
+            if (hydration.getDate().after(today.getTime())) {
+                profile.setCurrentAmount(profile.getCurrentAmount() + hydration.getQuantity());
+            }
         }
     }
 }
