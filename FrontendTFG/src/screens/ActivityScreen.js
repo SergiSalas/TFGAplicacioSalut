@@ -36,6 +36,8 @@ import { ActivityCache } from '../cache/ActivityCache';
 import { appStorage, activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import healthConnectService from '../service/HealthConnectService';
+import { getUserProfile, getUserLevel } from '../service/UserService';
+
 
 // Las declaraciones de función son "elevadas" (hoisted)
 function getCurrentDateFormatted() {
@@ -81,6 +83,37 @@ const ActivityScreen = ({ navigation, route }) => {
   const [totalCalories, setTotalCalories] = useState(0);
   const [isLoadingCalories, setIsLoadingCalories] = useState(false);
 
+  
+  const [userProfile, setUserProfile] = useState(null);
+  const [userLevel, setUserLevel] = useState(null);
+
+  const loadUserProfile = useCallback(async () => {
+    if (!token) return;
+    try {
+      const profile = await getUserProfile(token);
+      setUserProfile(profile);
+    } catch (err) {
+      console.error('Error cargando perfil:', err);
+    }
+  }, [token]);
+  
+  const loadUserLevel = useCallback(async () => {
+    if (!token) return;
+    try {
+      const level = await getUserLevel(token);
+      setUserLevel(level);
+    } catch (err) {
+      console.error('Error cargando nivel:', err);
+    }
+  }, [token]);
+  
+  // Y entonces tu useEffect de carga inicial:
+  useEffect(() => {
+    loadUserProfile();
+    loadUserLevel();
+  }, [loadUserProfile, loadUserLevel]);
+  
+
   useEffect(() => {
     if (token && !initialLoadDone) {
       // Cargar Health Connect primero (es más rápido) para tener datos básicos
@@ -93,6 +126,18 @@ const ActivityScreen = ({ navigation, route }) => {
       }, 100);
     }
   }, [token, initialLoadDone]);
+
+  useEffect(() => {
+    if (!token) return;
+  
+    getUserProfile(token)
+      .then(profile => setUserProfile(profile))
+      .catch(err => console.error('Error cargando perfil:', err));
+  
+    getUserLevel(token)
+      .then(level => setUserLevel(level))
+      .catch(err => console.error('Error cargando nivel:', err));
+  }, [token]);
 
   // Añadir este nuevo useEffect para el enfoque
   useEffect(() => {
@@ -288,10 +333,18 @@ const ActivityScreen = ({ navigation, route }) => {
   
   // Función para manejar el refresh manual (Pull to refresh)
   const handleRefresh = () => {
-    // Evitar iniciar otro refresh si ya está en progreso
-    if (!refreshing) {
-      loadActivities(true);
+    // Si estamos viendo la fecha de hoy, refrescamos HealthConnect
+    if (selectedDate === getCurrentDateFormatted()) {
+      initializeHealthConnectService();
     }
+    
+    // Cargar actividades y calorías para la fecha seleccionada
+    loadActivities(true, selectedDate);
+    loadTotalCalories();
+    
+    // También recargar perfil/nivel si lo deseas
+    loadUserProfile();
+    loadUserLevel();
   };
 
   // Reemplazar la función initializeHealthConnect con esta versión simplificada que usa el servicio
@@ -451,8 +504,19 @@ const ActivityScreen = ({ navigation, route }) => {
     return (
       <Card style={styles.card}>
         <View style={styles.cardHeader}>
-          <Icon name="analytics-outline" size={20} color="#61dafb" />
-          <Text style={styles.cardTitle}>Resumen de Actividad</Text>
+          {/* Grupo Izquierda: icono y título */}
+          <View style={styles.cardHeaderLeft}>
+            <Icon name="analytics-outline" size={20} color="#61dafb" />
+            <Text style={styles.cardTitle}>Resumen de Actividad</Text>
+          </View>
+
+          {/* Botón Calendario a la derecha */}
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.dateIcon}
+          >
+            <Icon name="calendar-outline" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
         
         {/* Sección de métricas principales */}
@@ -521,6 +585,16 @@ const ActivityScreen = ({ navigation, route }) => {
       </Card>
     );
   };
+
+  {showDatePicker && (
+    <DateTimePicker
+      value={new Date(selectedDate)}
+      mode="date"
+      display="default"
+      onChange={onDateChange}
+      maximumDate={new Date()}
+    />
+  )}
 
   // Combina actividades manuales y sesiones de ejercicio de Health Connect
   const allActivities = [...activities];
@@ -694,21 +768,16 @@ const ActivityScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
-      
-      {/* Header con nuevo estilo */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back-outline" size={24} color="#ffffff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Actividad Física</Text>
-        <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-          <Icon name="refresh-outline" size={22} color="#ffffff" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
-          <Icon name="calendar-outline" size={22} color="#ffffff" />
-        </TouchableOpacity>
-      </View>
-      
+  
+      {/* Header reutilizable */}
+      <Header
+        title="Actividad Física"
+        navigation={navigation}
+        userProfile={userProfile}
+        userLevel={userLevel}
+        onRefresh={handleRefresh}
+      />
+  
       {/* DatePicker */}
       {showDatePicker && (
         <DateTimePicker
@@ -719,22 +788,21 @@ const ActivityScreen = ({ navigation, route }) => {
           maximumDate={new Date()}
         />
       )}
-      
+  
       <ScrollView
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={["#61dafb"]}
+            colors={['#61dafb']}
             tintColor="#61dafb"
           />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {renderLoadingState()}
         {renderHealthConnectDataCard()}
-        
+  
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
@@ -744,7 +812,7 @@ const ActivityScreen = ({ navigation, route }) => {
               {activities.length} registros
             </Text>
           </View>
-          
+  
           {activities.length > 0 ? (
             activities.map(renderActivityItem)
           ) : (
@@ -759,9 +827,9 @@ const ActivityScreen = ({ navigation, route }) => {
             </View>
           )}
         </View>
-        
-        {/* Botón para crear nueva actividad */}
-        <TouchableOpacity 
+  
+        {/* Botón flotante para crear nueva actividad */}
+        <TouchableOpacity
           style={styles.fabButton}
           onPress={() => navigation.navigate('CreateActivityScreen')}
           activeOpacity={0.8}
@@ -772,9 +840,8 @@ const ActivityScreen = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
       </ScrollView>
-      
-      {/* Agregar el Footer */}
-      <Footer 
+  
+      <Footer
         activeScreen="activity"
         navigation={navigation}
         screens={[
@@ -785,7 +852,7 @@ const ActivityScreen = ({ navigation, route }) => {
         ]}
       />
     </View>
-  );
+  );  
 };
 
 export default ActivityScreen;

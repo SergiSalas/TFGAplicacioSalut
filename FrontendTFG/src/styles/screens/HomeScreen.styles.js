@@ -14,15 +14,59 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
     elevation: 5,
     backgroundColor: '#1a1a2e',
+    position: 'relative', // importante para el centrado del título
+  },
+  headerTitleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 45, // mismo valor que paddingTop
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     color: '#ffffff',
     fontSize: 20,
     fontWeight: 'bold',
-    flex: 1,
+  },
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 2, // para estar encima del título
+  },
+  profileImageContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2A2A2A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#4c6ef5',
+    marginRight: 10,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  levelBadge: {
+    backgroundColor: '#4c6ef5',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  levelText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   refreshButton: {
     padding: 8,
+    zIndex: 2, // para estar encima del título
   },
   content: {
     padding: 16,
@@ -61,7 +105,7 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
   },
   statItem: {
-    alignItems: 'center', 
+    alignItems: 'center',
     flex: 1,
   },
   statValue: {
@@ -101,8 +145,9 @@ export default StyleSheet.create({
   metricCard: {
     borderRadius: 8,
     padding: 12,
-    width: '48%', 
+    width: '48%',
     alignItems: 'center',
+    backgroundColor: '#232342',
   },
   metricValue: {
     color: '#FFFFFF',
