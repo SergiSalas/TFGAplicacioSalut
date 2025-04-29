@@ -250,16 +250,32 @@ export default StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  // Añadir estos estilos al objeto StyleSheet.create
   noDataContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 40,
+  backgroundColor: '#1a1a2e',
+  borderRadius: 16,
+  marginVertical: 10,
   },
   noDataText: {
-    color: '#cccccc',
-    fontSize: 16,
-    textAlign: 'center',
+  color: '#cccccc',
+  marginTop: 10,
+  fontSize: 16,
+  },
+  chartHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 15,
+  paddingTop: 15,
+  paddingBottom: 5,
+  },
+  chartTitle: {
+  color: '#ffffff',
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginLeft: 10,
   },
   refreshButton: {
     backgroundColor: '#4c6ef5',
@@ -297,6 +313,48 @@ export default StyleSheet.create({
   },
   calendarIconContainer: {
     backgroundColor: 'rgba(230, 126, 34, 0.2)',
+  },
+  // Estilos para los iconos de hidratación
+  waterIconContainer: {
+  backgroundColor: 'rgba(97, 218, 251, 0.15)',
+  borderRadius: 30,
+  padding: 10,
+  width: 40,
+  height: 40,
+  justifyContent: 'center',
+  alignItems: 'center',
+  },
+  percentIconContainer: {
+  backgroundColor: 'rgba(76, 217, 100, 0.15)',
+  borderRadius: 30,
+  padding: 10,
+  width: 40,
+  height: 40,
+  justifyContent: 'center',
+  alignItems: 'center',
+  },
+  streakIconContainer: {
+  backgroundColor: 'rgba(241, 196, 15, 0.15)',
+  borderRadius: 30,
+  padding: 10,
+  width: 40,
+  height: 40,
+  justifyContent: 'center',
+  alignItems: 'center',
+  },
+  // Mejora de los estilos para los valores y etiquetas
+  summaryValue: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: '#ffffff',
+  marginTop: 8,
+  marginBottom: 4,
+  textAlign: 'center',
+  },
+  summaryLabel: {
+  fontSize: 14,
+  color: '#cccccc',
+  textAlign: 'center',
   },
   // Estilos para el header
   header: {

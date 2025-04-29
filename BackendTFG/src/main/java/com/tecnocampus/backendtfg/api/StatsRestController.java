@@ -1,6 +1,7 @@
 package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.StatsService;
+import com.tecnocampus.backendtfg.application.dto.HydrationStatsDTO;
 import com.tecnocampus.backendtfg.application.dto.SleepStatsDTO;
 import com.tecnocampus.backendtfg.application.dto.StatsDTO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,4 +56,21 @@ public class StatsRestController {
         SleepStatsDTO dto = statsService.getSleepStats(token, period);
         return ResponseEntity.ok(dto);
     }
+
+    @GetMapping("/water")
+    public ResponseEntity<HydrationStatsDTO> getHydrationStats(HttpServletRequest request) {
+        String token = getTokenAuthFromRequest(request);
+        HydrationStatsDTO statsDTO = statsService.getHydrationStats(token);
+        return ResponseEntity.ok(statsDTO);
+    }
+
+    @GetMapping("/water/{period}")
+    public ResponseEntity<HydrationStatsDTO> getHydrationStatsByPeriod(
+            HttpServletRequest request,
+            @PathVariable String period) {
+        String token = getTokenAuthFromRequest(request);
+        HydrationStatsDTO statsDTO = statsService.getHydrationStats(token, period);
+        return ResponseEntity.ok(statsDTO);
+    }
+
 }

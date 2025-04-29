@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.application;
 
+import com.tecnocampus.backendtfg.application.dto.HydrationStatsDTO;
 import com.tecnocampus.backendtfg.application.dto.SleepStatsDTO;
 import com.tecnocampus.backendtfg.application.dto.StatsDTO;
 import com.tecnocampus.backendtfg.component.JwtUtils;
@@ -693,5 +694,458 @@ public class StatsService {
                 averageBedtime,
                 averageWakeTime
         );
+    }
+
+    public HydrationStatsDTO getHydrationStats(String token) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        HydrationProfile hydrationProfile = user.getHydrationProfile();
+
+        // Calcular consumo de hoy
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        Date startOfToday = today.getTime();
+
+        today.set(Calendar.HOUR_OF_DAY, 23);
+        today.set(Calendar.MINUTE, 59);
+        today.set(Calendar.SECOND, 59);
+        Date endOfToday = today.getTime();
+
+        int todayConsumption = 0;
+        for (Hydration hydration : hydrationProfile.getHydrations()) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfToday) && !hydrationDate.after(endOfToday)) {
+                todayConsumption += (int)(hydration.getQuantity() * 1000);
+            }
+        }
+
+        // Calcular consumo de ayer
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.add(Calendar.DAY_OF_MONTH, -1);
+        yesterday.set(Calendar.HOUR_OF_DAY, 0);
+        yesterday.set(Calendar.MINUTE, 0);
+        yesterday.set(Calendar.SECOND, 0);
+        yesterday.set(Calendar.MILLISECOND, 0);
+        Date startOfYesterday = yesterday.getTime();
+
+        yesterday.set(Calendar.HOUR_OF_DAY, 23);
+        yesterday.set(Calendar.MINUTE, 59);
+        yesterday.set(Calendar.SECOND, 59);
+        Date endOfYesterday = yesterday.getTime();
+
+        int yesterdayConsumption = 0;
+        for (Hydration hydration : hydrationProfile.getHydrations()) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfYesterday) && !hydrationDate.after(endOfYesterday)) {
+                yesterdayConsumption += (int)(hydration.getQuantity() * 1000);
+            }
+        }
+
+        // Calcular promedio semanal
+        int weekAverage = calculateWeekAverage(hydrationProfile);
+
+        // Calcular promedio mensual
+        int monthAverage = calculateMonthAverage(hydrationProfile);
+
+        // Calcular objetivo diario
+        int objective = (int) (hydrationProfile.getDailyObjectiveWater() * 1000);
+
+        // Calcular porcentaje alcanzado hoy
+        int percentageToday = objective > 0 ? Math.min(100, (todayConsumption * 100) / objective) : 0;
+
+        // Calcular racha
+        int streak = calculateStreak(hydrationProfile, objective, todayConsumption);
+
+        return new HydrationStatsDTO(
+                todayConsumption,
+                yesterdayConsumption,
+                weekAverage,
+                monthAverage,
+                objective,
+                percentageToday,
+                streak
+        );
+    }
+
+    private int calculateWeekAverage(HydrationProfile profile) {
+        Calendar weekStart = Calendar.getInstance();
+        int dayOfWeek = weekStart.get(Calendar.DAY_OF_WEEK);
+        int daysToSubtract = (dayOfWeek == Calendar.SUNDAY) ? 6 : dayOfWeek - Calendar.MONDAY;
+        weekStart.add(Calendar.DAY_OF_MONTH, -daysToSubtract);
+        weekStart.set(Calendar.HOUR_OF_DAY, 0);
+        weekStart.set(Calendar.MINUTE, 0);
+        weekStart.set(Calendar.SECOND, 0);
+        weekStart.set(Calendar.MILLISECOND, 0);
+        Date startOfWeek = weekStart.getTime();
+
+        int weekTotal = 0;
+        int weekDays = 0;
+
+        Calendar day = (Calendar) weekStart.clone();
+        Calendar now = Calendar.getInstance();
+
+        while (!day.after(now)) {
+            Date dayStart = day.getTime();
+            day.set(Calendar.HOUR_OF_DAY, 23);
+            day.set(Calendar.MINUTE, 59);
+            day.set(Calendar.SECOND, 59);
+            Date dayEnd = day.getTime();
+
+            int dayTotal = 0;
+            for (Hydration hydration : profile.getHydrations()) {
+                Date hydrationDate = hydration.getDate();
+                if (!hydrationDate.before(dayStart) && !hydrationDate.after(dayEnd)) {
+                    dayTotal += (int)(hydration.getQuantity() * 1000);
+                }
+            }
+
+            if (dayTotal > 0) {
+                weekTotal += dayTotal;
+                weekDays++;
+            }
+
+            day.add(Calendar.DAY_OF_MONTH, 1);
+            day.set(Calendar.HOUR_OF_DAY, 0);
+            day.set(Calendar.MINUTE, 0);
+            day.set(Calendar.SECOND, 0);
+        }
+
+        return weekDays > 0 ? weekTotal / weekDays : 0;
+    }
+
+    private int calculateMonthAverage(HydrationProfile profile) {
+        Calendar monthStart = Calendar.getInstance();
+        monthStart.set(Calendar.DAY_OF_MONTH, 1);
+        monthStart.set(Calendar.HOUR_OF_DAY, 0);
+        monthStart.set(Calendar.MINUTE, 0);
+        monthStart.set(Calendar.SECOND, 0);
+        monthStart.set(Calendar.MILLISECOND, 0);
+        Date startOfMonth = monthStart.getTime();
+
+        int monthTotal = 0;
+        int monthDays = 0;
+
+        Calendar day = (Calendar) monthStart.clone();
+        Calendar now = Calendar.getInstance();
+
+        while (!day.after(now)) {
+            Date dayStart = day.getTime();
+            day.set(Calendar.HOUR_OF_DAY, 23);
+            day.set(Calendar.MINUTE, 59);
+            day.set(Calendar.SECOND, 59);
+            Date dayEnd = day.getTime();
+
+            int dayTotal = 0;
+            for (Hydration hydration : profile.getHydrations()) {
+                Date hydrationDate = hydration.getDate();
+                if (!hydrationDate.before(dayStart) && !hydrationDate.after(dayEnd)) {
+                    dayTotal += (int)(hydration.getQuantity() * 1000);
+                }
+            }
+
+            if (dayTotal > 0) {
+                monthTotal += dayTotal;
+                monthDays++;
+            }
+
+            day.add(Calendar.DAY_OF_MONTH, 1);
+            day.set(Calendar.HOUR_OF_DAY, 0);
+            day.set(Calendar.MINUTE, 0);
+            day.set(Calendar.SECOND, 0);
+        }
+
+        return monthDays > 0 ? monthTotal / monthDays : 0;
+    }
+
+    private int calculateStreak(HydrationProfile profile, int objective, int todayConsumption) {
+        // Definimos un umbral (30% del objetivo) para considerar el día como válido
+        int threshold = (int)(objective * 0.3);
+
+        int streak = 0;
+        Calendar checkDay = Calendar.getInstance();
+        checkDay.add(Calendar.DAY_OF_MONTH, -1); // Empezar desde ayer
+
+        boolean streakBroken = false;
+        while (!streakBroken) {
+            checkDay.set(Calendar.HOUR_OF_DAY, 0);
+            checkDay.set(Calendar.MINUTE, 0);
+            checkDay.set(Calendar.SECOND, 0);
+            checkDay.set(Calendar.MILLISECOND, 0);
+            Date dayStart = checkDay.getTime();
+
+            checkDay.set(Calendar.HOUR_OF_DAY, 23);
+            checkDay.set(Calendar.MINUTE, 59);
+            checkDay.set(Calendar.SECOND, 59);
+            Date dayEnd = checkDay.getTime();
+
+            int dayTotal = 0;
+            for (Hydration hydration : profile.getHydrations()) {
+                Date hydrationDate = hydration.getDate();
+                if (!hydrationDate.before(dayStart) && !hydrationDate.after(dayEnd)) {
+                    dayTotal += (int)(hydration.getQuantity() * 1000);
+                }
+            }
+
+            // Usamos el umbral en lugar del objetivo completo
+            if (dayTotal < threshold) {
+                streakBroken = true;
+            } else {
+                streak++;
+                checkDay.add(Calendar.DAY_OF_MONTH, -1);
+            }
+        }
+
+        // También usamos el umbral para hoy
+        if (todayConsumption >= threshold) {
+            streak++;
+        }
+
+        return streak;
+    }
+
+    public HydrationStatsDTO getHydrationStats(String token, String period) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        HydrationProfile hydrationProfile = user.getHydrationProfile();
+
+        // Validar el periodo
+        if (!period.equalsIgnoreCase("week") && !period.equalsIgnoreCase("month")
+                && !period.equalsIgnoreCase("year")) {
+            throw new IllegalArgumentException("El período debe ser 'week', 'month' o 'year'");
+        }
+
+        // Calcular la fecha de inicio según el periodo
+        Calendar periodStart = Calendar.getInstance();
+        switch (period.toLowerCase()) {
+            case "week":
+                int dayOfWeek = periodStart.get(Calendar.DAY_OF_WEEK);
+                int daysToSubtract = (dayOfWeek == Calendar.SUNDAY) ? 6 : dayOfWeek - Calendar.MONDAY;
+                periodStart.add(Calendar.DAY_OF_MONTH, -daysToSubtract);
+                break;
+            case "month":
+                periodStart.set(Calendar.DAY_OF_MONTH, 1);
+                break;
+            case "year":
+                periodStart.set(Calendar.MONTH, Calendar.JANUARY);
+                periodStart.set(Calendar.DAY_OF_MONTH, 1);
+                break;
+        }
+        periodStart.set(Calendar.HOUR_OF_DAY, 0);
+        periodStart.set(Calendar.MINUTE, 0);
+        periodStart.set(Calendar.SECOND, 0);
+        periodStart.set(Calendar.MILLISECOND, 0);
+        Date startDate = periodStart.getTime();
+
+        // Filtrar las hidrataciones del periodo
+        List<Hydration> periodHydrations = hydrationProfile.getHydrations().stream()
+                .filter(h -> !h.getDate().before(startDate))
+                .collect(Collectors.toList());
+
+        // Calcular consumo de hoy
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+        Date startOfToday = today.getTime();
+
+        today.set(Calendar.HOUR_OF_DAY, 23);
+        today.set(Calendar.MINUTE, 59);
+        today.set(Calendar.SECOND, 59);
+        Date endOfToday = today.getTime();
+
+        int todayConsumption = 0;
+        for (Hydration hydration : periodHydrations) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfToday) && !hydrationDate.after(endOfToday)) {
+                todayConsumption += (int)(hydration.getQuantity() * 1000);
+            }
+        }
+
+        // Calcular consumo de ayer
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.add(Calendar.DAY_OF_MONTH, -1);
+        yesterday.set(Calendar.HOUR_OF_DAY, 0);
+        yesterday.set(Calendar.MINUTE, 0);
+        yesterday.set(Calendar.SECOND, 0);
+        yesterday.set(Calendar.MILLISECOND, 0);
+        Date startOfYesterday = yesterday.getTime();
+
+        yesterday.set(Calendar.HOUR_OF_DAY, 23);
+        yesterday.set(Calendar.MINUTE, 59);
+        yesterday.set(Calendar.SECOND, 59);
+        Date endOfYesterday = yesterday.getTime();
+
+        int yesterdayConsumption = 0;
+        for (Hydration hydration : periodHydrations) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfYesterday) && !hydrationDate.after(endOfYesterday)) {
+                yesterdayConsumption += (int)(hydration.getQuantity() * 1000);
+            }
+        }
+
+        // Calcular promedio semanal y mensual con las hidrataciones del periodo
+        int weekAverage = calculateWeekAverageForPeriod(periodHydrations, startDate);
+        int monthAverage = calculateMonthAverageForPeriod(periodHydrations, startDate);
+
+        // Calcular objetivo diario
+        int objective = (int) (hydrationProfile.getDailyObjectiveWater() * 1000);
+
+        // Calcular porcentaje alcanzado hoy
+        int percentageToday = objective > 0 ? Math.min(100, (todayConsumption * 100) / objective) : 0;
+
+        // Calcular racha con las hidrataciones del periodo
+        int streak = calculateStreakForPeriod(periodHydrations, objective, todayConsumption);
+
+        return new HydrationStatsDTO(
+                todayConsumption,
+                yesterdayConsumption,
+                weekAverage,
+                monthAverage,
+                objective,
+                percentageToday,
+                streak
+        );
+    }
+
+    private int calculateWeekAverageForPeriod(List<Hydration> hydrations, Date periodStart) {
+        Calendar weekStart = Calendar.getInstance();
+        int dayOfWeek = weekStart.get(Calendar.DAY_OF_WEEK);
+        int daysToSubtract = (dayOfWeek == Calendar.SUNDAY) ? 6 : dayOfWeek - Calendar.MONDAY;
+        weekStart.add(Calendar.DAY_OF_MONTH, -daysToSubtract);
+        weekStart.set(Calendar.HOUR_OF_DAY, 0);
+        weekStart.set(Calendar.MINUTE, 0);
+        weekStart.set(Calendar.SECOND, 0);
+        weekStart.set(Calendar.MILLISECOND, 0);
+        Date startOfWeek = weekStart.getTime();
+        startOfWeek = startOfWeek.before(periodStart) ? periodStart : startOfWeek;
+
+        int weekTotal = 0;
+        int weekDays = 0;
+
+        Calendar day = (Calendar) weekStart.clone();
+        Calendar now = Calendar.getInstance();
+
+        while (!day.after(now)) {
+            Date dayStart = day.getTime();
+            day.set(Calendar.HOUR_OF_DAY, 23);
+            day.set(Calendar.MINUTE, 59);
+            day.set(Calendar.SECOND, 59);
+            Date dayEnd = day.getTime();
+
+            int dayTotal = 0;
+            for (Hydration hydration : hydrations) {
+                Date hydrationDate = hydration.getDate();
+                if (!hydrationDate.before(dayStart) && !hydrationDate.after(dayEnd)) {
+                    dayTotal += (int)(hydration.getQuantity() * 1000);
+                }
+            }
+
+            if (dayTotal > 0) {
+                weekTotal += dayTotal;
+                weekDays++;
+            }
+
+            day.add(Calendar.DAY_OF_MONTH, 1);
+            day.set(Calendar.HOUR_OF_DAY, 0);
+            day.set(Calendar.MINUTE, 0);
+            day.set(Calendar.SECOND, 0);
+        }
+
+        return weekDays > 0 ? weekTotal / weekDays : 0;
+    }
+
+    private int calculateMonthAverageForPeriod(List<Hydration> hydrations, Date periodStart) {
+        Calendar monthStart = Calendar.getInstance();
+        monthStart.set(Calendar.DAY_OF_MONTH, 1);
+        monthStart.set(Calendar.HOUR_OF_DAY, 0);
+        monthStart.set(Calendar.MINUTE, 0);
+        monthStart.set(Calendar.SECOND, 0);
+        monthStart.set(Calendar.MILLISECOND, 0);
+        Date startOfMonth = monthStart.getTime();
+        startOfMonth = startOfMonth.before(periodStart) ? periodStart : startOfMonth;
+
+        int monthTotal = 0;
+        int monthDays = 0;
+
+        Calendar day = (Calendar) monthStart.clone();
+        Calendar now = Calendar.getInstance();
+
+        while (!day.after(now)) {
+            Date dayStart = day.getTime();
+            day.set(Calendar.HOUR_OF_DAY, 23);
+            day.set(Calendar.MINUTE, 59);
+            day.set(Calendar.SECOND, 59);
+            Date dayEnd = day.getTime();
+
+            int dayTotal = 0;
+            for (Hydration hydration : hydrations) {
+                Date hydrationDate = hydration.getDate();
+                if (!hydrationDate.before(dayStart) && !hydrationDate.after(dayEnd)) {
+                    dayTotal += (int)(hydration.getQuantity() * 1000);
+                }
+            }
+
+            if (dayTotal > 0) {
+                monthTotal += dayTotal;
+                monthDays++;
+            }
+
+            day.add(Calendar.DAY_OF_MONTH, 1);
+            day.set(Calendar.HOUR_OF_DAY, 0);
+            day.set(Calendar.MINUTE, 0);
+            day.set(Calendar.SECOND, 0);
+        }
+
+        return monthDays > 0 ? monthTotal / monthDays : 0;
+    }
+
+    private int calculateStreakForPeriod(List<Hydration> hydrations, int objective, int todayConsumption) {
+        // Definimos un umbral (30% del objetivo) para considerar el día como válido
+        int threshold = (int)(objective * 0.3);
+
+        int streak = 0;
+        Calendar checkDay = Calendar.getInstance();
+        checkDay.add(Calendar.DAY_OF_MONTH, -1); // Empezar desde ayer
+
+        boolean streakBroken = false;
+        while (!streakBroken) {
+            checkDay.set(Calendar.HOUR_OF_DAY, 0);
+            checkDay.set(Calendar.MINUTE, 0);
+            checkDay.set(Calendar.SECOND, 0);
+            checkDay.set(Calendar.MILLISECOND, 0);
+            Date dayStart = checkDay.getTime();
+
+            checkDay.set(Calendar.HOUR_OF_DAY, 23);
+            checkDay.set(Calendar.MINUTE, 59);
+            checkDay.set(Calendar.SECOND, 59);
+            Date dayEnd = checkDay.getTime();
+
+            int dayTotal = 0;
+            for (Hydration hydration : hydrations) {
+                Date hydrationDate = hydration.getDate();
+                if (!hydrationDate.before(dayStart) && !hydrationDate.after(dayEnd)) {
+                    dayTotal += (int)(hydration.getQuantity() * 1000);
+                }
+            }
+
+            // Usamos el umbral en lugar del objetivo completo
+            if (dayTotal < threshold) {
+                streakBroken = true;
+            } else {
+                streak++;
+                checkDay.add(Calendar.DAY_OF_MONTH, -1);
+            }
+        }
+
+        // También usamos el umbral para hoy
+        if (todayConsumption >= threshold) {
+            streak++;
+        }
+
+        return streak;
     }
 }

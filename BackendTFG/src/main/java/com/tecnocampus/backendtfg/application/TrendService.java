@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.application;
 
+import com.tecnocampus.backendtfg.application.dto.HydrationTrendDTO;
 import com.tecnocampus.backendtfg.application.dto.SleepStageDataSetDTO;
 import com.tecnocampus.backendtfg.application.dto.SleepStageTrendDTO;
 import com.tecnocampus.backendtfg.application.dto.TrendsDTO;
@@ -839,6 +840,158 @@ public class TrendService {
                 cal.setTime(endTime);
                 int month = cal.get(Calendar.MONTH);
                 values.set(month, values.get(month) + sleep.getRemSleep());
+            }
+        }
+
+        return values;
+    }
+
+    public HydrationTrendDTO getHydrationTrends(String token, String period) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        HydrationProfile hydrationProfile = user.getHydrationProfile();
+
+        if (!period.equalsIgnoreCase("week") && !period.equalsIgnoreCase("month")
+                && !period.equalsIgnoreCase("year")) {
+            throw new IllegalArgumentException("El período debe ser 'week', 'month' o 'year'");
+        }
+
+        List<String> labels;
+        List<Integer> values;
+
+        switch (period.toLowerCase()) {
+            case "week":
+                labels = Arrays.asList("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom");
+                values = getWeeklyHydrationValues(hydrationProfile);
+                break;
+            case "month":
+                labels = getMonthLabels();
+                values = getMonthlyHydrationValues(hydrationProfile);
+                break;
+            case "year":
+                labels = Arrays.asList("Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                        "Jul", "Ago", "Sep", "Oct", "Nov", "Dic");
+                values = getYearlyHydrationValues(hydrationProfile);
+                break;
+            default:
+                throw new IllegalArgumentException("Período inválido");
+        }
+
+        // Calcular estadísticas
+        int average = calculateAverage(values);
+        int max = values.stream().mapToInt(Integer::intValue).max().orElse(0);
+        int min = values.stream().filter(v -> v > 0).mapToInt(Integer::intValue).min().orElse(0);
+        int objective = (int) (hydrationProfile.getDailyObjectiveWater() * 1000); // Convertir de litros a ml
+
+        return new HydrationTrendDTO(labels, values, average, max, min, objective);
+    }
+
+    private int calculateAverage(List<Integer> values) {
+        if (values.isEmpty()) return 0;
+        List<Integer> nonZeroValues = values.stream().filter(v -> v > 0).collect(Collectors.toList());
+        return nonZeroValues.isEmpty() ? 0 :
+                (int) nonZeroValues.stream().mapToInt(Integer::intValue).average().orElse(0);
+    }
+
+    private List<Integer> getWeeklyHydrationValues(HydrationProfile hydrationProfile) {
+        Calendar calendar = Calendar.getInstance();
+
+        // Retroceder al lunes de la semana actual
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+        int daysToSubtract = (dayOfWeek == Calendar.SUNDAY) ? 6 : dayOfWeek - Calendar.MONDAY;
+        calendar.add(Calendar.DAY_OF_MONTH, -daysToSubtract);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        Date startOfWeek = calendar.getTime();
+
+        // Calcular fin de semana
+        calendar.add(Calendar.DAY_OF_MONTH, 6);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        Date endOfWeek = calendar.getTime();
+
+        List<Integer> values = Arrays.asList(0, 0, 0, 0, 0, 0, 0);
+
+        for (Hydration hydration : hydrationProfile.getHydrations()) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfWeek) && !hydrationDate.after(endOfWeek)) {
+                Calendar hydrationCal = Calendar.getInstance();
+                hydrationCal.setTime(hydrationDate);
+                int dayOfWeekHydration = hydrationCal.get(Calendar.DAY_OF_WEEK);
+                int index = dayOfWeekHydration == Calendar.SUNDAY ? 6 : dayOfWeekHydration - Calendar.MONDAY;
+                values.set(index, values.get(index) + (int)(hydration.getQuantity() * 1000));
+            }
+        }
+
+        return values;
+    }
+
+    private List<Integer> getMonthlyHydrationValues(HydrationProfile hydrationProfile) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        Date startOfMonth = calendar.getTime();
+
+        int lastDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+        calendar.set(Calendar.DAY_OF_MONTH, lastDay);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        Date endOfMonth = calendar.getTime();
+
+        List<Integer> values = new ArrayList<>();
+        for (int i = 0; i < lastDay; i++) {
+            values.add(0);
+        }
+
+        for (Hydration hydration : hydrationProfile.getHydrations()) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfMonth) && !hydrationDate.after(endOfMonth)) {
+                Calendar hydrationCal = Calendar.getInstance();
+                hydrationCal.setTime(hydrationDate);
+                int dayOfMonth = hydrationCal.get(Calendar.DAY_OF_MONTH);
+                values.set(dayOfMonth - 1, values.get(dayOfMonth - 1) + (int)(hydration.getQuantity() * 1000));
+            }
+        }
+
+        return values;
+    }
+
+    private List<Integer> getYearlyHydrationValues(HydrationProfile hydrationProfile) {
+        Calendar calendar = Calendar.getInstance();
+        int currentYear = calendar.get(Calendar.YEAR);
+
+        calendar.set(Calendar.YEAR, currentYear);
+        calendar.set(Calendar.MONTH, Calendar.JANUARY);
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        Date startOfYear = calendar.getTime();
+
+        calendar.set(Calendar.MONTH, Calendar.DECEMBER);
+        calendar.set(Calendar.DAY_OF_MONTH, 31);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        Date endOfYear = calendar.getTime();
+
+        List<Integer> values = new ArrayList<>(Arrays.asList(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+        for (Hydration hydration : hydrationProfile.getHydrations()) {
+            Date hydrationDate = hydration.getDate();
+            if (!hydrationDate.before(startOfYear) && !hydrationDate.after(endOfYear)) {
+                Calendar hydrationCal = Calendar.getInstance();
+                hydrationCal.setTime(hydrationDate);
+                int month = hydrationCal.get(Calendar.MONTH);
+                values.set(month, values.get(month) + (int)(hydration.getQuantity() * 1000));
             }
         }
 
