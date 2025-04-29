@@ -5,10 +5,7 @@ import com.tecnocampus.backendtfg.application.dto.JwtDTO;
 import com.tecnocampus.backendtfg.application.dto.UserDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RequestMapping("/auth")
 @RestController
@@ -54,5 +51,25 @@ public class AuthRestController {
         }
     }
 
+    @DeleteMapping("/user")
+    public ResponseEntity<?> deleteUser(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            boolean result = authService.deleteUser(token);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization");
+            boolean result = authService.logout(token);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

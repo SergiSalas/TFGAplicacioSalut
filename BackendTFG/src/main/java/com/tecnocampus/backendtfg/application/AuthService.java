@@ -66,6 +66,32 @@ public class AuthService {
         }
     }
 
+    public boolean deleteUser(String token) {
+        try {
+            String email = jwtUtils.extractEmail(token);
+            if (!userRepository.existsByEmail(email)) {
+                throw new RuntimeException("Usuario no existe");
+            }
+            User user = userRepository.findByEmail(email);
+            userRepository.delete(user);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Error al eliminar usuario: " + e.getMessage());
+        }
+    }
+
+    public boolean logout(String token) {
+        try {
+            String email = jwtUtils.extractEmail(token);
+            if (!userRepository.existsByEmail(email)) {
+                throw new RuntimeException("Usuario no existe");
+            }
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Error en logout: " + e.getMessage());
+        }
+    }
+
 
     private boolean checkUserExist(String email) {
         return userRepository.existsByEmail(email);

@@ -57,3 +57,47 @@ export const verifyToken = async (token) => {
     return false; // Si hay error, consideramos que el token no es válido
   }
 };
+/**
+ * Cierra la sesión del usuario en el servidor
+ * @param {string} token - Token de autenticación del usuario
+ * @returns {Promise<boolean>} - True si el logout fue exitoso
+ */
+export const logoutUser = async (token) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/auth/logout`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    return response.data === true;
+  } catch (error) {
+    console.error('Logout error:', error.response?.data || error.message);
+    throw new Error('No se pudo cerrar sesión');
+  }
+};
+
+/**
+ * Elimina la cuenta del usuario
+ * @param {string} token - Token de autenticación del usuario
+ * @returns {Promise<boolean>} - True si la eliminación fue exitosa
+ */
+export const deleteUserAccount = async (token) => {
+  try {
+    const response = await axios.delete(
+      `${API_URL}/auth/user`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    return response.data === true;
+  } catch (error) {
+    console.error('Delete account error:', error.response?.data || error.message);
+    throw new Error('No se pudo eliminar la cuenta');
+  }
+};

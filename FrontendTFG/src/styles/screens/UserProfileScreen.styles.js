@@ -165,11 +165,28 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  actionButtonsContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    width: '100%',
+    gap: 12,
+  },
+  editButton: {
+    backgroundColor: '#4c6ef5',
+    marginBottom: 8,
+  },
+  logoutButton: {
+    backgroundColor: '#f59c42',
+    marginBottom: 8,
+  },
+  logoutButtonText: {
+    color: '#fff',
+  },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
+  },
+  deleteButtonText: {
+    color: '#fff',
   },
   profileButton: {
     position: 'absolute',
