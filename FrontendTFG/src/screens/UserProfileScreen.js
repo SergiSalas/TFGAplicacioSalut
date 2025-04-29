@@ -10,13 +10,27 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Footer from '../components/layout/Footer';
 import { FOOTER_SCREENS } from '../constants/navigation';
 import * as Progress from 'react-native-progress';
+import axios from 'axios';
+import { API_URL } from '../config/api';
+import { logoutUser, deleteUserAccount } from '../service/AuthService';
+import CustomAlert from '../components/common/CustomAlert';
 
 const UserProfileScreen = ({ navigation }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [userLevel, setUserLevel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { token } = useContext(AuthContext);
+  const { token, logout: contextLogout } = useContext(AuthContext);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    onCancel: () => setAlertVisible(false),
+    confirmText: '',
+    cancelText: '',
+    type: 'warning'
+  });
 
   useEffect(() => {
     loadUserProfile();
@@ -75,6 +89,93 @@ const UserProfileScreen = ({ navigation }) => {
 
   const handleBackPress = () => {
     navigation.goBack();
+  };
+
+  const handleLogout = async () => {
+    setAlertConfig({
+      title: "Cerrar sesión",
+      message: "¿Estás seguro de que quieres cerrar sesión?",
+      onCancel: () => setAlertVisible(false),
+      onConfirm: async () => {
+        try {
+          setAlertVisible(false);
+          const result = await logoutUser(token);
+          if (result) {
+            contextLogout();
+          }
+        } catch (error) {
+          console.error('Error al cerrar sesión:', error);
+          showErrorAlert('No se pudo cerrar sesión. Inténtalo de nuevo.');
+        }
+      },
+      confirmText: "Cerrar sesión",
+      cancelText: "Cancelar",
+      type: "warning"
+    });
+    setAlertVisible(true);
+  };
+
+  const handleDeleteAccount = async () => {
+    setAlertConfig({
+      title: "Eliminar cuenta",
+      message: "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.",
+      onCancel: () => setAlertVisible(false),
+      onConfirm: () => {
+        setAlertVisible(false);
+        // Segunda confirmación
+        setAlertConfig({
+          title: "Confirmación final",
+          message: "Esta acción eliminará permanentemente tu cuenta y todos tus datos. ¿Estás completamente seguro?",
+          onCancel: () => setAlertVisible(false),
+          onConfirm: async () => {
+            try {
+              setAlertVisible(false);
+              const result = await deleteUserAccount(token);
+              if (result) {
+                showSuccessAlert("Cuenta eliminada", "Tu cuenta ha sido eliminada correctamente.", () => contextLogout());
+              }
+            } catch (error) {
+              console.error('Error al eliminar cuenta:', error);
+              showErrorAlert('No se pudo eliminar la cuenta. Inténtalo de nuevo.');
+            }
+          },
+          confirmText: "Sí, eliminar mi cuenta",
+          cancelText: "No, cancelar",
+          type: "error"
+        });
+        setAlertVisible(true);
+      },
+      confirmText: "Eliminar cuenta",
+      cancelText: "Cancelar",
+      type: "warning"
+    });
+    setAlertVisible(true);
+  };
+
+  const showErrorAlert = (message, onConfirm = () => setAlertVisible(false)) => {
+    setAlertConfig({
+      title: "Error",
+      message: message,
+      onCancel: null,
+      onConfirm: onConfirm,
+      confirmText: "Aceptar",
+      cancelText: null,
+      type: "error"
+    });
+    setAlertVisible(true);
+  };
+
+  const showSuccessAlert = (title, message, onConfirm = () => setAlertVisible(false)) => {
+    setAlertConfig({
+      title: title,
+      message: message,
+      onCancel: null,
+      onConfirm: onConfirm,
+      confirmText: "Aceptar",
+      cancelText: null,
+      type: "success"
+    });
+    setAlertVisible(true);
   };
 
   if (loading) {
@@ -239,9 +340,42 @@ const UserProfileScreen = ({ navigation }) => {
               <Text style={styles.buttonText}>Mis Desafíos</Text>
             </View>
           </TouchableOpacity>
+          
+          {/* Nuevos botones para logout y eliminar cuenta */}
+          <TouchableOpacity 
+            style={[styles.editProfileButton, {backgroundColor: '#f59c42'}]} 
+            onPress={handleLogout}
+          >
+            <View style={styles.buttonContent}>
+              <Icon name="log-out-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
+              <Text style={styles.buttonText}>Cerrar Sesión</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.editProfileButton, {backgroundColor: '#e74c3c'}]} 
+            onPress={handleDeleteAccount}
+          >
+            <View style={styles.buttonContent}>
+              <Icon name="trash-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
+              <Text style={styles.buttonText}>Eliminar Cuenta</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
       <Footer />
+      
+      {/* Alerta personalizada */}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onCancel={alertConfig.onCancel}
+        onConfirm={alertConfig.onConfirm}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        type={alertConfig.type}
+      />
     </View>
   );
 };
