@@ -76,6 +76,21 @@ class TrendsService {
       throw error;
     }
   }
+
+  // Endpoint para tendencias de hidratación
+  async getHydrationTrends(token, period = 'week') {
+    try {
+      const response = await axios.get(`${API_URL}/trend/water/${period}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo tendencias de hidratación:', error);
+      throw error;
+    }
+  }
 }
 
 export default new TrendsService();

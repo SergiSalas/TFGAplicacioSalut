@@ -1,6 +1,7 @@
 package com.tecnocampus.backendtfg.api;
 
 import com.tecnocampus.backendtfg.application.TrendService;
+import com.tecnocampus.backendtfg.application.dto.HydrationTrendDTO;
 import com.tecnocampus.backendtfg.application.dto.SleepStageTrendDTO;
 import com.tecnocampus.backendtfg.application.dto.TrendsDTO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -67,6 +68,15 @@ public class TrendRestController {
         String token = getTokenAuthFromRequest(request);
         SleepStageTrendDTO dto = trendService.getSleepStages(token, period);
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/water/{period}")
+    public ResponseEntity<HydrationTrendDTO> getHydrationTrends(
+            HttpServletRequest request,
+            @PathVariable String period) {
+        String token = getTokenAuthFromRequest(request);
+        HydrationTrendDTO trendsDTO = trendService.getHydrationTrends(token, period);
+        return ResponseEntity.ok(trendsDTO);
     }
 
 }

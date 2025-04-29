@@ -125,6 +125,54 @@ class StatsService {
       throw error;
     }
   }
+
+  async getHydrationStats(token) {
+    try {
+      if (!token) {
+        const storedToken = await AsyncStorage.getItem('userToken');
+        if (!storedToken) {
+          throw new Error('No authentication token available');
+        }
+        token = storedToken;
+      }
+
+      const response = await axios.get(`${API_URL}/stats/water`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching hydration stats:', error);
+      throw error;
+    }
+  }
+
+  async getHydrationStatsByPeriod(token, period = 'week') {
+    try {
+      if (!token) {
+        const storedToken = await AsyncStorage.getItem('userToken');
+        if (!storedToken) {
+          throw new Error('No authentication token available');
+        }
+        token = storedToken;
+      }
+
+      const response = await axios.get(`${API_URL}/stats/water/${period}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching hydration stats by period:', error);
+      throw error;
+    }
+  }
 }
 
 export default new StatsService();
