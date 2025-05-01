@@ -512,7 +512,7 @@ public class StatsService {
 
         // 4. Media de REM
         int totalRem = sleeps.stream()
-                .mapToInt(Sleep::getRemSleep)
+                .mapToInt(Sleep::getRemSleepMinutes)
                 .sum();
         int averageRem = (int) Math.round((double) totalRem / n);
 
@@ -635,7 +635,7 @@ public class StatsService {
 
         // 8. Media de REM
         int totalRem = sleeps.stream()
-                .mapToInt(Sleep::getRemSleep)
+                .mapToInt(Sleep::getRemSleepMinutes)
                 .sum();
         int avgRem = (int) Math.round((double) totalRem / n);
 

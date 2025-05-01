@@ -11,6 +11,7 @@ import com.tecnocampus.backendtfg.persistence.SleepRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -39,7 +40,6 @@ public class SleepService {
 
     public void createSleep(SleepDTO sleepDTO, String token) {
         String email = getEmailFromToken(token);
-        System.out.println("Creating sleep for user: " + email);
         if (!userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("User not found");
         }
@@ -84,11 +84,33 @@ public class SleepService {
         }
     }
 
-    public List<SleepDTO> getSleeps(String email) {
+    public List<SleepDTO> getSleeps(String token, Date date) {
+        String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         SleepProfile sleepProfile = user.getSleepProfile();
         List<Sleep> sleeps = sleepRepository.findBySleepProfile(sleepProfile);
+
+        if (date != null) {
+            // Filtrar por fecha si se proporciona
+            sleeps = sleeps.stream()
+                    .filter(sleep -> isSameDay(sleep.getStartTime(), date))
+                    .toList();
+        }
+
         return sleeps.stream().map(SleepDTO::new).toList();
+    }
+
+    private boolean isSameDay(Date date1, Date date2) {
+        if (date1 == null || date2 == null) {
+            return false;
+        }
+        Calendar cal1 = Calendar.getInstance();
+        cal1.setTime(date1);
+        Calendar cal2 = Calendar.getInstance();
+        cal2.setTime(date2);
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
+                cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH);
     }
 
     public void addObjective(double dailyObjectiveSleep, String email) {

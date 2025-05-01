@@ -1,3 +1,4 @@
+/*
 package com.tecnocampus.backendtfg.configuration;
 
 import com.tecnocampus.backendtfg.domain.*;
@@ -14,9 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Random;
+import java.util.*;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -194,52 +193,127 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void generateSleepDataForOneYear(User user) {
-        LocalDate startDate = LocalDate.now().minusYears(1);
-        LocalDate endDate = LocalDate.now();
-        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Cálculo correcto de días
         SleepProfile sleepProfile = user.getSleepProfile();
+        Random random = new Random();
 
-        for (int i = 0; i < days; i++) {
-            LocalDate currentDate = startDate.plusDays(i);
+        // Fecha actual menos un año
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.YEAR, -1);
 
-            // Hora de finalización: entre 5:00 AM y 9:00 AM
-            int wakeHour = 5 + random.nextInt(4);
-            int wakeMinute = random.nextInt(60);
+        // Generamos datos para cada día del año
+        for (int i = 0; i < 365; i++) {
+            // Algunos días aleatorios sin datos (20% probabilidad)
+            if (random.nextDouble() < 0.2) {
+                calendar.add(Calendar.DAY_OF_MONTH, 1);
+                continue;
+            }
 
-            // Convertir a Date para la hora de despertar (endTime)
-            Date endTime = Date.from(currentDate.atTime(wakeHour, wakeMinute)
-                    .atZone(ZoneId.systemDefault()).toInstant());
+            // Hora de acostarse (entre 22:00 y 00:30)
+            calendar.set(Calendar.HOUR_OF_DAY, 22 + random.nextInt(3));
+            calendar.set(Calendar.MINUTE, random.nextInt(60));
+            Date startTime = calendar.getTime();
 
-            // Duración del sueño: entre 5 y 9 horas (con un decimal)
-            double hoursSlept = 5.0 + random.nextDouble() * 4.0;
-            hoursSlept = Math.round(hoursSlept * 10.0) / 10.0;
+            // Duración del sueño (entre 6 y 9 horas)
+            double hours = 6 + random.nextDouble() * 3;
 
-            // Calcular startTime restando las horas dormidas
-            long sleepMillis = (long)(hoursSlept * 60 * 60 * 1000);
-            Date startTime = new Date(endTime.getTime() - sleepMillis);
+            // Avanzamos para obtener la hora de despertar
+            calendar.add(Calendar.MINUTE, (int)(hours * 60));
+            Date endTime = calendar.getTime();
 
-            // Calidad del sueño (1-10)
-            int quality = random.nextInt(10) + 1;
+            // Calidad (entre 50 y 100)
+            int quality = 50 + random.nextInt(51);
 
-            // Sueño REM (15-25% del tiempo total dormido en minutos)
-            int remSleep = (int)(hoursSlept * 60 * (15 + random.nextInt(11)) / 100);
 
-            // Comentario descriptivo
-            String comment = "Sesión de sueño - Día " + (days - i);
+            // Creamos el registro de sueño
+            Sleep sleep = new Sleep();
+            sleep.setStartTime(startTime);
+            sleep.setEndTime(endTime);
+            sleep.setHours(hours);
+            sleep.setQuality(quality);
+            sleep.setSleepProfile(sleepProfile);
 
-            // Crear el registro de sueño
-            Sleep sleep = new Sleep(
-                    hoursSlept,
-                    startTime,
-                    endTime,
-                    quality,
-                    remSleep,
-                    comment,
-                    sleepProfile
-            );
+            // Creamos al menos 4 etapas de sueño para cada noche
+            List<SleepStage> stages = generateSleepStages(startTime, endTime, sleep);
+            sleep.setSleepStages(stages);
 
-            sleepProfile.addSleep(sleep);
+            sleepProfile.getSleeps().add(sleep);
+
+            // Avanzamos al siguiente día (desde la hora de despertar)
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
         }
+    }
+
+    private List<SleepStage> generateSleepStages(Date startTime, Date endTime, Sleep sleep) {
+        List<SleepStage> stages = new ArrayList<>();
+        Random random = new Random();
+
+        // Calculamos duración total en minutos
+        long totalDurationMinutes = (endTime.getTime() - startTime.getTime()) / (60 * 1000);
+
+        // Siempre empezamos con AWAKE_IN_BED (5-15 minutos)
+        Calendar stageTime = Calendar.getInstance();
+        stageTime.setTime(startTime);
+        int awakeDuration = 5 + random.nextInt(11);
+
+        SleepStage awakeStage = new SleepStage();
+        awakeStage.setStageType(StageType.AWAKE_IN_BED);
+        awakeStage.setStartTime(stageTime.getTime());
+        stageTime.add(Calendar.MINUTE, awakeDuration);
+        awakeStage.setEndTime(stageTime.getTime());
+        awakeStage.setSleep(sleep);
+        stages.add(awakeStage);
+
+        // Minutos restantes para distribuir entre máximo 3 etapas más
+        long remainingMinutes = totalDurationMinutes - awakeDuration;
+
+        // Lista de tipos de sueño a distribuir
+        List<StageType> stageTypes = new ArrayList<>(Arrays.asList(
+                StageType.LIGHT, StageType.DEEP, StageType.REM));
+
+        // Vamos a generar hasta 3 etapas más (para un total de 4)
+        for (int i = 0; i < 3 && remainingMinutes > 0; i++) {
+            // Para la última etapa, ajustamos para usar todo el tiempo restante
+            boolean isLastStage = (i == 2) || (i == 0 && remainingMinutes < 30) || (i == 1 && remainingMinutes < 30);
+
+            // Elegimos aleatoriamente un tipo de etapa
+            StageType type = stageTypes.get(random.nextInt(stageTypes.size()));
+
+            // Duración de la etapa
+            int duration;
+            if (isLastStage) {
+                // Si es la última etapa, usar todo el tiempo restante
+                duration = (int) remainingMinutes;
+            } else {
+                // Duración según el tipo de etapa
+                if (type == StageType.LIGHT) {
+                    duration = 30 + random.nextInt(61); // 30-90 min
+                } else if (type == StageType.DEEP) {
+                    duration = 20 + random.nextInt(41); // 20-60 min
+                } else { // REM
+                    duration = 20 + random.nextInt(31); // 20-50 min
+                }
+
+                // No exceder el tiempo restante
+                if (duration > remainingMinutes) {
+                    duration = (int) remainingMinutes;
+                }
+            }
+
+            // Creamos la etapa
+            SleepStage stage = new SleepStage();
+            stage.setStageType(type);
+            stage.setStartTime(stageTime.getTime());
+            stageTime.add(Calendar.MINUTE, duration);
+            stage.setEndTime(stageTime.getTime());
+            stage.setSleep(sleep);
+            stages.add(stage);
+
+            remainingMinutes -= duration;
+        }
+
+        return stages;
     }
 
     private void generateHydrationDataForOneYear(User user) {
@@ -293,3 +367,5 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
+
+ */

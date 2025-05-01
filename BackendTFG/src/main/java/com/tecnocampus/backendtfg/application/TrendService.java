@@ -766,8 +766,7 @@ public class TrendService {
                 sleepCal.setTime(date);
                 int day = sleepCal.get(Calendar.DAY_OF_WEEK);
                 int index = (day == Calendar.SUNDAY) ? 6 : day - Calendar.MONDAY;
-
-                values.set(index, values.get(index) + sleep.getRemSleep());
+                values.set(index, values.get(index) + sleep.getRemSleepMinutes());
                 counts[index]++;
             }
         }
@@ -802,7 +801,7 @@ public class TrendService {
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(endTime);
                 int day = cal.get(Calendar.DAY_OF_MONTH);
-                values.set(day - 1, values.get(day - 1) + sleep.getRemSleep());
+                values.set(day - 1, values.get(day - 1) + sleep.getRemSleepMinutes());
             }
         }
 
@@ -839,7 +838,7 @@ public class TrendService {
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(endTime);
                 int month = cal.get(Calendar.MONTH);
-                values.set(month, values.get(month) + sleep.getRemSleep());
+                values.set(month, values.get(month) + sleep.getRemSleepMinutes());
             }
         }
 

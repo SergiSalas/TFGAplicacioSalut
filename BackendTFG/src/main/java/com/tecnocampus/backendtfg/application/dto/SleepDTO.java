@@ -1,12 +1,14 @@
 package com.tecnocampus.backendtfg.application.dto;
 
 import com.tecnocampus.backendtfg.domain.Sleep;
+import com.tecnocampus.backendtfg.domain.SleepStage;
 import com.tecnocampus.backendtfg.domain.TypeQuality;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -16,7 +18,7 @@ public class SleepDTO {
     private Date endTime;
     private double hours;
     private int quality;
-    private int remSleep;
+    private List<SleepStageDTO> sleepStagesDTO;
     private String comment;
 
     public SleepDTO(Sleep sleep) {
@@ -24,30 +26,21 @@ public class SleepDTO {
         this.endTime = sleep.getEndTime();
         this.hours = sleep.getHours();
         this.quality = sleep.getQuality();
-        this.remSleep = sleep.getRemSleep();
+        this.sleepStagesDTO = sleep.getSleepStages().stream()
+                .map(SleepStageDTO::new)
+                .toList();
         this.comment = sleep.getComment();
     }
 
-    public SleepDTO(Date startTime, Date endTime, double hours, int quality, int remSleep) {
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.hours = hours;
-        this.quality = quality;
-        this.remSleep = remSleep;
+    @Override
+    public String toString() {
+        return "SleepDTO{" +
+                "startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", hours=" + hours +
+                ", quality=" + quality +
+                ", sleepStages=" + (sleepStagesDTO != null ? sleepStagesDTO.size() : 0) + " etapas" +
+                ", comment='" + comment + '\'' +
+                '}';
     }
-
-    public SleepDTO(Date startTime, Date endTime, double hours, int quality, int remSleep, String comment) {
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.hours = hours;
-        this.quality = quality;
-        this.remSleep = remSleep;
-        this.comment = comment;
-    }
-
-
-
-
-
-
 }
