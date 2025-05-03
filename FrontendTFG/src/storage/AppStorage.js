@@ -19,6 +19,10 @@ export const STORAGE_KEYS = {
   LAST_FETCH_PREFIX: 'last_fetch_',
   LAST_LOAD_TIME: 'last_load_time',
   
+  // Sleep keys
+  SLEEP_PREFIX: 'sleep_',
+  SAVED_SLEEP_IDS: 'saved_sleep_ids',
+  
   // Health Connect
   HEALTH_CONNECT_LAST_FETCH: 'health_connect_last_fetch'
-}; 
+};

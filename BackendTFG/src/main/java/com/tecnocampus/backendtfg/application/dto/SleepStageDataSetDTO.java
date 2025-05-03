@@ -16,5 +16,5 @@ public class SleepStageDataSetDTO {
 
     private String label;
     private List<Integer> values;
-    private String color;
+
 }

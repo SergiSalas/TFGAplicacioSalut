@@ -5,7 +5,10 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: '#121212',
   },
-  content: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 16,
     paddingBottom: 80,
   },
@@ -13,13 +16,14 @@ export default StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   loadingText: {
     color: '#cccccc',
     marginTop: 12,
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 24, // Aumentado de 20 a 24 para más separación
     borderRadius: 16,
     backgroundColor: '#1a1a2e',
     padding: 16,
@@ -261,5 +265,104 @@ export default StyleSheet.create({
     fontSize: 12,
     color: '#006064',
     fontWeight: '500',
+  },
+  // Añadir estos estilos
+  sleepStagesCard: {
+    marginBottom: 16,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  sleepStagesList: {
+    marginTop: 8,
+  },
+  sleepStageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  stageIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(97, 218, 251, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stageInfo: {
+    flex: 1,
+  },
+  stageName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  stageDescription: {
+    fontSize: 14,
+    color: '#AAAAAA',
+    marginTop: 2,
+  },
+  stageDuration: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#61dafb',
+  },
+  stageDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 4,
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+  noDataText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  noDataSubText: {
+    fontSize: 14,
+    color: '#a0a0a0',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  datePickerContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A2A4A',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  datePickerText: {
+    color: '#ffffff',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  buttonContainer: {
+    marginTop: 10,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  button: {
+    backgroundColor: '#61dafb',
+    borderRadius: 10,
   },
 });

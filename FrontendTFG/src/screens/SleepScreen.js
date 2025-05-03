@@ -32,20 +32,6 @@ function getCurrentDateFormatted() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-// Mapeo de los valores enteros a los tipos de etapa de sueño
-const mapSleepStageToEnum = (stageValue) => {
-  switch (parseInt(stageValue, 10)) {
-    case 0: return 'UNKNOWN';
-    case 1: return 'AWAKE';
-    case 2: return 'SLEEPING';
-    case 3: return 'OUT_OF_BED';
-    case 4: return 'LIGHT';
-    case 5: return 'DEEP';
-    case 6: return 'REM';
-    case 7: return 'AWAKE_IN_BED';
-    default: return 'UNKNOWN';
-  }
-};
 
 const SleepScreen = ({ navigation }) => {
   const { token } = useContext(AuthContext);
@@ -54,11 +40,9 @@ const SleepScreen = ({ navigation }) => {
   const [healthConnectAvailable, setHealthConnectAvailable] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getCurrentDateFormatted());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [appState, setAppState] = useState(AppState.currentState);
   const [userProfile, setUserProfile] = useState(null);
   const [userLevel, setUserLevel] = useState(null);
   const [sleepData, setSleepData] = useState(null);
-  const [sleepHistory, setSleepHistory] = useState([]);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // Add the onRefresh function
@@ -83,6 +67,7 @@ const SleepScreen = ({ navigation }) => {
     if (!token) return;
     try {
       const level = await getUserLevel(token);
+      console.log("Nivel recibido del servidor:", level);
       setUserLevel(level);
     } catch (err) {
       console.error('Error cargando nivel:', err);
@@ -93,6 +78,9 @@ const SleepScreen = ({ navigation }) => {
     loadUserProfile();
     loadUserLevel();
   }, [loadUserProfile, loadUserLevel]);
+
+  // Añadir un nuevo useEffect para monitorear cambios en userLevel
+  
 
   useEffect(() => {
     if (token && !initialLoadDone) {
@@ -121,110 +109,43 @@ const SleepScreen = ({ navigation }) => {
     }
   };
 
-  // Datos de ejemplo para mostrar en la pantalla
-  const EXAMPLE_SLEEP_DATA = {
-    date: new Date().toISOString(),
-    quality: 7.5,  // Calidad del sueño en escala de 0-10
-    durationHours: 7.2,  // Duración total en horas
-    startTime: new Date(new Date().setHours(23, 30, 0, 0)).toISOString(),  // Hora de acostarse (23:30)
-    endTime: new Date(new Date().setHours(6, 42, 0, 0)).toISOString(),     // Hora de despertar (6:42)
-    stagesSummary: {
-      totalSleep: 7.2,  // Tiempo total de sueño en horas
-      deepSleep: 1.8,   // Sueño profundo en horas
-      lightSleep: 3.5,  // Sueño ligero en horas
-      remSleep: 1.5,    // Sueño REM en horas
-      awake: 0.4        // Tiempo despierto durante la noche en horas
-    },
-    // Añadimos las etapas de sueño en el nuevo formato
-    sleepStages: [
-      {
-        startTime: new Date(new Date().setHours(23, 30, 0, 0)),
-        endTime: new Date(new Date().setHours(23, 45, 0, 0)),
-        stageType: 'AWAKE_IN_BED'
-      },
-      {
-        startTime: new Date(new Date().setHours(23, 45, 0, 0)),
-        endTime: new Date(new Date().setHours(0, 30, 0, 0)),
-        stageType: 'LIGHT'
-      },
-      {
-        startTime: new Date(new Date().setHours(0, 30, 0, 0)),
-        endTime: new Date(new Date().setHours(2, 0, 0, 0)),
-        stageType: 'DEEP'
-      },
-      {
-        startTime: new Date(new Date().setHours(2, 0, 0, 0)),
-        endTime: new Date(new Date().setHours(3, 30, 0, 0)),
-        stageType: 'LIGHT'
-      },
-      {
-        startTime: new Date(new Date().setHours(3, 30, 0, 0)),
-        endTime: new Date(new Date().setHours(5, 0, 0, 0)),
-        stageType: 'REM'
-      },
-      {
-        startTime: new Date(new Date().setHours(5, 0, 0, 0)),
-        endTime: new Date(new Date().setHours(6, 30, 0, 0)),
-        stageType: 'LIGHT'
-      },
-      {
-        startTime: new Date(new Date().setHours(6, 30, 0, 0)),
-        endTime: new Date(new Date().setHours(6, 42, 0, 0)),
-        stageType: 'AWAKE'
-      }
-    ]
-  };
   
-  // Función para cargar los datos de sueño
-  const loadSleepData = async () => {
+  
+  const loadSleepData = useCallback(async (forceRefresh = false, dateParam = null) => {
+    const dateToFetch = dateParam || selectedDate;
+    console.log('Obteniendo datos de sueño para la fecha:', dateToFetch);
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Intentar cargar datos del backend para la fecha seleccionada
-      const sleepRecords = await getSleepsByDate(token, selectedDate);
-      
-      if (sleepRecords && sleepRecords.length > 0) {
-        // Usar el primer registro de sueño encontrado
+      const sleepRecords = await getSleepsByDate(token, dateToFetch);
+      if (sleepRecords.length > 0) {
         const record = sleepRecords[0];
-        
-        // Calcular la duración en horas
-        const startTime = new Date(record.startTime);
-        const endTime = new Date(record.endTime);
-        
-        // Crear un objeto con el formato esperado por la UI
-        const formattedSleepData = {
-          date: selectedDate,
-          quality: record.quality / 10, // Convertir de escala 0-100 a 0-10
+        const startTime = new Date(record.startTime).toISOString();
+        const endTime   = new Date(record.endTime).toISOString();
+        setSleepData({
+          date: dateToFetch,
+          quality: record.quality / 10,
           durationHours: record.hours,
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
+          startTime,
+          endTime,
           stagesSummary: calculateStagesSummary(record.sleepStagesDTO),
           sleepStages: record.sleepStagesDTO
-        };
-        
-        setSleepData(formattedSleepData);
-        console.log('Datos de sueño cargados del backend:', formattedSleepData);
+        });
+        console.log('Datos de sueño cargados del backend:', {
+          date: dateToFetch,
+          quality: record.quality / 10,
+          durationHours: record.hours
+        });
       } else {
-        // Si no hay datos en el backend, usar datos de ejemplo o Health Connect
-        if (healthConnectAvailable) {
-          const healthConnectData = await healthConnectService.readSleepData();
-          if (healthConnectData) {
-            setSleepData(healthConnectData);
-          } else {
-            setSleepData(EXAMPLE_SLEEP_DATA);
-          }
-        } else {
-          setSleepData(EXAMPLE_SLEEP_DATA);
-        }
+        setSleepData(null);
       }
-      
-      setLoading(false);
     } catch (error) {
       console.error('Error al cargar datos de sueño:', error);
+      setSleepData(null);
+    } finally {
       setLoading(false);
-      Alert.alert('Error', 'No se pudieron cargar los datos de sueño');
     }
-  };
+  }, [token, selectedDate]);
+
   
   // Función para calcular el resumen de etapas de sueño
   const calculateStagesSummary = (stages) => {
@@ -273,18 +194,20 @@ const SleepScreen = ({ navigation }) => {
     };
   };
   
-  // Actualizar la función handleDateChange para cargar datos cuando cambia la fecha
-  const handleDateChange = (event, selectedDate) => {
+// 2) onDateChange: misma firma que en ActivityScreen, llama a loadSleepData(true, fecha)
+  const onDateChange = (event, date) => {
     setShowDatePicker(false);
-    if (selectedDate) {
-      const formattedDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+    if (date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const formattedDate = `${y}-${m}-${d}`;
       setSelectedDate(formattedDate);
-      // Cargar datos para la nueva fecha seleccionada
-      setTimeout(() => {
-        loadSleepData();
-      }, 100);
+      // ¡Aquí está lo clave! fuerza la carga con la nueva fecha:
+      loadSleepData(true, formattedDate);
     }
   };
+
   
   // Función para guardar los datos de sueño en el nuevo formato
   const handleSaveSleepData = async () => {
@@ -390,122 +313,97 @@ const SleepScreen = ({ navigation }) => {
     }
   };
 
-  // Función para procesar datos de Health Connect al nuevo formato
-  const processHealthConnectSleepData = (rawData) => {
-    if (!rawData || !rawData.sessions || rawData.sessions.length === 0) {
-      return null;
-    }
+  // Función para obtener el color de cada etapa
+const getStageColor = (stageType) => {
+  switch (stageType) {
+    case 'DEEP':
+      return '#4a69bd';
+    case 'LIGHT':
+      return '#f7b731';
+    case 'REM':
+      return '#61dafb';
+    case 'AWAKE':
+    case 'AWAKE_IN_BED':
+      return '#ff6b6b';
+    case 'OUT_OF_BED':
+      return '#a55eea';
+    case 'SLEEPING':
+      return '#26de81';
+    case 'UNKNOWN':
+      return '#778ca3';
+    default:
+      return '#778ca3';
+  }
+};
 
-    // Ordenar sesiones por fecha
-    const sortedSessions = [...rawData.sessions].sort((a, b) => 
-      new Date(a.startTime) - new Date(b.startTime)
-    );
+// Función para obtener la descripción de cada etapa
+const getStageDescription = (stageType) => {
+  switch (stageType) {
+    case 'DEEP':
+      return 'Fase de recuperación física';
+    case 'LIGHT':
+      return 'Fase de transición del sueño';
+    case 'REM':
+      return 'Fase de sueños y memoria';
+    case 'AWAKE':
+      return 'Tiempo despierto durante la noche';
+    case 'AWAKE_IN_BED':
+      return 'Tiempo despierto en la cama';
+    case 'OUT_OF_BED':
+      return 'Tiempo fuera de la cama';
+    case 'SLEEPING':
+      return 'Fase general de sueño';
+    case 'UNKNOWN':
+      return 'Fase no identificada';
+    default:
+      return 'Fase de sueño';
+  }
+};
 
-    const latestSession = sortedSessions[sortedSessions.length - 1];
-    
-    // Calcular duración en horas
-    const startTime = new Date(latestSession.startTime);
-    const endTime = new Date(latestSession.endTime);
-    const durationHours = (endTime - startTime) / (1000 * 60 * 60);
-    
-    // Procesar etapas de sueño
-    const sleepStages = latestSession.stages.map(stage => ({
-      startTime: new Date(stage.startTime),
-      endTime: new Date(stage.endTime),
-      stageType: mapSleepStageToEnum(stage.stage)
-    }));
-    
-    // Calcular resumen de etapas
-    const stagesSummary = {
-      totalSleep: durationHours,
-      deepSleep: 0,
-      lightSleep: 0,
-      remSleep: 0,
-      awake: 0
-    };
-    
-    sleepStages.forEach(stage => {
-      const stageDuration = (stage.endTime - stage.startTime) / (1000 * 60 * 60);
+const renderSleepQualityCard = () => {
+  if (!sleepData) return null;
+  
+  const qualityPercentage = sleepData.quality / 10;
+  
+  return (
+    <Card style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          <Icon name="star-outline" size={22} color="#61dafb" />
+          <Text style={styles.cardTitle}>Calidad del Sueño</Text>
+        </View>
+      </View>
       
-      switch (stage.stageType) {
-        case 'DEEP':
-          stagesSummary.deepSleep += stageDuration;
-          break;
-        case 'LIGHT':
-          stagesSummary.lightSleep += stageDuration;
-          break;
-        case 'REM':
-          stagesSummary.remSleep += stageDuration;
-          break;
-        case 'AWAKE':
-        case 'AWAKE_IN_BED':
-          stagesSummary.awake += stageDuration;
-          break;
-      }
-    });
-    
-    // Calcular calidad del sueño (ejemplo simple)
-    // Más tiempo en sueño profundo y REM = mejor calidad
-    const qualityScore = Math.min(10, ((stagesSummary.deepSleep + stagesSummary.remSleep) / durationHours) * 10);
-    
-    return {
-      date: startTime.toISOString().split('T')[0],
-      quality: parseFloat(qualityScore.toFixed(1)),
-      durationHours: parseFloat(durationHours.toFixed(1)),
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      stagesSummary,
-      sleepStages
-    };
-  };
-
-  const renderSleepQualityCard = () => {
-    if (!sleepData) return null;
-    
-    const qualityPercentage = sleepData.quality / 10;
-    
-    return (
-      <Card style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <Icon name="star-outline" size={22} color="#61dafb" />
-            <Text style={styles.cardTitle}>Calidad del Sueño</Text>
-          </View>
-          <TouchableOpacity style={styles.dateIcon} onPress={() => setShowDatePicker(true)}>
-            <Icon name="calendar-outline" size={20} color="#61dafb" />
-          </TouchableOpacity>
+      <View style={styles.qualityContainer}>
+        <View style={styles.circleProgressWrapper}>
+          <Progress.Circle
+            size={120}
+            thickness={12}
+            progress={qualityPercentage}
+            color="#61dafb"
+            unfilledColor="#2A2A4A"
+            borderWidth={0}
+            showsText={true}
+            formatText={() => `${sleepData.quality}/10`}
+            textStyle={styles.progressText}
+          />
         </View>
-        
-        <View style={styles.qualityContainer}>
-          <View style={styles.circleProgressWrapper}>
-            <Progress.Circle
-              size={120}
-              thickness={12}
-              progress={qualityPercentage}
-              color="#61dafb"
-              unfilledColor="#2A2A4A"
-              borderWidth={0}
-              showsText={true}
-              formatText={() => `${sleepData.quality}/10`}
-              textStyle={styles.progressText}
-            />
-          </View>
-          <View style={styles.qualityInfoContainer}>
-            <Text style={styles.qualityLabel}>
-              {qualityPercentage >= 0.8 ? 'Excelente' : 
-               qualityPercentage >= 0.6 ? 'Bueno' : 
-               qualityPercentage >= 0.4 ? 'Regular' : 'Mejorable'}
-            </Text>
-            <Text style={styles.qualityDescription}>
-              {qualityPercentage >= 0.8 ? 'Has tenido un sueño reparador' : 
-               qualityPercentage >= 0.6 ? 'Tu sueño ha sido bastante bueno' : 
-               qualityPercentage >= 0.4 ? 'Tu sueño podría mejorar' : 'Intenta mejorar tus hábitos de sueño'}
-            </Text>
-          </View>
+        <View style={styles.qualityInfoContainer}>
+          <Text style={styles.qualityLabel}>
+            {qualityPercentage >= 0.8 ? 'Excelente' : 
+             qualityPercentage >= 0.6 ? 'Bueno' : 
+             qualityPercentage >= 0.4 ? 'Regular' : 'Mejorable'}
+          </Text>
+          <Text style={styles.qualityDescription}>
+            {qualityPercentage >= 0.8 ? 'Has tenido un sueño reparador' : 
+             qualityPercentage >= 0.6 ? 'Tu sueño ha sido bastante bueno' : 
+             qualityPercentage >= 0.4 ? 'Tu sueño podría mejorar' : 'Intenta mejorar tus hábitos de sueño'}
+          </Text>
         </View>
-      </Card>
-    );
-  };
+      </View>
+    </Card>
+  );
+};
 
   const renderSleepDurationCard = () => {
     if (!sleepData) return null;
@@ -676,6 +574,18 @@ const SleepScreen = ({ navigation }) => {
     );
   };
 
+  const renderNoDataMessage = () => {
+    return (
+      <Card style={styles.card}>
+        <View style={styles.noDataContainer}>
+          <Icon name="alert-circle-outline" size={50} color="#61dafb" />
+          <Text style={styles.noDataText}>No hay datos de sueño disponibles para esta fecha</Text>
+          <Text style={styles.noDataSubText}>Selecciona otra fecha o registra nuevos datos</Text>
+        </View>
+      </Card>
+    );
+  };
+
   const renderSleepTipsCard = () => {
     if (!sleepData) return null;
     
@@ -728,10 +638,11 @@ const SleepScreen = ({ navigation }) => {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#121212" />
         <Header 
-          title="Calidad del Sueño" 
+          title="Sueño" 
           navigation={navigation}
           userProfile={userProfile}
           userLevel={userLevel}
+          onRefresh={onRefresh}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#61dafb" />
@@ -748,9 +659,9 @@ const SleepScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+    <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
       <Header 
-        title="Calidad del Sueño" 
+        title="Sueño" 
         navigation={navigation}
         userProfile={userProfile}
         userLevel={userLevel}
@@ -758,7 +669,8 @@ const SleepScreen = ({ navigation }) => {
       />
       
       <ScrollView 
-        contentContainerStyle={styles.content}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -768,39 +680,55 @@ const SleepScreen = ({ navigation }) => {
           />
         }
       >
-        {showDatePicker && (
-          <DateTimePicker
-            value={new Date(selectedDate)}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
-        
-        {healthConnectAvailable && (
-          <View style={styles.healthConnectBadge}>
-            <Text style={styles.healthConnectText}>Health Connect</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#61dafb" />
+            <Text style={styles.loadingText}>Cargando datos...</Text>
           </View>
+        ) : (
+          <>
+            {showDatePicker && (
+              <DateTimePicker
+                value={new Date(selectedDate)}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                maximumDate={new Date()}
+              />
+            )}
+            
+            <View style={styles.datePickerContainer}>
+              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
+                <Icon name="calendar-outline" size={20} color="#61dafb" />
+                <Text style={styles.datePickerText}>{selectedDate}</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {sleepData ? (
+              <>
+                {renderSleepQualityCard()}
+                {renderSleepDurationCard()}
+                {renderSleepStagesCard()}
+                {renderSleepTipsCard()}
+                
+                <View style={styles.buttonContainer}>
+                  <Button 
+                    title="Guardar Datos" 
+                    onPress={handleSaveSleepData} 
+                    style={styles.button}
+                  />
+                </View>
+              </>
+            ) : (
+              renderNoDataMessage()
+            )}
+          </>
         )}
-        
-        {renderSleepQualityCard()}
-        {renderSleepDurationCard()}
-        {renderSleepStagesCard()}
-        {renderSleepTipsCard()}
-        
-        <TouchableOpacity
-          style={styles.syncButton}
-          onPress={handleSaveSleepData}
-        >
-          <Icon name="cloud-upload-outline" size={20} color="#fff" style={styles.syncButtonIcon} />
-          <Text style={styles.syncButtonText}>Guardar Datos de Sueño</Text>
-        </TouchableOpacity>
       </ScrollView>
       
       <Footer 
-        activeScreen="sleep"
-        navigation={navigation}
-        screens={FOOTER_SCREENS}
+        activeScreen={FOOTER_SCREENS.SLEEP} 
+        navigation={navigation} 
       />
     </View>
   );
@@ -809,49 +737,4 @@ const SleepScreen = ({ navigation }) => {
 export default SleepScreen;
 
 
-// Función para obtener el color de cada etapa
-const getStageColor = (stageType) => {
-  switch (stageType) {
-    case 'DEEP':
-      return '#4a69bd';
-    case 'LIGHT':
-      return '#f7b731';
-    case 'REM':
-      return '#61dafb';
-    case 'AWAKE':
-    case 'AWAKE_IN_BED':
-      return '#ff6b6b';
-    case 'OUT_OF_BED':
-      return '#a55eea';
-    case 'SLEEPING':
-      return '#26de81';
-    case 'UNKNOWN':
-      return '#778ca3';
-    default:
-      return '#778ca3';
-  }
-};
 
-// Función para obtener la descripción de cada etapa
-const getStageDescription = (stageType) => {
-  switch (stageType) {
-    case 'DEEP':
-      return 'Fase de recuperación física';
-    case 'LIGHT':
-      return 'Fase de transición del sueño';
-    case 'REM':
-      return 'Fase de sueños y memoria';
-    case 'AWAKE':
-      return 'Tiempo despierto durante la noche';
-    case 'AWAKE_IN_BED':
-      return 'Tiempo despierto en la cama';
-    case 'OUT_OF_BED':
-      return 'Tiempo fuera de la cama';
-    case 'SLEEPING':
-      return 'Fase general de sueño';
-    case 'UNKNOWN':
-      return 'Fase no identificada';
-    default:
-      return 'Fase de sueño';
-  }
-};

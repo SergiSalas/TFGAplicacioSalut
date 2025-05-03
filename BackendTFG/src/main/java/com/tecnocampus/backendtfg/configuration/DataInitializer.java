@@ -1,4 +1,3 @@
-/*
 package com.tecnocampus.backendtfg.configuration;
 
 import com.tecnocampus.backendtfg.domain.*;
@@ -233,7 +232,7 @@ public class DataInitializer implements CommandLineRunner {
             sleep.setSleepProfile(sleepProfile);
 
             // Creamos al menos 4 etapas de sueño para cada noche
-            List<SleepStage> stages = generateSleepStages(startTime, endTime, sleep);
+            List<SleepStage> stages = generateSleepStages(sleep);
             sleep.setSleepStages(stages);
 
             sleepProfile.getSleeps().add(sleep);
@@ -245,76 +244,45 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private List<SleepStage> generateSleepStages(Date startTime, Date endTime, Sleep sleep) {
+    private List<SleepStage> generateSleepStages(Sleep sleep) {
         List<SleepStage> stages = new ArrayList<>();
-        Random random = new Random();
 
-        // Calculamos duración total en minutos
-        long totalDurationMinutes = (endTime.getTime() - startTime.getTime()) / (60 * 1000);
+        // Obtenemos el tiempo total del sueño en milisegundos
+        long startTimeMs = sleep.getStartTime().getTime();
+        long endTimeMs = sleep.getEndTime().getTime();
+        long totalDurationMs = endTimeMs - startTimeMs;
 
-        // Siempre empezamos con AWAKE_IN_BED (5-15 minutos)
-        Calendar stageTime = Calendar.getInstance();
-        stageTime.setTime(startTime);
-        int awakeDuration = 5 + random.nextInt(11);
+        // Distribución aproximada de las fases de sueño
+        // DEEP: ~20%, LIGHT: ~50%, REM: ~25%, AWAKE: ~5%
+        long deepDurationMs = totalDurationMs * 20 / 100;
+        long lightDurationMs = totalDurationMs * 50 / 100;
+        long remDurationMs = totalDurationMs * 25 / 100;
+        long awakeDurationMs = totalDurationMs - deepDurationMs - lightDurationMs - remDurationMs; // El resto
 
-        SleepStage awakeStage = new SleepStage();
-        awakeStage.setStageType(StageType.AWAKE_IN_BED);
-        awakeStage.setStartTime(stageTime.getTime());
-        stageTime.add(Calendar.MINUTE, awakeDuration);
-        awakeStage.setEndTime(stageTime.getTime());
-        awakeStage.setSleep(sleep);
-        stages.add(awakeStage);
+        // Creamos las etapas con tiempo progresivo
+        // 1. DEEP (al principio de la noche)
+        Date deepStart = new Date(startTimeMs);
+        Date deepEnd = new Date(startTimeMs + deepDurationMs);
+        stages.add(new SleepStage(deepStart, deepEnd, StageType.DEEP, sleep));
 
-        // Minutos restantes para distribuir entre máximo 3 etapas más
-        long remainingMinutes = totalDurationMinutes - awakeDuration;
+        // 2. LIGHT (después del sueño profundo)
+        Date lightStart = deepEnd;
+        Date lightEnd = new Date(lightStart.getTime() + lightDurationMs);
+        stages.add(new SleepStage(lightStart, lightEnd, StageType.LIGHT, sleep));
 
-        // Lista de tipos de sueño a distribuir
-        List<StageType> stageTypes = new ArrayList<>(Arrays.asList(
-                StageType.LIGHT, StageType.DEEP, StageType.REM));
+        // 3. REM (generalmente ocurre después de LIGHT)
+        Date remStart = lightEnd;
+        Date remEnd = new Date(remStart.getTime() + remDurationMs);
+        stages.add(new SleepStage(remStart, remEnd, StageType.REM, sleep));
 
-        // Vamos a generar hasta 3 etapas más (para un total de 4)
-        for (int i = 0; i < 3 && remainingMinutes > 0; i++) {
-            // Para la última etapa, ajustamos para usar todo el tiempo restante
-            boolean isLastStage = (i == 2) || (i == 0 && remainingMinutes < 30) || (i == 1 && remainingMinutes < 30);
-
-            // Elegimos aleatoriamente un tipo de etapa
-            StageType type = stageTypes.get(random.nextInt(stageTypes.size()));
-
-            // Duración de la etapa
-            int duration;
-            if (isLastStage) {
-                // Si es la última etapa, usar todo el tiempo restante
-                duration = (int) remainingMinutes;
-            } else {
-                // Duración según el tipo de etapa
-                if (type == StageType.LIGHT) {
-                    duration = 30 + random.nextInt(61); // 30-90 min
-                } else if (type == StageType.DEEP) {
-                    duration = 20 + random.nextInt(41); // 20-60 min
-                } else { // REM
-                    duration = 20 + random.nextInt(31); // 20-50 min
-                }
-
-                // No exceder el tiempo restante
-                if (duration > remainingMinutes) {
-                    duration = (int) remainingMinutes;
-                }
-            }
-
-            // Creamos la etapa
-            SleepStage stage = new SleepStage();
-            stage.setStageType(type);
-            stage.setStartTime(stageTime.getTime());
-            stageTime.add(Calendar.MINUTE, duration);
-            stage.setEndTime(stageTime.getTime());
-            stage.setSleep(sleep);
-            stages.add(stage);
-
-            remainingMinutes -= duration;
-        }
+        // 4. AWAKE (períodos cortos al final)
+        Date awakeStart = remEnd;
+        Date awakeEnd = new Date(endTimeMs);
+        stages.add(new SleepStage(awakeStart, awakeEnd, StageType.AWAKE_IN_BED, sleep));
 
         return stages;
     }
+
 
     private void generateHydrationDataForOneYear(User user) {
         HydrationProfile profile = user.getHydrationProfile();
@@ -368,4 +336,3 @@ public class DataInitializer implements CommandLineRunner {
     }
 }
 
- */

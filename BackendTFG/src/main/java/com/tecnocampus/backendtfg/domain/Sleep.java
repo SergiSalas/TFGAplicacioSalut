@@ -82,4 +82,35 @@ public class Sleep {
                 })
                 .sum();
     }
+
+    public int getDeepSleepMinutes() {
+        return sleepStages.stream()
+                .filter(stage -> stage.getStageType() == StageType.DEEP)
+                .mapToInt(stage -> {
+                    long durationMillis = stage.getEndTime().getTime() - stage.getStartTime().getTime();
+                    return (int) (durationMillis / (60 * 1000)); // Convertir a minutos
+                })
+                .sum();
+    }
+
+    public int getLightSleepMinutes() {
+        return sleepStages.stream()
+                .filter(stage -> stage.getStageType() == StageType.LIGHT)
+                .mapToInt(stage -> {
+                    long durationMillis = stage.getEndTime().getTime() - stage.getStartTime().getTime();
+                    return (int) (durationMillis / (60 * 1000)); // Convertir a minutos
+                })
+                .sum();
+    }
+
+    public int getAwakeSleepMinutes() {
+        return sleepStages.stream()
+                .filter(stage -> stage.getStageType() == StageType.AWAKE ||
+                        stage.getStageType() == StageType.AWAKE_IN_BED)
+                .mapToInt(stage -> {
+                    long durationMillis = stage.getEndTime().getTime() - stage.getStartTime().getTime();
+                    return (int) (durationMillis / (60 * 1000));
+                })
+                .sum();
+    }
 }

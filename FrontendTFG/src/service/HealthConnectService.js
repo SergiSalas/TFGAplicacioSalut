@@ -4,6 +4,7 @@ import {
   readRecords
 } from 'react-native-health-connect';
 import { ActivityCache } from '../cache/ActivityCache';
+import { SleepCache } from '../cache/SleepCache';
 import { createActivity } from './ActivityService';
 import { getBackendActivityType, getExerciseTypeName } from '../utils/ExerciseTypeMapper';
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
@@ -291,13 +292,35 @@ class HealthConnectService {
         }
       };
       
+      // Sincronizar datos de ejercicio
+      await this.syncExerciseSessions(timeFilter);
+      
+      // Sincronizar datos de sueño
+      await this.syncSleepSessions(timeFilter,true);
+      
+      // Actualizar tiempo de última sincronización
+      lastSyncTime = Date.now();
+      activityStorage.set(STORAGE_KEYS.HEALTH_CONNECT_LAST_FETCH, lastSyncTime.toString());
+      
+      console.log('Sincronización completada con éxito');
+      return true;
+    } catch (error) {
+      console.error('Error durante la sincronización con Health Connect:', error);
+      return false;
+    } finally {
+      // Asegurarse de marcar que ya no estamos sincronizando
+      syncInProgress = false;
+    }
+  }
+  
+  // Método para sincronizar sesiones de ejercicio
+  async syncExerciseSessions(timeFilter) {
+    try {
       // Leer sesiones de ejercicio
       const exerciseSessions = await readRecords('ExerciseSession', timeFilter);
       
       if (!exerciseSessions || !exerciseSessions.records || exerciseSessions.records.length === 0) {
         console.log('No se encontraron sesiones de ejercicio en Health Connect');
-        syncInProgress = false;
-        lastSyncTime = Date.now();
         return false;
       }
       
@@ -325,8 +348,6 @@ class HealthConnectService {
       
       if (newExercises.length === 0) {
         console.log('No hay nuevas actividades para guardar');
-        syncInProgress = false;
-        lastSyncTime = Date.now();
         return true;
       }
       
@@ -423,19 +444,192 @@ class HealthConnectService {
         });
       }
       
-      // Actualizar tiempo de última sincronización
-      lastSyncTime = Date.now();
-      activityStorage.set(STORAGE_KEYS.HEALTH_CONNECT_LAST_FETCH, lastSyncTime.toString());
-      
-      console.log('Sincronización completada con éxito');
       return true;
     } catch (error) {
-      console.error('Error durante la sincronización con Health Connect:', error);
+      console.error('Error durante la sincronización de ejercicios:', error);
       return false;
-    } finally {
-      // Asegurarse de marcar que ya no estamos sincronizando
-      syncInProgress = false;
     }
+  }
+  
+  // Método para sincronizar sesiones de sueño
+  
+async syncSleepSessions(timeFilter, forceRefresh = false) {
+  try {
+    console.log('Sincronizando sesiones de sueño...');
+    
+    // Si se solicita forzar actualización, limpiar IDs guardados
+    if (forceRefresh) {
+      await SleepCache.clearSavedSleepIds();
+      console.log('IDs de sueño guardados borrados para forzar actualización');
+    }
+    
+    // Cargar IDs guardados para evitar duplicados
+    const savedSleepIds = await SleepCache.getSavedSleepIds();
+    console.log(`IDs de sueño ya guardados: ${savedSleepIds.length}`);
+    
+    // Leer datos de sueño de Health Connect
+    const sleepResponse = await readRecords('SleepSession', timeFilter);
+    
+    if (sleepResponse?.records?.length > 0) {
+      console.log(`Recuperadas ${sleepResponse.records.length} sesiones de sueño`);
+      
+      // Contador para nuevas sesiones
+      let newSessions = 0;
+      
+      // Procesar cada registro de sueño
+      for (const sleepRecord of sleepResponse.records) {
+        // Verificar si ya hemos procesado este registro
+        const sleepId = sleepRecord.metadata?.id;
+        if (!sleepId) {
+          console.log('Registro de sueño sin ID, omitiendo');
+          continue;
+        }
+        
+        if (savedSleepIds.includes(sleepId)) {
+          console.log(`Registro de sueño ${sleepId} ya procesado, omitiendo`);
+          continue; // Ya procesado, omitir
+        }
+        
+        console.log(`Procesando nuevo registro de sueño: ${sleepId}`);
+        
+        // Procesar y guardar la sesión de sueño
+        const sleepData = this.processSleepRecord(sleepRecord);
+        
+        // Guardar en el backend
+        if (this.token) {
+          try {
+            const response = await saveSleepData(this.token, sleepData);
+            console.log(`Sesión de sueño guardada en backend: ${sleepId}`, response);
+            
+            // Solo guardar el ID como procesado si se guardó correctamente
+            await SleepCache.saveSleepId(sleepId);
+            
+            // También guardar en caché local
+            const sleepDate = new Date(sleepRecord.startTime).toISOString().split('T')[0];
+            await SleepCache.saveSleepData(sleepData, sleepDate);
+            
+            newSessions++;
+          } catch (error) {
+            // Verificar si el error es por duplicado
+            if (error.response?.status === 400) {
+              const errorData = error.response?.data || {};
+              const errorString = JSON.stringify(errorData);
+              
+              if (errorString.includes('duplicated') || 
+                  errorString.includes('ya existe') || 
+                  errorString.includes('already exists')) {
+                
+                console.log(`Sesión de sueño ${sleepId} ya existe en el backend, marcando como guardada`);
+                
+                // Marcar el ID como guardado solo si ya existe en el backend
+                await SleepCache.saveSleepId(sleepId);
+              } else {
+                console.error(`Error al guardar sesión de sueño: ${error.message}`, error.response?.data);
+              }
+            } else {
+              console.error('Error al guardar datos de sueño:', error);
+              // NO guardamos el ID como procesado si hubo un error
+            }
+          }
+        }
+      }
+      
+      console.log(`Se guardaron ${newSessions} nuevas sesiones de sueño`);
+      
+      // Si se guardaron nuevas sesiones, invalidar la caché
+      if (newSessions > 0) {
+        SleepCache.invalidateCache();
+      }
+    } else {
+      console.log('No hay sesiones de sueño para procesar');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error sincronizando sesiones de sueño:', error);
+    return false;
+  }
+}
+
+  
+  // Método auxiliar para procesar un registro de sueño
+  processSleepRecord(sleepRecord) {
+    // Calcular duración total
+    const startTime = new Date(sleepRecord.startTime);
+    const endTime = new Date(sleepRecord.endTime);
+    const durationHours = (endTime - startTime) / (1000 * 60 * 60);
+  
+    const stages = sleepRecord.stages || [];
+    
+    // Inicializar resumen de etapas
+    const stagesSummary = {
+      deepSleep: 0,
+      lightSleep: 0,
+      remSleep: 0,
+      awake: 0,
+      awakeInBed: 0,  // Añadir esta nueva propiedad
+      totalSleep: 0
+    };
+  
+    // Procesar las etapas
+    const processedStages = stages.map(stage => {
+      const stageStartTime = new Date(stage.startTime);
+      const stageEndTime = new Date(stage.endTime);
+      const stageDuration = (stageEndTime - stageStartTime) / (1000 * 60 * 60);
+      const stageType = parseInt(stage.stage || stage.type, 10);
+  
+      // Actualizar resumen según el tipo
+      switch (stageType) {
+        case SLEEP_STAGES.DEEP:
+          stagesSummary.deepSleep += stageDuration;
+          break;
+        case SLEEP_STAGES.LIGHT:
+          stagesSummary.lightSleep += stageDuration;
+          break;
+        case SLEEP_STAGES.REM:
+          stagesSummary.remSleep += stageDuration;
+          break;
+        case SLEEP_STAGES.AWAKE:
+          stagesSummary.awake += stageDuration;
+          break;
+        case SLEEP_STAGES.AWAKE_IN_BED:
+          stagesSummary.awakeInBed += stageDuration;  // Usar la nueva propiedad
+          break;
+        case SLEEP_STAGES.SLEEPING:
+          stagesSummary.lightSleep += stageDuration; // Consideramos sueño genérico como ligero
+          break;
+      }
+  
+      // Actualizar tiempo total de sueño
+      if (stageType !== SLEEP_STAGES.AWAKE && stageType !== SLEEP_STAGES.OUT_OF_BED && stageType !== SLEEP_STAGES.AWAKE_IN_BED) {
+        stagesSummary.totalSleep += stageDuration;
+      }
+  
+      return {
+        stage: this.getStageName(stageType),
+        startTime: stageStartTime,
+        endTime: stageEndTime,
+        duration: stageEndTime - stageStartTime,
+        originalType: stageType
+      };
+    });
+  
+    // Calcular calidad del sueño
+    const quality = this.calculateSleepQuality(stagesSummary, durationHours);
+  
+    return {
+      durationHours: parseFloat(durationHours.toFixed(1)),
+      startTime,
+      endTime,
+      stages: processedStages,
+      stagesSummary,
+      quality,
+      externalId: sleepRecord.metadata?.id,
+      hasDetailedStages: stages.some(stage => {
+        const type = parseInt(stage.stage || stage.type, 10);
+        return type === SLEEP_STAGES.DEEP || type === SLEEP_STAGES.LIGHT || type === SLEEP_STAGES.REM;
+      })
+    };
   }
   
   /**
@@ -744,6 +938,8 @@ async loadInitialData() {
   }
 
   // Modificar el método readSleepData para que actualice el subject
+  // ... existing code ...
+
   async readSleepData() {
     try {
       if (!this.healthConnectAvailable) {
@@ -767,95 +963,121 @@ async loadInitialData() {
       console.log('Sleep Response:', JSON.stringify(sleepResponse, null, 2));
       
       if (sleepResponse?.records?.length > 0) {
-        const lastSleepSession = sleepResponse.records[0];
+        // Cargar IDs de sueño guardados
+        const savedSleepIds = await SleepCache.getSavedSleepIds();
         
-        // Calcular duración total
-        const startTime = new Date(lastSleepSession.startTime);
-        const endTime = new Date(lastSleepSession.endTime);
-        const durationHours = (endTime - startTime) / (1000 * 60 * 60);
-
-        const stages = lastSleepSession.stages || [];
-        
-        // Inicializar resumen de etapas
-        const stagesSummary = {
-          deepSleep: 0,
-          lightSleep: 0,
-          remSleep: 0,
-          awake: 0,
-          totalSleep: 0
-        };
-
-        // Procesar las etapas
-        const processedStages = stages.map(stage => {
-          const stageStartTime = new Date(stage.startTime);
-          const stageEndTime = new Date(stage.endTime);
-          const stageDuration = (stageEndTime - stageStartTime) / (1000 * 60 * 60);
-          const stageType = parseInt(stage.stage || stage.type, 10);
-
-          // Actualizar resumen según el tipo
-          switch (stageType) {
-            case SLEEP_STAGES.DEEP:
-              stagesSummary.deepSleep += stageDuration;
-              break;
-            case SLEEP_STAGES.LIGHT:
-              stagesSummary.lightSleep += stageDuration;
-              break;
-            case SLEEP_STAGES.REM:
-              stagesSummary.remSleep += stageDuration;
-              break;
-            case SLEEP_STAGES.AWAKE:
-            case SLEEP_STAGES.AWAKE_IN_BED:
-              stagesSummary.awake += stageDuration;
-              break;
-            case SLEEP_STAGES.SLEEPING:
-              stagesSummary.lightSleep += stageDuration; // Consideramos sueño genérico como ligero
-              break;
+        // Procesar cada registro de sueño
+        for (const sleepRecord of sleepResponse.records) {
+          // Verificar si ya hemos procesado este registro
+          const sleepId = sleepRecord.metadata?.id;
+          if (sleepId && savedSleepIds.includes(sleepId)) {
+            console.log(`Registro de sueño ${sleepId} ya procesado, omitiendo`);
+            continue;
           }
-
-          // Actualizar tiempo total de sueño
-          if (stageType !== SLEEP_STAGES.AWAKE && stageType !== SLEEP_STAGES.OUT_OF_BED) {
-            stagesSummary.totalSleep += stageDuration;
-          }
-
-          return {
-            stage: this.getStageName(stageType),
-            startTime: stageStartTime,
-            endTime: stageEndTime,
-            duration: stageEndTime - stageStartTime,
-            originalType: stageType
+          
+          // Calcular duración total
+          const startTime = new Date(sleepRecord.startTime);
+          const endTime = new Date(sleepRecord.endTime);
+          const durationHours = (endTime - startTime) / (1000 * 60 * 60);
+  
+          const stages = sleepRecord.stages || [];
+          
+          // Inicializar resumen de etapas
+          const stagesSummary = {
+            deepSleep: 0,
+            lightSleep: 0,
+            remSleep: 0,
+            awake: 0,
+            totalSleep: 0
           };
-        });
-
-        // Calcular calidad del sueño
-        const quality = this.calculateSleepQuality(stagesSummary, durationHours);
-
-        const sleepData = {
-          durationHours: parseFloat(durationHours.toFixed(1)),
-          startTime,
-          endTime,
-          stages: processedStages,
-          stagesSummary,
-          quality,
-          hasDetailedStages: stages.some(stage => {
-            const type = parseInt(stage.stage || stage.type, 10);
-            return type === SLEEP_STAGES.DEEP || type === SLEEP_STAGES.LIGHT || type === SLEEP_STAGES.REM;
-          })
-        };
-
-        // Guardar los datos en el backend
-        if (this.token) {
-          try {
-            await saveSleepData(this.token, sleepData);
-            console.log('Datos de sueño guardados exitosamente');
-          } catch (error) {
-            console.error('Error al guardar datos de sueño:', error);
-            // No interrumpimos el flujo si falla el guardado
+  
+          // Procesar las etapas
+          const processedStages = stages.map(stage => {
+            const stageStartTime = new Date(stage.startTime);
+            const stageEndTime = new Date(stage.endTime);
+            const stageDuration = (stageEndTime - stageStartTime) / (1000 * 60 * 60);
+            const stageType = parseInt(stage.stage || stage.type, 10);
+  
+            // Actualizar resumen según el tipo
+            switch (stageType) {
+              case SLEEP_STAGES.DEEP:
+                stagesSummary.deepSleep += stageDuration;
+                break;
+              case SLEEP_STAGES.LIGHT:
+                stagesSummary.lightSleep += stageDuration;
+                break;
+              case SLEEP_STAGES.REM:
+                stagesSummary.remSleep += stageDuration;
+                break;
+              case SLEEP_STAGES.AWAKE:
+              case SLEEP_STAGES.AWAKE_IN_BED:
+                stagesSummary.awake += stageDuration;
+                break;
+              case SLEEP_STAGES.SLEEPING:
+                stagesSummary.lightSleep += stageDuration; // Consideramos sueño genérico como ligero
+                break;
+            }
+  
+            // Actualizar tiempo total de sueño
+            if (stageType !== SLEEP_STAGES.AWAKE && stageType !== SLEEP_STAGES.OUT_OF_BED) {
+              stagesSummary.totalSleep += stageDuration;
+            }
+  
+            return {
+              stage: this.getStageName(stageType),
+              startTime: stageStartTime,
+              endTime: stageEndTime,
+              duration: stageEndTime - stageStartTime,
+              originalType: stageType
+            };
+          });
+  
+          // Calcular calidad del sueño
+          const quality = this.calculateSleepQuality(stagesSummary, durationHours);
+  
+          const sleepData = {
+            durationHours: parseFloat(durationHours.toFixed(1)),
+            startTime,
+            endTime,
+            stages: processedStages,
+            stagesSummary,
+            quality,
+            externalId: sleepId,
+            hasDetailedStages: stages.some(stage => {
+              const type = parseInt(stage.stage || stage.type, 10);
+              return type === SLEEP_STAGES.DEEP || type === SLEEP_STAGES.LIGHT || type === SLEEP_STAGES.REM;
+            })
+          };
+  
+          // Guardar los datos en el backend
+          if (this.token) {
+            try {
+              const response = await saveSleepData(this.token, sleepData);
+              console.log('Datos de sueño guardados exitosamente en el backend', response);
+              
+              // Solo guardar el ID como procesado si se guardó correctamente
+              if (sleepId) {
+                await SleepCache.saveSleepId(sleepId);
+              }
+              
+              // Guardar en caché local
+              const sleepDate = startTime.toISOString().split('T')[0];
+              await SleepCache.saveSleepData(sleepData, sleepDate);
+              
+            } catch (error) {
+              console.error('Error al guardar datos de sueño:', error);
+              // No interrumpimos el flujo si falla el guardado
+              // Pero tampoco marcamos el ID como procesado
+            }
           }
+  
+          // Emitir los datos a través del BehaviorSubject
+          this.sleepDataSubject.next(sleepData);
         }
-
-        // Emitir los datos a través del BehaviorSubject
-        this.sleepDataSubject.next(sleepData);
-        return sleepData;
+        
+        // Devolver el último registro procesado para compatibilidad
+        const lastSleepData = this.sleepDataSubject.getValue();
+        return lastSleepData;
       }
       
       this.sleepDataSubject.next(null);
@@ -864,6 +1086,17 @@ async loadInitialData() {
       console.error('Error al leer datos de sueño:', error);
       this.sleepDataSubject.next(null);
       return null;
+    }
+  }
+
+  async clearSavedSleepIds() {
+    try {
+      await SleepCache.clearSavedSleepIds();
+      console.log('IDs de sueño guardados borrados correctamente');
+      return true;
+    } catch (error) {
+      console.error('Error al borrar IDs de sueño guardados:', error);
+      return false;
     }
   }
 
@@ -885,22 +1118,24 @@ async loadInitialData() {
     const stage = parseInt(stageType, 10);
     
     switch (stage) {
+      case SLEEP_STAGES.UNKNOWN:
+        return 'UNKNOWN';
       case SLEEP_STAGES.AWAKE:
-      case SLEEP_STAGES.AWAKE_IN_BED:
-        return 'Despierto';
+        return 'AWAKE';
       case SLEEP_STAGES.SLEEPING:
-        return 'Dormido';
+        return 'SLEEPING';
       case SLEEP_STAGES.OUT_OF_BED:
-        return 'Fuera de cama';
+        return 'OUT_OF_BED';
       case SLEEP_STAGES.LIGHT:
-        return 'Sueño ligero';
+        return 'LIGHT';
       case SLEEP_STAGES.DEEP:
-        return 'Sueño profundo';
+        return 'DEEP';
       case SLEEP_STAGES.REM:
         return 'REM';
-      case SLEEP_STAGES.UNKNOWN:
+      case SLEEP_STAGES.AWAKE_IN_BED:
+        return 'AWAKE_IN_BED';  // Nombre diferenciado
       default:
-        return 'Sueño no especificado';
+        return 'UNKNOWN';
     }
   }
 
