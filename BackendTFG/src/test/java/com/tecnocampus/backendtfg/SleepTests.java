@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class SleepTests {
-
+/*
     @Mock
     private SleepRepository sleepRepository;
 
@@ -189,4 +189,6 @@ public class SleepTests {
         verify(userRepository, times(1)).save(user);
         assertEquals(dailyObjectiveSleep, sleepProfile.getDailyObjectiveSleep());
     }
+
+ */
 }

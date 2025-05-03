@@ -493,7 +493,7 @@ public class StatsService {
 
         if (sleeps.isEmpty()) {
             // Devuelve un DTO con ceros si no hay datos
-            return new SleepStatsDTO(0.0, 0.0, 0, "", "", "00:00", "00:00");
+            return new SleepStatsDTO(0.0, 0.0, 0, 0, 0, 0, "", "", "00:00", "00:00");
         }
 
         int n = sleeps.size();
@@ -510,11 +510,18 @@ public class StatsService {
                 .sum();
         double averageQuality = Math.round((totalQuality / n) * 10) / 10.0;
 
-        // 4. Media de REM
-        int totalRem = sleeps.stream()
-                .mapToInt(Sleep::getRemSleep)
-                .sum();
+        // 4. Media de todas las fases de sueño
+        int totalRem = sleeps.stream().mapToInt(Sleep::getRemSleepMinutes).sum();
         int averageRem = (int) Math.round((double) totalRem / n);
+
+        int totalDeep = sleeps.stream().mapToInt(Sleep::getDeepSleepMinutes).sum();
+        int averageDeep = (int) Math.round((double) totalDeep / n);
+
+        int totalLight = sleeps.stream().mapToInt(Sleep::getLightSleepMinutes).sum();
+        int averageLight = (int) Math.round((double) totalLight / n);
+
+        int totalAwake = sleeps.stream().mapToInt(Sleep::getAwakeSleepMinutes).sum();
+        int averageAwake = (int) Math.round((double) totalAwake / n);
 
         // 5. Mejor y peor día (por día de la semana de endTime)
         Map<DayOfWeek, List<Double>> byDay = new EnumMap<>(DayOfWeek.class);
@@ -563,11 +570,14 @@ public class StatsService {
         int avgWake = totalWakeMins / n;
         String averageWakeTime = String.format("%02d:%02d", avgWake / 60, avgWake % 60);
 
-        // 8. Devolver DTO
+        // 8. Devolver DTO actualizado con todas las fases
         return new SleepStatsDTO(
                 averageDuration,
                 averageQuality,
                 averageRem,
+                averageDeep,
+                averageLight,
+                averageAwake,
                 bestSleepDay,
                 worstSleepDay,
                 averageBedtime,
@@ -616,7 +626,7 @@ public class StatsService {
 
         // 5. Si no hay datos, devolver ceros
         if (sleeps.isEmpty()) {
-            return new SleepStatsDTO(0.0, 0.0, 0, "", "", "00:00", "00:00");
+            return new SleepStatsDTO(0.0, 0.0, 0, 0, 0, 0, "", "", "00:00", "00:00");
         }
 
         int n = sleeps.size();
@@ -633,11 +643,18 @@ public class StatsService {
                 .sum();
         double avgQuality = Math.round((totalQuality / n) * 10) / 10.0;
 
-        // 8. Media de REM
-        int totalRem = sleeps.stream()
-                .mapToInt(Sleep::getRemSleep)
-                .sum();
+        // 8. Media de todas las fases de sueño
+        int totalRem = sleeps.stream().mapToInt(Sleep::getRemSleepMinutes).sum();
         int avgRem = (int) Math.round((double) totalRem / n);
+
+        int totalDeep = sleeps.stream().mapToInt(Sleep::getDeepSleepMinutes).sum();
+        int avgDeep = (int) Math.round((double) totalDeep / n);
+
+        int totalLight = sleeps.stream().mapToInt(Sleep::getLightSleepMinutes).sum();
+        int avgLight = (int) Math.round((double) totalLight / n);
+
+        int totalAwake = sleeps.stream().mapToInt(Sleep::getAwakeSleepMinutes).sum();
+        int avgAwake = (int) Math.round((double) totalAwake / n);
 
         // 9. Mejor y peor día (por día de la semana de endTime)
         Map<DayOfWeek, List<Double>> byDay = new EnumMap<>(DayOfWeek.class);
@@ -684,11 +701,14 @@ public class StatsService {
         int avgWake = totalWakeMins / n;
         String averageWakeTime = String.format("%02d:%02d", avgWake / 60, avgWake % 60);
 
-        // 12. Devolver DTO
+        // 12. Devolver DTO actualizado con todas las fases
         return new SleepStatsDTO(
                 avgDuration,
                 avgQuality,
                 avgRem,
+                avgDeep,
+                avgLight,
+                avgAwake,
                 bestSleepDay,
                 worstSleepDay,
                 averageBedtime,

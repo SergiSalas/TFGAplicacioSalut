@@ -59,12 +59,8 @@ const ActivityScreen = ({ navigation, route }) => {
   const [todaySteps, setTodaySteps] = useState(0);
   const { token, handleTokenExpiration } = useContext(AuthContext);
 
-  // Agregar un nuevo estado para rastrear las actividades ya guardadas de Health Connect
-  const [savedHealthConnectIds, setSavedHealthConnectIds] = useState([]);
   
   const [refreshing, setRefreshing] = useState(false);
-  const [savedStepIds, setSavedStepIds] = useState([]);
-  const [savedExerciseIds, setSavedExerciseIds] = useState([]);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   
   // Ahora la función getCurrentDateFormatted ya está definida cuando se usa aquí
@@ -76,6 +72,10 @@ const ActivityScreen = ({ navigation, route }) => {
 
   const [appState, setAppState] = useState(AppState.currentState);
 
+  const [savedHealthConnectIds, setSavedHealthConnectIds] = useState([]);
+
+  const [savedStepIds, setSavedStepIds] = useState([]);
+  const [savedExerciseIds, setSavedExerciseIds] = useState([]);
   // Añadir un nuevo estado para calorías
   const [calories, setCalories] = useState(0);
 
@@ -738,24 +738,10 @@ const ActivityScreen = ({ navigation, route }) => {
     );
   };
 
-  const renderLoadingState = () => {
-    // Eliminar esta función por completo o simplemente retornar null
-    // Ya que el RefreshControl es suficiente feedback visual
-    return null;
-    
-    // Alternativa: Solo mostrar en carga inicial, nunca en refreshes
-    // if (initialLoadDone || refreshing) return null;
-    // 
-    // return (
-    //   <View style={styles.loadingContainer}>
-    //     <ActivityIndicator size="large" color="#61dafb" />
-    //     <Text style={styles.loadingText}>Cargando actividades...</Text>
-    //   </View>
-    // );
-  };
+  
 
   // Función para cambiar la fecha seleccionada
-  const onDateChange = (event, date) => {
+  const onDateChange = (event,date) => {
     setShowDatePicker(false);
     if (date) {
       const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

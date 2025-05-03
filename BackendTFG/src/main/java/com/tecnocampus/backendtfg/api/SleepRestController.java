@@ -3,8 +3,11 @@ package com.tecnocampus.backendtfg.api;
 import com.tecnocampus.backendtfg.application.SleepService;
 import com.tecnocampus.backendtfg.application.dto.SleepDTO;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Date;
 
 @RequestMapping("/sleep")
 @RestController
@@ -17,10 +20,10 @@ public class SleepRestController {
     }
 
     @PostMapping("/createSleep")
-    public ResponseEntity<String> createSleep(HttpServletRequest request, @RequestBody SleepDTO sleepDTO) {
+    public ResponseEntity<SleepDTO> createSleep(HttpServletRequest request, @RequestBody SleepDTO sleepDTO) {
         String token = getTokenAuthFromRequest(request);
         sleepService.createSleep(sleepDTO,token);
-        return ResponseEntity.ok("Sleep created");
+        return ResponseEntity.ok(sleepDTO);
     }
 
     @DeleteMapping("/deleteSleep")
@@ -36,8 +39,12 @@ public class SleepRestController {
     }
 
     @GetMapping("/getSleeps")
-    public ResponseEntity<?> getSleeps(String email) {
-        return ResponseEntity.ok(sleepService.getSleeps(email));
+    public ResponseEntity<?> getSleeps(HttpServletRequest request,
+                                       @RequestParam(required = false)
+                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
+        String token = getTokenAuthFromRequest(request);
+        System.out.println(sleepService.getSleeps(token, date).toString());
+        return ResponseEntity.ok(sleepService.getSleeps(token,date));
     }
 
     @PostMapping("/addObjective")

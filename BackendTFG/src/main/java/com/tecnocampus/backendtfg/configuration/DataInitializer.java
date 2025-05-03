@@ -14,9 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Random;
+import java.util.*;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -194,53 +192,97 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void generateSleepDataForOneYear(User user) {
-        LocalDate startDate = LocalDate.now().minusYears(1);
-        LocalDate endDate = LocalDate.now();
-        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Cálculo correcto de días
         SleepProfile sleepProfile = user.getSleepProfile();
+        Random random = new Random();
 
-        for (int i = 0; i < days; i++) {
-            LocalDate currentDate = startDate.plusDays(i);
+        // Fecha actual menos un año
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.YEAR, -1);
 
-            // Hora de finalización: entre 5:00 AM y 9:00 AM
-            int wakeHour = 5 + random.nextInt(4);
-            int wakeMinute = random.nextInt(60);
+        // Generamos datos para cada día del año
+        for (int i = 0; i < 365; i++) {
+            // Algunos días aleatorios sin datos (20% probabilidad)
+            if (random.nextDouble() < 0.2) {
+                calendar.add(Calendar.DAY_OF_MONTH, 1);
+                continue;
+            }
 
-            // Convertir a Date para la hora de despertar (endTime)
-            Date endTime = Date.from(currentDate.atTime(wakeHour, wakeMinute)
-                    .atZone(ZoneId.systemDefault()).toInstant());
+            // Hora de acostarse (entre 22:00 y 00:30)
+            calendar.set(Calendar.HOUR_OF_DAY, 22 + random.nextInt(3));
+            calendar.set(Calendar.MINUTE, random.nextInt(60));
+            Date startTime = calendar.getTime();
 
-            // Duración del sueño: entre 5 y 9 horas (con un decimal)
-            double hoursSlept = 5.0 + random.nextDouble() * 4.0;
-            hoursSlept = Math.round(hoursSlept * 10.0) / 10.0;
+            // Duración del sueño (entre 6 y 9 horas)
+            double hours = 6 + random.nextDouble() * 3;
 
-            // Calcular startTime restando las horas dormidas
-            long sleepMillis = (long)(hoursSlept * 60 * 60 * 1000);
-            Date startTime = new Date(endTime.getTime() - sleepMillis);
+            // Avanzamos para obtener la hora de despertar
+            calendar.add(Calendar.MINUTE, (int)(hours * 60));
+            Date endTime = calendar.getTime();
 
-            // Calidad del sueño (1-10)
-            int quality = random.nextInt(10) + 1;
+            // Calidad (entre 50 y 100)
+            int quality = 50 + random.nextInt(51);
 
-            // Sueño REM (15-25% del tiempo total dormido en minutos)
-            int remSleep = (int)(hoursSlept * 60 * (15 + random.nextInt(11)) / 100);
 
-            // Comentario descriptivo
-            String comment = "Sesión de sueño - Día " + (days - i);
+            // Creamos el registro de sueño
+            Sleep sleep = new Sleep();
+            sleep.setStartTime(startTime);
+            sleep.setEndTime(endTime);
+            sleep.setHours(hours);
+            sleep.setQuality(quality);
+            sleep.setSleepProfile(sleepProfile);
 
-            // Crear el registro de sueño
-            Sleep sleep = new Sleep(
-                    hoursSlept,
-                    startTime,
-                    endTime,
-                    quality,
-                    remSleep,
-                    comment,
-                    sleepProfile
-            );
+            // Creamos al menos 4 etapas de sueño para cada noche
+            List<SleepStage> stages = generateSleepStages(sleep);
+            sleep.setSleepStages(stages);
 
-            sleepProfile.addSleep(sleep);
+            sleepProfile.getSleeps().add(sleep);
+
+            // Avanzamos al siguiente día (desde la hora de despertar)
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
         }
     }
+
+    private List<SleepStage> generateSleepStages(Sleep sleep) {
+        List<SleepStage> stages = new ArrayList<>();
+
+        // Obtenemos el tiempo total del sueño en milisegundos
+        long startTimeMs = sleep.getStartTime().getTime();
+        long endTimeMs = sleep.getEndTime().getTime();
+        long totalDurationMs = endTimeMs - startTimeMs;
+
+        // Distribución aproximada de las fases de sueño
+        // DEEP: ~20%, LIGHT: ~50%, REM: ~25%, AWAKE: ~5%
+        long deepDurationMs = totalDurationMs * 20 / 100;
+        long lightDurationMs = totalDurationMs * 50 / 100;
+        long remDurationMs = totalDurationMs * 25 / 100;
+        long awakeDurationMs = totalDurationMs - deepDurationMs - lightDurationMs - remDurationMs; // El resto
+
+        // Creamos las etapas con tiempo progresivo
+        // 1. DEEP (al principio de la noche)
+        Date deepStart = new Date(startTimeMs);
+        Date deepEnd = new Date(startTimeMs + deepDurationMs);
+        stages.add(new SleepStage(deepStart, deepEnd, StageType.DEEP, sleep));
+
+        // 2. LIGHT (después del sueño profundo)
+        Date lightStart = deepEnd;
+        Date lightEnd = new Date(lightStart.getTime() + lightDurationMs);
+        stages.add(new SleepStage(lightStart, lightEnd, StageType.LIGHT, sleep));
+
+        // 3. REM (generalmente ocurre después de LIGHT)
+        Date remStart = lightEnd;
+        Date remEnd = new Date(remStart.getTime() + remDurationMs);
+        stages.add(new SleepStage(remStart, remEnd, StageType.REM, sleep));
+
+        // 4. AWAKE (períodos cortos al final)
+        Date awakeStart = remEnd;
+        Date awakeEnd = new Date(endTimeMs);
+        stages.add(new SleepStage(awakeStart, awakeEnd, StageType.AWAKE_IN_BED, sleep));
+
+        return stages;
+    }
+
 
     private void generateHydrationDataForOneYear(User user) {
         HydrationProfile profile = user.getHydrationProfile();
@@ -293,3 +335,4 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
+

@@ -342,19 +342,61 @@ export default StyleSheet.create({
   justifyContent: 'center',
   alignItems: 'center',
   },
-  // Mejora de los estilos para los valores y etiquetas
-  summaryValue: {
-  fontSize: 24,
-  fontWeight: 'bold',
-  color: '#ffffff',
-  marginTop: 8,
-  marginBottom: 4,
-  textAlign: 'center',
+  
+  // Nuevos estilos para etapas de sueño
+  sleepStagesIconContainer: {
+  backgroundColor: 'rgba(163, 161, 251, 0.15)',
+  borderRadius: 30,
+  padding: 10,
+  width: 40,
+  height: 40,
+  justifyContent: 'center',
+  alignItems: 'center',
   },
-  summaryLabel: {
+  stagesSummaryContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  marginBottom: 15,
+  marginTop: 5,
+  },
+  stageSummaryItem: {
+  width: '48%',
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#232342',
+  borderRadius: 8,
+  padding: 10,
+  marginBottom: 10,
+  },
+  stageColorIndicator: {
+  width: 12,
+  height: 12,
+  borderRadius: 6,
+  marginRight: 8,
+  },
+  stageName: {
+  color: '#ffffff',
   fontSize: 14,
-  color: '#cccccc',
+  fontWeight: '500',
+  flex: 1,
+  },
+  stageValue: {
+  color: '#ffffff',
+  fontSize: 16,
+  fontWeight: 'bold',
+  },
+  stageUnit: {
+  color: '#aaaaaa',
+  fontSize: 12,
+  },
+  chartDescription: {
+  color: '#aaaaaa',
+  fontSize: 12,
+  marginTop: 10,
+  lineHeight: 18,
   textAlign: 'center',
+  paddingHorizontal: 10,
   },
   // Estilos para el header
   header: {
@@ -489,5 +531,80 @@ export default StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(231, 76, 60, 0.3)',
+  },
+
+  stagesSummaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  stageSummaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  stagesContainer: {
+    marginVertical: 10,
+    paddingHorizontal: 10,
+  },
+  stageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stageIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginBottom: 5,
+  },
+  stageLabel: {
+    color: '#ffffff',
+    fontSize: 14,
+    flex: 1,
+  },
+  stageValue: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+  summaryCard: {
+    backgroundColor: '#1e1e2e',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+  },
+  summaryContainer: {
+    width: '100%',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  summaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  summaryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginVertical: 2,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#aaaaaa',
   },
 });

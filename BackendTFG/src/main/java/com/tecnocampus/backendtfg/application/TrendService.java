@@ -715,32 +715,58 @@ public class TrendService {
         SleepProfile sleepProfile = user.getSleepProfile();
 
         List<String> labels;
-        List<Integer> values;
-
         switch (period.toLowerCase()) {
             case "week":
                 labels = Arrays.asList("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom");
-                values = getWeeklyREMValues(sleepProfile);
                 break;
             case "month":
                 labels = getMonthLabels();
-                values = getMonthlyREMValues(sleepProfile);
                 break;
             case "year":
                 labels = Arrays.asList("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic");
-                values = getYearlyREMValues(sleepProfile);
                 break;
             default:
                 throw new IllegalArgumentException("Periodo inválido");
         }
 
-        SleepStageDataSetDTO remDataset = new SleepStageDataSetDTO("REM", values, "#FF9933");
-        return new SleepStageTrendDTO(labels, List.of(remDataset), "minutos");
+        // Crear listas independientes para cada tipo de etapa
+        List<Integer> remValues = new ArrayList<>(getSleepStageValues(sleepProfile, period, StageType.REM));
+        List<Integer> deepValues = new ArrayList<>(getSleepStageValues(sleepProfile, period, StageType.DEEP));
+        List<Integer> lightValues = new ArrayList<>(getSleepStageValues(sleepProfile, period, StageType.LIGHT));
+        List<Integer> awakeValues = new ArrayList<>(getSleepStageValues(sleepProfile, period, StageType.AWAKE_IN_BED));
+
+        // Agregar logs para depuración
+        System.out.println("REM: " + remValues);
+        System.out.println("DEEP: " + deepValues);
+        System.out.println("LIGHT: " + lightValues);
+        System.out.println("AWAKE: " + awakeValues);
+
+        // Crear datasets con listas independientes
+        // Crear datasets sin el parámetro de color
+        List<SleepStageDataSetDTO> datasets = new ArrayList<>();
+        datasets.add(new SleepStageDataSetDTO("REM", remValues));
+        datasets.add(new SleepStageDataSetDTO("DEEP", deepValues));
+        datasets.add(new SleepStageDataSetDTO("LIGHT", lightValues));
+        datasets.add(new SleepStageDataSetDTO("AWAKE_IN_BED", awakeValues));;
+
+        return new SleepStageTrendDTO(labels, datasets, "minutos");
     }
 
-    private List<Integer> getWeeklyREMValues(SleepProfile sleepProfile) {
+    private List<Integer> getSleepStageValues(SleepProfile sleepProfile, String period, StageType stageType) {
+        switch (period.toLowerCase()) {
+            case "week":
+                return getWeeklySleepStageValues(sleepProfile, stageType);
+            case "month":
+                return getMonthlySleepStageValues(sleepProfile, stageType);
+            case "year":
+                return getYearlySleepStageValues(sleepProfile, stageType);
+            default:
+                throw new IllegalArgumentException("Período inválido");
+        }
+    }
+
+    private List<Integer> getWeeklySleepStageValues(SleepProfile sleepProfile, StageType stageType) {
         List<Integer> values = Arrays.asList(0, 0, 0, 0, 0, 0, 0);
-        int[] counts = new int[7];
 
         Calendar calendar = Calendar.getInstance();
         int dow = calendar.get(Calendar.DAY_OF_WEEK);
@@ -764,18 +790,19 @@ public class TrendService {
             if (!date.before(start) && !date.after(end)) {
                 Calendar sleepCal = Calendar.getInstance();
                 sleepCal.setTime(date);
-                int day = sleepCal.get(Calendar.DAY_OF_WEEK);
-                int index = (day == Calendar.SUNDAY) ? 6 : day - Calendar.MONDAY;
+                int dayOfWeek = sleepCal.get(Calendar.DAY_OF_WEEK);
+                int index = (dayOfWeek == Calendar.SUNDAY) ? 6 : dayOfWeek - Calendar.MONDAY;
 
-                values.set(index, values.get(index) + sleep.getRemSleep());
-                counts[index]++;
+                // Calcular minutos para este tipo específico de etapa
+                int minutes = getSleepStageMinutes(sleep, stageType);
+                values.set(index, values.get(index) + minutes);
             }
         }
 
         return values;
     }
 
-    private List<Integer> getMonthlyREMValues(SleepProfile sleepProfile) {
+    private List<Integer> getMonthlySleepStageValues(SleepProfile sleepProfile, StageType stageType) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.DAY_OF_MONTH, 1);
         calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -802,14 +829,17 @@ public class TrendService {
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(endTime);
                 int day = cal.get(Calendar.DAY_OF_MONTH);
-                values.set(day - 1, values.get(day - 1) + sleep.getRemSleep());
+
+                // Determinar minutos según el tipo de etapa
+                int minutes = getSleepStageMinutes(sleep, stageType);
+                values.set(day - 1, values.get(day - 1) + minutes);
             }
         }
 
         return values;
     }
 
-    private List<Integer> getYearlyREMValues(SleepProfile sleepProfile) {
+    private List<Integer> getYearlySleepStageValues(SleepProfile sleepProfile, StageType stageType) {
         Calendar calendar = Calendar.getInstance();
         int currentYear = calendar.get(Calendar.YEAR);
 
@@ -839,11 +869,60 @@ public class TrendService {
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(endTime);
                 int month = cal.get(Calendar.MONTH);
-                values.set(month, values.get(month) + sleep.getRemSleep());
+
+                // Determinar minutos según el tipo de etapa
+                int minutes = getSleepStageMinutes(sleep, stageType);
+                values.set(month, values.get(month) + minutes);
             }
         }
 
         return values;
+    }
+
+    private int getSleepStageMinutes(Sleep sleep, StageType stageType) {
+        // Añadir logs para depuración
+        System.out.println("Calculando minutos para: " + stageType);
+        System.out.println("Sleep ID: " + sleep.getId());
+        System.out.println("Etapas totales en este Sleep: " + sleep.getSleepStages().size());
+
+        // Contar etapas por tipo
+        long remCount = sleep.getSleepStages().stream().filter(s -> s.getStageType() == StageType.REM).count();
+        long deepCount = sleep.getSleepStages().stream().filter(s -> s.getStageType() == StageType.DEEP).count();
+        long lightCount = sleep.getSleepStages().stream().filter(s -> s.getStageType() == StageType.LIGHT).count();
+        long awakeCount = sleep.getSleepStages().stream().filter(s -> s.getStageType() == StageType.AWAKE || s.getStageType() == StageType.AWAKE_IN_BED).count();
+
+        System.out.println("Distribución de etapas - REM: " + remCount + ", DEEP: " + deepCount +
+                ", LIGHT: " + lightCount + ", AWAKE/AWAKE_IN_BED: " + awakeCount);
+
+        // Utilizar los métodos específicos según el tipo de etapa
+        int result = 0;
+        switch(stageType) {
+            case REM:
+                result = sleep.getRemSleepMinutes();
+                break;
+            case DEEP:
+                result = sleep.getDeepSleepMinutes();
+                break;
+            case LIGHT:
+                result = sleep.getLightSleepMinutes();
+                break;
+            case AWAKE:
+            case AWAKE_IN_BED:
+                result = sleep.getAwakeSleepMinutes();
+                break;
+            default:
+                // Si es otro tipo, usar el filtro genérico
+                result = sleep.getSleepStages().stream()
+                        .filter(stage -> stage.getStageType() == stageType)
+                        .mapToInt(stage -> {
+                            long durationMillis = stage.getEndTime().getTime() - stage.getStartTime().getTime();
+                            return (int) (durationMillis / (60 * 1000));
+                        })
+                        .sum();
+        }
+
+        System.out.println("Resultado para " + stageType + ": " + result + " minutos");
+        return result;
     }
 
     public HydrationTrendDTO getHydrationTrends(String token, String period) {
