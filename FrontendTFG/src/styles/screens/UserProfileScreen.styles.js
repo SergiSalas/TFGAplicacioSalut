@@ -256,5 +256,16 @@ export default StyleSheet.create({
     color: '#AAAAAA',
     marginTop: 8,
     fontSize: 14,
-  }
+  },
+  
+  buttonContainer: {
+    marginTop: 16,
+    marginBottom: 24,
+    width: '100%',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

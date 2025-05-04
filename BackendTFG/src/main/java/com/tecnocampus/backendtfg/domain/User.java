@@ -43,15 +43,14 @@ public class User implements UserDetails {
     @OneToOne(cascade = CascadeType.ALL)
     private HydrationProfile hydrationProfile;
 
-    //ConfigurationClass?
-    //private Configuration configuration;
-
     @OneToOne(cascade = CascadeType.ALL)
     private Level level = new Level();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Challenge> challenges = new ArrayList<>();
 
+    @OneToOne(cascade = CascadeType.ALL)
+    private UserImage userImage;
 
     public User(String name, String email, String password, Double weight, int height, int age, Gender gender) {
         this.name = name;

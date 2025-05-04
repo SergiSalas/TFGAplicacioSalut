@@ -58,6 +58,7 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
               <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
               <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
+              <Stack.Screen name="SetUserProfileScreen" component={SetUserProfileScreen} />
               <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
               <Stack.Screen name="TrendsScreen" component={TrendsScreen}/>
               <Stack.Screen name="ChallengesScreen" component={ChallengesScreen} />

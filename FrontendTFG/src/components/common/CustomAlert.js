@@ -3,12 +3,16 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const CustomAlert = ({ visible, title, message, onCancel, onConfirm, confirmText, cancelText, type }) => {
+  // Asegurar que onCancel y onConfirm siempre sean funciones
+  const handleCancel = onCancel || (() => {});
+  const handleConfirm = onConfirm || (() => {});
+
   return (
     <Modal
       transparent={true}
       visible={visible}
       animationType="fade"
-      onRequestClose={onCancel}
+      onRequestClose={handleCancel}
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
@@ -25,7 +29,7 @@ const CustomAlert = ({ visible, title, message, onCancel, onConfirm, confirmText
             {cancelText && (
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
-                onPress={onCancel}
+                onPress={handleCancel}
               >
                 <Text style={styles.cancelButtonText}>{cancelText}</Text>
               </TouchableOpacity>
@@ -38,7 +42,7 @@ const CustomAlert = ({ visible, title, message, onCancel, onConfirm, confirmText
                   styles.confirmButton,
                   type === 'error' ? styles.deleteButton : null
                 ]}
-                onPress={onConfirm}
+                onPress={handleConfirm}
               >
                 <Text style={styles.confirmButtonText}>{confirmText}</Text>
               </TouchableOpacity>

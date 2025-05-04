@@ -1,194 +1,330 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import Header from '../components/layout/Header';
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  StatusBar
+} from 'react-native';
+import { AuthContext } from '../contexts/AuthContext';
+import { getUserProfile, updateUserProfile } from '../service/UserService';
+import Icon from 'react-native-vector-icons/Ionicons';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import { AuthContext } from '../contexts/AuthContext';
+import InputField from '../components/common/InputField';
+import CustomPicker from '../components/common/CustomPicker';
 import styles from '../styles/screens/SetUserProfileScreen.styles';
-import { CommonActions } from '@react-navigation/native';
-import { updateUserProfile, getGenderTypes } from '../service/UserService';
+import CustomAlert from '../components/common/CustomAlert';
 
 const SetUserProfileScreen = ({ navigation }) => {
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [genderTypes, setGenderTypes] = useState([]);
-  const [loadingGenders, setLoadingGenders] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { token, setIsNewUser } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    weight: '',
+    height: '',
+    age: '',
+    gender: ''
+  });
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    onCancel: () => setAlertVisible(false),
+    confirmText: '',
+    cancelText: '',
+    type: 'warning'
+  });
 
-  // Cargar los tipos de género al iniciar la pantalla
+  // Opciones para el selector de género
+  const genderOptions = [
+    { label: 'Masculino', value: 'MALE' },
+    { label: 'Femenino', value: 'FEMALE' },
+    { label: 'Otro', value: 'OTHER' }
+  ];
+
   useEffect(() => {
-    if (token) {
-      getGenderTypes(token)
-        .then(data => {
-          setGenderTypes(data);
-          if (data.length > 0) {
-            setGender(data[0].name);
-          }
-          setLoadingGenders(false);
-        })
-        .catch(error => {
-          console.error('Error al cargar tipos de género:', error);
-          setLoadingGenders(false);
-        });
-    }
+    loadUserProfile();
   }, [token]);
 
-  const validateInputs = () => {
-    const weightNum = parseFloat(weight);
-    const heightNum = parseInt(height);
-    const ageNum = parseInt(age);
-
-    if (!weight || !height || !age || isNaN(weightNum) || isNaN(heightNum) || isNaN(ageNum) || !gender) {
-      Alert.alert('Error', 'Por favor, introduce valores válidos para todos los campos');
-      return false;
+  const loadUserProfile = async () => {
+    if (!token) return;
+    
+    try {
+      setLoading(true);
+      const profileData = await getUserProfile(token);
+      setProfile({
+        name: profileData.name || '',
+        email: profileData.email || '',
+        weight: profileData.weight ? profileData.weight.toString() : '',
+        height: profileData.height ? profileData.height.toString() : '',
+        age: profileData.age ? profileData.age.toString() : '',
+        gender: profileData.gender || ''
+      });
+    } catch (error) {
+      console.error('Error al cargar perfil:', error);
+      showAlert({
+        title: 'Error',
+        message: 'No se pudo cargar la información del perfil',
+        type: 'error',
+        confirmText: 'Entendido'
+      });
+    } finally {
+      setLoading(false);
     }
-
-    if (weightNum < 30 || weightNum > 300) {
-      Alert.alert('Error', 'Por favor, introduce un peso válido entre 30 y 300 kg');
-      return false;
-    }
-
-    if (heightNum < 100 || heightNum > 250) {
-      Alert.alert('Error', 'Por favor, introduce una altura válida entre 100 y 250 cm');
-      return false;
-    }
-
-    if (ageNum < 12 || ageNum > 120) {
-      Alert.alert('Error', 'Por favor, introduce una edad válida entre 12 y 120 años');
-      return false;
-    }
-
-    return true;
   };
 
-  const handleSubmit = async () => {
-    if (!validateInputs()) return;
+  const handleSaveProfile = async () => {
+    // Validar que peso, altura y edad sean números válidos
+    const weight = parseFloat(profile.weight);
+    const height = parseFloat(profile.height);
+    const age = parseInt(profile.age, 10);
+
+    if (isNaN(weight) || weight <= 0) {
+      showAlert({
+        title: 'Valor inválido',
+        message: 'Por favor, introduce un peso válido',
+        type: 'warning',
+        confirmText: 'Entendido'
+      });
+      return;
+    }
+
+    if (isNaN(height) || height <= 0) {
+      showAlert({
+        title: 'Valor inválido',
+        message: 'Por favor, introduce una altura válida',
+        type: 'warning',
+        confirmText: 'Entendido'
+      });
+      return;
+    }
+
+    if (isNaN(age) || age <= 0) {
+      showAlert({
+        title: 'Valor inválido',
+        message: 'Por favor, introduce una edad válida',
+        type: 'warning',
+        confirmText: 'Entendido'
+      });
+      return;
+    }
+
+    if (!profile.gender) {
+      showAlert({
+        title: 'Campos incompletos',
+        message: 'Por favor, selecciona tu género',
+        type: 'warning',
+        confirmText: 'Entendido'
+      });
+      return;
+    }
 
     try {
-      setIsSubmitting(true);
-      await updateUserProfile(token, {
-        height: parseInt(height),
-        weight: parseFloat(weight),
-        age: parseInt(age),
-        gender: gender
+      setSaving(true);
+      
+      // Preparar datos para enviar al servidor
+      const updatedProfile = {
+        name: profile.name, // Mantenemos el nombre original
+        weight: weight,
+        height: height,
+        age: age,
+        gender: profile.gender
+      };
+      
+      // Llamar al servicio para actualizar el perfil
+      await updateUserProfile(token, updatedProfile);
+      
+      setSaving(false);
+      
+      // Mostrar mensaje de éxito
+      showAlert({
+        title: 'Perfil actualizado',
+        message: 'Tu perfil ha sido actualizado correctamente',
+        type: 'success',
+        confirmText: 'Genial',
+        onConfirm: () => {
+          setAlertVisible(false);
+          navigation.goBack(); // Volver a la pantalla de perfil
+        }
       });
-
-      Alert.alert(
-        'Perfil actualizado',
-        'Tus datos han sido guardados correctamente',
-        [{ 
-          text: 'Continuar', 
-          onPress: () => {
-            navigation.navigate('SetDailyObjectiveScreen');
-          }
-        }]
-      );
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron guardar los datos. Inténtalo de nuevo.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error al guardar perfil:', error);
+      setSaving(false);
+      showAlert({
+        title: 'Error',
+        message: 'No se pudo actualizar el perfil. Inténtalo de nuevo.',
+        type: 'error',
+        confirmText: 'Entendido'
+      });
     }
   };
+
+  const handleInputChange = (field, value) => {
+    setProfile(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const showAlert = (config) => {
+    setAlertConfig({
+      ...config,
+      onCancel: config.onCancel || (() => setAlertVisible(false))
+    });
+    setAlertVisible(true);
+  };
+
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#121212" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Editar Perfil</Text>
+          <TouchableOpacity onPress={loadUserProfile} style={styles.refreshButton}>
+            <Icon name="refresh-outline" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4c6ef5" />
+          <Text style={styles.loadingText}>Cargando perfil...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Header title="Configura tu perfil" />
-      
-      <View style={styles.content}>
-        <Card style={styles.card}>
-          <Text style={styles.title}>Completa tu perfil</Text>
-          <Text style={styles.subtitle}>
-            Estos datos nos ayudarán a calcular mejor tus métricas de actividad
-          </Text>
+    <StatusBar barStyle="light-content" backgroundColor="#121212" />
+    
+    <View style={styles.header}>
+      <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+        <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>Editar Perfil</Text>
+      <TouchableOpacity onPress={loadUserProfile} style={styles.refreshButton}>
+        <Icon name="refresh-outline" size={22} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Altura (cm)</Text>
-            <TextInput
-              style={styles.input}
-              value={height}
-              onChangeText={setHeight}
-              keyboardType="number-pad"
-              placeholder="Ej: 175"
-              maxLength={3}
-            />
+      <ScrollView contentContainerStyle={styles.content}>
+        <Card style={styles.infoCard}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <Icon name="person-outline" size={20} color="#ff7f50" />
+              <Text style={styles.cardTitle}>Información Personal</Text>
+            </View>
           </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Peso (kg)</Text>
-            <TextInput
-              style={styles.input}
-              value={weight}
-              onChangeText={setWeight}
-              keyboardType="decimal-pad"
-              placeholder="Ej: 70.5"
-              maxLength={5}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Edad</Text>
-            <TextInput
-              style={styles.input}
-              value={age}
-              onChangeText={setAge}
-              keyboardType="number-pad"
-              placeholder="Ej: 25"
-              maxLength={3}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Género</Text>
-            {loadingGenders ? (
-              <ActivityIndicator size="small" color="#0000ff" />
-            ) : (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={gender}
-                  onValueChange={(itemValue) => setGender(itemValue)}
-                  style={styles.picker}
-                  dropdownIconColor="#FFFFFF"
-                >
-                  {genderTypes.map((type) => (
-                    <Picker.Item 
-                      key={type.name} 
-                      label={getGenderLabel(type.name)} 
-                      value={type.name} 
-                    />
-                  ))}
-                </Picker>
-              </View>
-            )}
-          </View>
-
-          <Button
-            title="Guardar y Continuar"
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            loading={isSubmitting}
+          
+          <InputField
+            label="Nombre"
+            value={profile.name}
+            editable={false} // Nombre no editable
+            icon="person-outline"
+            style={styles.disabledInput}
           />
+          
+          <InputField
+            label="Email"
+            value={profile.email}
+            editable={false} // Email no editable
+            icon="mail-outline"
+            style={styles.disabledInput}
+          />
+          
+          <View style={styles.rowContainer}>
+            <View style={styles.halfField}>
+              <InputField
+                label="Peso (kg)"
+                value={profile.weight}
+                onChangeText={(text) => handleInputChange('weight', text)}
+                placeholder="Peso"
+                keyboardType="numeric"
+                icon="fitness-outline"
+              />
+            </View>
+            <View style={styles.halfField}>
+              <InputField
+                label="Altura (cm)"
+                value={profile.height}
+                onChangeText={(text) => handleInputChange('height', text)}
+                placeholder="Altura"
+                keyboardType="numeric"
+                icon="resize-outline"
+              />
+            </View>
+          </View>
+          
+          <View style={styles.rowContainer}>
+            <View style={styles.halfField}>
+              <InputField
+                label="Edad"
+                value={profile.age}
+                onChangeText={(text) => handleInputChange('age', text)}
+                placeholder="Edad"
+                keyboardType="numeric"
+                icon="calendar-outline"
+              />
+            </View>
+            <View style={styles.halfField}>
+              <CustomPicker
+                label="Género"
+                selectedValue={profile.gender}
+                onValueChange={(value) => handleInputChange('gender', value)}
+                items={genderOptions}
+                icon="people-outline"
+              />
+            </View>
+          </View>
         </Card>
-      </View>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={styles.editProfileButton} 
+            onPress={handleSaveProfile}
+            disabled={saving}
+          >
+            <View style={styles.buttonContent}>
+              <Icon name="save-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
+              <Text style={styles.buttonText}>{saving ? "Guardando..." : "Guardar Cambios"}</Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.editProfileButton, {backgroundColor: '#f59c42'}]} 
+            onPress={handleBackPress}
+          >
+            <View style={styles.buttonContent}>
+              <Icon name="close-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+      
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onCancel={alertConfig.onCancel}
+        onConfirm={alertConfig.onConfirm}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        type={alertConfig.type}
+      />
     </View>
   );
 };
 
-// Función para obtener etiquetas más amigables para los géneros
-const getGenderLabel = (name) => {
-  switch (name) {
-    case 'MALE':
-      return 'Masculino';
-    case 'FEMALE':
-      return 'Femenino';
-    case 'OTHER':
-      return 'Otro';
-    default:
-      return name;
-  }
-};
-
-export default SetUserProfileScreen; 
+export default SetUserProfileScreen;
