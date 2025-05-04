@@ -5,6 +5,7 @@ import { registerUser, loginUser, verifyToken } from '../service/AuthService';
 import { ActivityCache } from '../cache/ActivityCache';
 import { appStorage, STORAGE_KEYS } from '../storage/AppStorage';
 import { CommonActions } from '@react-navigation/native';
+import { ProfileImageCache } from '../cache/ProfileImageCache';
 
 export const AuthContext = createContext();
 
@@ -155,6 +156,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     try {
+
+      ProfileImageCache.clearCache();
+
       appStorage.delete(STORAGE_KEYS.AUTH_TOKEN);
       appStorage.delete(STORAGE_KEYS.USER_DATA);
       
@@ -169,6 +173,9 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Sesión expirada, limpiando todas las cachés y datos guardados');
       
+
+      ProfileImageCache.clearCache();
+
       ActivityCache.clearAllCache();
       
       appStorage.delete(STORAGE_KEYS.AUTH_TOKEN);
@@ -227,6 +234,8 @@ export const AuthProvider = ({ children }) => {
       appStorage.delete('token');
       appStorage.delete(STORAGE_KEYS.USER_DATA);
       appStorage.delete(STORAGE_KEYS.IS_NEW_USER);
+
+      ProfileImageCache.clearCache();
       
       // Limpiar también en el módulo CacheService si existe
       try {

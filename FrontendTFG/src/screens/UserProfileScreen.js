@@ -4,7 +4,12 @@ import Header from '../components/layout/Header';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { AuthContext } from '../contexts/AuthContext';
-import { getUserProfile, getUserLevel } from '../service/UserService';
+import { 
+  getUserProfile, 
+  getUserLevel, 
+  getProfileImage, 
+  uploadProfileImage 
+} from '../service/UserService';
 import styles from '../styles/screens/UserProfileScreen.styles';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Footer from '../components/layout/Footer';
@@ -14,6 +19,10 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { logoutUser, deleteUserAccount } from '../service/AuthService';
 import CustomAlert from '../components/common/CustomAlert';
+import { Platform } from 'react-native';
+import { ProfileImageCache } from '../cache/ProfileImageCache';
+import { launchImageLibrary } from 'react-native-image-picker';
+
 
 const UserProfileScreen = ({ navigation }) => {
   const [userProfile, setUserProfile] = useState(null);
@@ -22,6 +31,7 @@ const UserProfileScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const { token, logout: contextLogout } = useContext(AuthContext);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
   const [alertConfig, setAlertConfig] = useState({
     title: '',
     message: '',
@@ -35,7 +45,9 @@ const UserProfileScreen = ({ navigation }) => {
   useEffect(() => {
     loadUserProfile();
     loadUserLevel();
+    loadProfileImage();
   }, [token]);
+
 
   const loadUserProfile = async () => {
     if (!token) return;
@@ -63,6 +75,124 @@ const UserProfileScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Error al cargar nivel del usuario:', error);
     }
+  };
+
+  const loadProfileImage = async () => {
+    try {
+      // Solo cargar imagen si hay un token válido
+      if (!token) {
+        setProfileImage(null);
+        return;
+      }
+      
+      // Intentar cargar desde caché primero
+      const cachedImage = await ProfileImageCache.getImageFromCache();
+      if (cachedImage) {
+        setProfileImage(cachedImage);
+      }
+      
+      // Si hay token, intentar obtener del servidor (actualización en segundo plano)
+      if (token) {
+        const imageUrl = await getProfileImage(token);
+        if (imageUrl) {
+          setProfileImage(imageUrl);
+          // Actualizar la caché con la imagen más reciente
+          await ProfileImageCache.saveImageToCache(imageUrl);
+        }
+      }
+    } catch (error) {
+      console.log('Error al cargar imagen de perfil:', error);
+      // No mostramos error al usuario si no hay imagen
+    }
+  };
+  
+
+  const handleUploadProfileImage = async (imageFile) => {
+    try {
+      setLoading(true);
+      if (!token) {
+        throw new Error('No se encontró el token de autenticación');
+      }
+  
+      await uploadProfileImage(token, imageFile);
+      
+      // Actualizar la imagen en la UI
+      setProfileImage(imageFile.uri);
+      
+      // Guardar en caché
+      await ProfileImageCache.saveImageToCache(imageFile.uri);
+      
+      // Desactivar el loading antes de mostrar la alerta
+      setLoading(false);
+      
+      // Definir una función específica para manejar el cierre de la alerta
+      const handleConfirm = () => {
+        console.log('Cerrando alerta de éxito');
+        setAlertVisible(false);
+      };
+      
+      // Configurar la alerta con la función específica
+      setAlertConfig({
+        title: 'Éxito',
+        message: 'Imagen de perfil actualizada correctamente.',
+        onConfirm: handleConfirm,
+        onCancel: null,
+        confirmText: 'Genial',
+        cancelText: null,
+        type: 'success'
+      });
+      
+      // Mostrar la alerta
+      setAlertVisible(true);
+    } catch (error) {
+      console.error('Error al subir la imagen:', error);
+      
+      setLoading(false); // Importante: desactivar el loading antes de mostrar la alerta
+      
+      setAlertConfig({
+        title: 'Error',
+        message: 'No se pudo subir la imagen de perfil.',
+        onConfirm: () => setAlertVisible(false),
+        onCancel: null,
+        confirmText: 'Entendido',
+        cancelText: null,
+        type: 'error'
+      });
+      setAlertVisible(true);
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const options = {
+        mediaType: 'photo',
+        includeBase64: false,
+        maxHeight: 800,
+        maxWidth: 800,
+        quality: 0.7,
+      };
+  
+      const result = await launchImageLibrary(options);
+      
+      if (!result.didCancel && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        handleUploadProfileImage(selectedImage);
+      }
+    } catch (error) {
+      console.error('Error al seleccionar imagen:', error);
+      showAlert({
+        title: 'Error',
+        message: 'No se pudo seleccionar la imagen. Inténtalo de nuevo.',
+        type: 'error',
+        confirmText: 'Entendido'
+      });
+    }
+  };
+
+
+  const showAlert = (config) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
   };
 
   // Helper function to translate gender
@@ -99,6 +229,8 @@ const UserProfileScreen = ({ navigation }) => {
       onConfirm: async () => {
         try {
           setAlertVisible(false);
+          // Limpiar la imagen de perfil antes de cerrar sesión
+          setProfileImage(null);
           const result = await logoutUser(token);
           if (result) {
             contextLogout();
@@ -211,6 +343,7 @@ const UserProfileScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => {
           loadUserProfile();
           loadUserLevel();
+          loadProfileImage(); // Añadir carga de imagen al refrescar
         }} style={styles.refreshButton}>
           <Icon name="refresh-outline" size={22} color="#FFFFFF" />
         </TouchableOpacity>
@@ -220,11 +353,26 @@ const UserProfileScreen = ({ navigation }) => {
         {/* Sección de Foto de Perfil */}
         <Card style={styles.profileCard}>
           <View style={styles.profileImageContainer}>
-            <View style={styles.profileImage}>
-              <Icon name="person" size={60} color="#CCCCCC" />
-              {/* Aquí se cargará la imagen cuando se implemente */}
-            </View>
-            <TouchableOpacity style={styles.editPhotoButton}>
+            {profileImage ? (
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.profileImage}
+                // Añadir manejo de errores para la imagen
+                onError={() => {
+                  console.log('Error al cargar la imagen');
+                  setProfileImage(null);
+                }}
+              />
+            ) : (
+              <View style={styles.profileImage}>
+                <Icon name="person" size={60} color="#CCCCCC" />
+              </View>
+            )}
+            <TouchableOpacity 
+              style={styles.editPhotoButton} 
+              onPress={pickImage}
+              activeOpacity={0.7}
+            >
               <Icon name="camera" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>

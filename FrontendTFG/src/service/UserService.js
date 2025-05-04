@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ProfileImageCache } from '../cache/ProfileImageCache';
 const API_URL = "http://10.0.2.2:8080";
 
 export async function updateUserProfile(token, profileData) {
@@ -76,3 +77,65 @@ export const getUserLevel = async (token) => {
     throw error;
   }
 };
+
+export const uploadProfileImage = async (token, imageFile) =>{
+  try {
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageFile.uri,
+      type: imageFile.type || 'image/jpeg',
+      name: imageFile.fileName || 'profile.jpg'
+    });
+
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    };
+
+    const response = await axios.post(`${API_URL}/user/profile-image`, formData, config);
+    
+    // Guardar en caché después de subir exitosamente
+    await ProfileImageCache.saveImageToCache(imageFile.uri);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al subir la imagen de perfil:', error);
+    throw error;
+  }
+}
+
+// Método para obtener la imagen de perfil
+export const getProfileImage = async (token) => {
+  try {
+    // Intentar obtener desde caché primero
+    const cachedImage = await ProfileImageCache.getImageFromCache();
+    if (cachedImage) {
+      return cachedImage;
+    }
+    
+    // Si no hay caché, obtener del servidor
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
+
+    const response = await axios.get(`${API_URL}/user/profile-image`, config);
+    
+    // Crear URI de datos con el tipo de imagen y los datos en base64
+    const imageUri = `data:${response.data.imageType};base64,${response.data.imageData}`;
+    
+    // Guardar en caché
+    if (imageUri) {
+      await ProfileImageCache.saveImageToCache(imageUri);
+    }
+    
+    return imageUri;
+  } catch (error) {
+    console.error('Error al obtener la imagen de perfil:', error);
+    throw error;
+  }
+}
+
