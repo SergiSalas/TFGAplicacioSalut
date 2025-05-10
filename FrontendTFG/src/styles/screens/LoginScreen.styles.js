@@ -1,31 +1,63 @@
 import { StyleSheet } from 'react-native';
-import { COLORS, SIZES } from '../../utils/constants';
 
 export default StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#121212',
+  },
+  header: {
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 32,
-    color: COLORS.primary,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  input: {
-    width: '100%',
-    marginBottom: 16,
+  subtitle: {
+    fontSize: 16,
+    color: '#AAAAAA',
+    marginBottom: 30,
+    textAlign: 'center',
   },
   button: {
-    width: '100%',
-    marginTop: 8,
+    backgroundColor: '#4c6ef5',
+    borderRadius: 10,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  registerLink: {
+    alignItems: 'center',
+    paddingVertical: 10,
   },
   linkText: {
-    marginTop: 16,
-    color: COLORS.primary,
-    textDecorationLine: 'underline',
+    color: '#4c6ef5',
+    fontSize: 14,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 12,
+    paddingLeft: 4,
   },
 });

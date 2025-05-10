@@ -7,6 +7,9 @@ const CustomAlert = ({ visible, title, message, onCancel, onConfirm, confirmText
   const handleCancel = onCancel || (() => {});
   const handleConfirm = onConfirm || (() => {});
 
+  // Determinar si solo hay un botón
+  const hasSingleButton = !cancelText;
+
   return (
     <Modal
       transparent={true}
@@ -25,7 +28,10 @@ const CustomAlert = ({ visible, title, message, onCancel, onConfirm, confirmText
           <Text style={styles.modalTitle}>{title}</Text>
           <Text style={styles.modalText}>{message}</Text>
           
-          <View style={styles.buttonContainer}>
+          <View style={[
+            styles.buttonContainer, 
+            hasSingleButton && styles.singleButtonContainer
+          ]}>
             {cancelText && (
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
@@ -40,7 +46,8 @@ const CustomAlert = ({ visible, title, message, onCancel, onConfirm, confirmText
                 style={[
                   styles.button, 
                   styles.confirmButton,
-                  type === 'error' ? styles.deleteButton : null
+                  type === 'error' ? styles.deleteButton : null,
+                  hasSingleButton && styles.singleButton
                 ]}
                 onPress={handleConfirm}
               >
@@ -98,12 +105,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
+  singleButtonContainer: {
+    justifyContent: 'center',
+  },
   button: {
     borderRadius: 10,
     padding: 12,
     elevation: 2,
     minWidth: '45%',
     alignItems: 'center',
+  },
+  singleButton: {
+    minWidth: '60%',
   },
   cancelButton: {
     backgroundColor: 'transparent',

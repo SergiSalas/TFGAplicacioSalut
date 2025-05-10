@@ -10,6 +10,7 @@ export default StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingHorizontal: 20,
     paddingBottom: 80,
   },
   loadingContainer: {
@@ -23,7 +24,7 @@ export default StyleSheet.create({
     marginTop: 12,
   },
   card: {
-    marginBottom: 24, // Aumentado de 20 a 24 para más separación
+    marginBottom: 24, 
     borderRadius: 16,
     backgroundColor: '#1a1a2e',
     padding: 16,
@@ -33,6 +34,8 @@ export default StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -340,21 +343,28 @@ export default StyleSheet.create({
     marginTop: 10,
   },
   datePickerContainer: {
-    alignItems: 'center',
-    marginBottom: 15,
+    marginVertical: 16,
+    width: '100%',
+    paddingHorizontal: 16,
   },
   datePickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2A2A4A',
-    paddingHorizontal: 15,
+    backgroundColor: '#1e1e2e',
     paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2A2A4A',
+    width: '100%',
+    justifyContent: 'space-between',
   },
   datePickerText: {
     color: '#ffffff',
-    marginLeft: 8,
-    fontSize: 16,
+    fontSize: 14,
+    flex: 1,
+    textAlign: 'center',
+    textTransform: 'capitalize',
   },
   buttonContainer: {
     marginTop: 10,
@@ -364,5 +374,10 @@ export default StyleSheet.create({
   button: {
     backgroundColor: '#61dafb',
     borderRadius: 10,
+  },
+  // ... existing code ...
+  datePickerContainer: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
 });

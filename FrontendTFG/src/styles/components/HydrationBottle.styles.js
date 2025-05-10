@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   cardContainer: {
     width: '100%',
-    backgroundColor: '#14142A',
+    backgroundColor: '#1a1a2e',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',

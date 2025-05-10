@@ -42,6 +42,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.23,
     shadowRadius: 2.62,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -61,29 +63,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#FFFFFF',
   },
-  cardDescription: {
-    fontSize: 14,
-    color: '#CCCCCC',
-    marginBottom: 16,
-    lineHeight: 20,
+  // Eliminamos rowContainer que era para disposición horizontal
+  fieldContainer: {
+    marginBottom: 16, // Espacio entre campos verticales
   },
-  presetContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  presetButton: {
-    backgroundColor: '#2a2a3a',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  presetButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
+  // Ya no necesitamos halfField para campos de ancho medio
   buttonContainer: {
     marginTop: 24,
     gap: 16,

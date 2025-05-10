@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#1a1a2e',
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -20,17 +20,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  refreshButton: {
+    padding: 8,
   },
   content: {
     padding: 16,
     paddingBottom: 32,
   },
-  welcomeText: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
     fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 20,
-    textAlign: 'center',
-    lineHeight: 24,
+    color: '#CCCCCC',
   },
   infoCard: {
     marginBottom: 16,
@@ -42,6 +52,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.23,
     shadowRadius: 2.62,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -61,36 +73,33 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#FFFFFF',
   },
-  cardDescription: {
-    fontSize: 14,
-    color: '#CCCCCC',
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  presetContainer: {
+  rowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginBottom: 8,
   },
-  presetButton: {
-    backgroundColor: '#2a2a3a',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  presetButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+  halfField: {
+    width: '48%',
   },
   buttonContainer: {
     marginTop: 24,
     gap: 16,
     width: '100%',
   },
-  editProfileButton: {
+  createButton: {
     backgroundColor: '#4c6ef5',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  cancelButton: {
+    backgroundColor: '#f59c42',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,

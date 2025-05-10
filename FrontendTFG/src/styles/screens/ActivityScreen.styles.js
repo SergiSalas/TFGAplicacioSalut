@@ -30,9 +30,31 @@ export default StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingHorizontal: 20,
     paddingBottom: 80,
   },
-
+  updateButton: {
+    backgroundColor: '#4c6ef5',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#333356',
+  },
+  updateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  updateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
   // --- Card de Resumen ---
   card: {
     marginBottom: 20,
@@ -41,6 +63,8 @@ export default StyleSheet.create({
     padding: 16,
     elevation: 8,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -68,7 +92,6 @@ export default StyleSheet.create({
     lineHeight: 20,
   },
 
-  // --- Botones ---
   button: {
     backgroundColor: '#4c6ef5',
     borderRadius: 8,
@@ -93,7 +116,6 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
 
-  // --- Loading ---
   loadingContainer: {
     alignItems: 'center',
     padding: 20,
@@ -103,7 +125,6 @@ export default StyleSheet.create({
     marginTop: 12,
   },
 
-  // --- Métricas ---
   metricsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -115,6 +136,8 @@ export default StyleSheet.create({
     width: '31%',
     alignItems: 'center',
     backgroundColor: '#232342',
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   metricIcon: {
     marginBottom: 5,
@@ -176,6 +199,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     paddingHorizontal: 4,
+    
   },
   sectionTitle: {
     color: '#ffffff',
@@ -198,6 +222,8 @@ export default StyleSheet.create({
     backgroundColor: '#1a1a2e',
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   activityHeader: {
     flexDirection: 'row',
@@ -212,6 +238,8 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   activityTitleContainer: {
     flex: 1,

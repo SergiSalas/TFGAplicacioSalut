@@ -1,5 +1,6 @@
 package com.tecnocampus.backendtfg.component;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,8 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 email = jwtUtils.extractEmail(token);
                 System.out.println("Extracted email: " + email);
+            } catch (ExpiredJwtException e) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Token caducado\",\"message\":\"Su sesión ha expirado. Por favor, inicie sesión nuevamente.\"}");
+                return;
             } catch (Exception e) {
-                System.out.println("Error parsing token: " + e.getMessage());
+                System.out.println("Error extracting email from token: " + e.getMessage());
             }
         } else {
             System.out.println("Authorization header not found or does not start with \"Bearer \"");

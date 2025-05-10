@@ -48,10 +48,12 @@ const ChallengesScreen = ({ navigation }) => {
   const handleGenerateChallenges = async () => {
     try {
       setLoading(true);
-      const newChallenges = await ChallengeService.generateDailyChallenges(token);
-      console.log('Nuevos desafíos generados:', newChallenges); // Añadir log para depuración
+      // Generar nuevos desafíos
+      await ChallengeService.generateDailyChallenges(token);
+      // Cargar los desafíos generados
+      const newChallenges = await ChallengeService.getUserChallenges(token);
       setChallenges(newChallenges);
-      Alert.alert('Éxito', 'Se han generado nuevos desafíos diarios');
+      Alert.alert('¡Éxito!', 'Se han generado nuevos desafíos');
     } catch (error) {
       console.error('Error al generar desafíos:', error);
       Alert.alert('Error', 'No se pudieron generar nuevos desafíos');
@@ -78,6 +80,10 @@ const ChallengesScreen = ({ navigation }) => {
         return 'fitness-outline';
       case 'SLEEP_HOURS':
         return 'moon-outline';
+      case 'SLEEP_QUALITY':
+        return 'bed-outline';
+      case 'HYDRATION':
+        return 'water-outline';
       default:
         return 'trophy-outline';
     }
@@ -92,6 +98,10 @@ const ChallengesScreen = ({ navigation }) => {
         return 'Actividad';
       case 'SLEEP_HOURS':
         return 'Sueño';
+      case 'SLEEP_QUALITY':
+        return 'Calidad del Sueño';
+      case 'HYDRATION':
+        return 'Hidratación';
       default:
         return 'Desafío';
     }
@@ -142,6 +152,8 @@ const ChallengesScreen = ({ navigation }) => {
             <Text style={styles.progressText}>
               {challenge.currentValue} / {challenge.targetValue}
               {challenge.type === 'SLEEP_HOURS' ? ' min' : ''}
+              {challenge.type === 'HYDRATION' ? ' ml' : ''}
+              {challenge.type === 'SLEEP_QUALITY' ? '%' : ''}
             </Text>
             <Text style={styles.progressPercentage}>
               {Math.round(challenge.progress)}%

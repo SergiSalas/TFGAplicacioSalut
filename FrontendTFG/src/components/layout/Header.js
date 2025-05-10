@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import headerStyles from '../../styles/components/Header.styles';
 import { ProfileImageCache } from '../../cache/ProfileImageCache';
 import { AuthContext } from '../../contexts/AuthContext';
+import { getProfileImage } from '../../service/UserService';
 
 const Header = ({ title, navigation, userProfile, userLevel, onRefresh }) => {
   const [profileImage, setProfileImage] = useState(null);
@@ -35,6 +36,16 @@ const Header = ({ title, navigation, userProfile, userLevel, onRefresh }) => {
           // Si no hay imagen en caché pero sí en el perfil, la usamos y guardamos en caché
           setProfileImage(userProfile.profileImage);
           await ProfileImageCache.saveImageToCache(userProfile.profileImage);
+        } else {
+          // Si no hay imagen en caché ni en el perfil, intentamos obtenerla del servidor
+          try {
+            const serverImage = await getProfileImage(token);
+            if (serverImage) {
+              setProfileImage(serverImage);
+            }
+          } catch (serverError) {
+            console.error('Error al obtener imagen del servidor en Header:', serverError);
+          }
         }
       } catch (error) {
         console.error('Error al cargar imagen de perfil en Header:', error);

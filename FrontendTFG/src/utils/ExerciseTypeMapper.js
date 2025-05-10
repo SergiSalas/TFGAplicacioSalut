@@ -327,112 +327,181 @@ export const getExerciseTypeName = (exerciseType) => {
 };
 
 
-// Mapeo de tipo de ejercicio a icono (usando Ionicons)
+// Mapeo de tipo de ejercicio a icono
 export const getExerciseTypeIcon = (exerciseType) => {
-  const typeName = typeof exerciseType === 'number' 
-    ? getExerciseTypeName(exerciseType)
+  // Si recibimos un string, intentamos convertirlo a número
+  const typeCode = typeof exerciseType === 'string' 
+    ? parseInt(exerciseType, 10) 
     : exerciseType;
+    
+  // Si no es un número válido, devolvemos un icono predeterminado
+  if (isNaN(typeCode)) {
+    return "fitness-outline";
+  }
   
-  const iconsMap = {
-    'Carrera': 'speedometer-outline',
-    'Running': 'speedometer-outline',
-    'Caminata': 'walk-outline', 
-    'Walking': 'walk-outline',
-    'Ciclismo': 'bicycle-outline',
-    'Cycling': 'bicycle-outline',
-    'Bicicleta estática': 'bicycle-outline',
-    'Natación': 'water-outline',
-    'Natación en piscina': 'water-outline',
-    'Natación en aguas abiertas': 'water-outline',
-    'Swimming': 'water-outline',
-    'Fútbol': 'football-outline',
-    'Soccer': 'football-outline',
-    'Baloncesto': 'basketball-outline',
-    'Basketball': 'basketball-outline',
-    'Tenis': 'tennisball-outline',
-    'Tennis': 'tennisball-outline',
-    'Boxeo': 'fitness-outline',
-    'Boxing': 'fitness-outline',
-    'Entrenamiento': 'barbell-outline',
-    'Entrenamiento de fuerza': 'barbell-outline',
-    'Levantamiento de pesas': 'barbell-outline',
-    'Workout': 'barbell-outline',
-    'Yoga': 'body-outline',
-    'Pilates': 'body-outline',
-    'HIIT': 'timer-outline',
-    'Hiit': 'timer-outline',
-    'Baile': 'musical-notes-outline',
-    'Dance': 'musical-notes-outline',
-    'Senderismo': 'trail-sign-outline',
-    'Remo': 'boat-outline',
-    'Máquina de remo': 'boat-outline',
-    'Golf': 'golf-outline',
-    'Escalada': 'trending-up-outline',
-    'Esquí': 'snow-outline',
-    'Snowboard': 'snow-outline',
-    'Patinaje': 'snow-outline',
-    'Patinaje sobre hielo': 'snow-outline',
-    'Hockey sobre hielo': 'snow-outline',
-    'Frisbee': 'disc-outline',
-    'Voleibol': 'american-football-outline',
-    'Rugby': 'american-football-outline',
-    'Fútbol Americano': 'american-football-outline',
-  };
-  
-  return iconsMap[typeName] || 'fitness-outline';
+  // Mapeo de código a icono
+  switch (typeCode) {
+    case EXERCISE_TYPES.EXERCISE_TYPE_AEROBICS:
+      return "body-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BADMINTON:
+      return "tennisball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BASEBALL:
+      return "baseball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BASKETBALL:
+      return "basketball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BIKING:
+      return "bicycle-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BIKING_STATIONARY:
+      return "bicycle-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BOOT_CAMP:
+      return "barbell-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_BOXING:
+      return "fist-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_CALISTHENICS:
+      return "body-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_CRICKET:
+      return "tennisball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_DANCING:
+      return "musical-notes-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ELLIPTICAL:
+      return "walk-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_FENCING:
+      return "flash-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL_AMERICAN:
+      return "american-football-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_FOOTBALL_AUSTRALIAN:
+      return "football-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_FRISBEE_DISC:
+      return "disc-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_GOLF:
+      return "golf-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_GUIDED_BREATHING:
+      return "pulse-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_GYMNASTICS:
+      return "body-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_HANDBALL:
+      return "hand-right-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
+      return "stopwatch-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_HIKING:
+      return "trail-sign-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ICE_HOCKEY:
+      return "snow-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ICE_SKATING:
+      return "snow-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_MARTIAL_ARTS:
+      return "hand-left-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_PADDLING:
+      return "boat-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_PARAGLIDING:
+      return "airplane-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_PILATES:
+      return "body-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_RACQUETBALL:
+      return "tennisball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROCK_CLIMBING:
+      return "trending-up-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROLLER_HOCKEY:
+      return "football-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROWING:
+      return "boat-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_ROWING_MACHINE:
+      return "boat-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_RUGBY:
+      return "football-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_RUNNING:
+      return "footsteps-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_RUNNING_TREADMILL:
+      return "footsteps-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SAILING:
+      return "boat-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SCUBA_DIVING:
+      return "water-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SKATING:
+      return "walk-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SKIING:
+      return "snow-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SNOWBOARDING:
+      return "snow-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SNOWSHOEING:
+      return "snow-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SOCCER:
+      return "football-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SOFTBALL:
+      return "baseball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SQUASH:
+      return "tennisball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_STAIR_CLIMBING:
+      return "trending-up-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_STAIR_CLIMBING_MACHINE:
+      return "trending-up-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_STRENGTH_TRAINING:
+      return "barbell-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_STRETCHING:
+      return "body-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SURFING:
+      return "water-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SWIMMING_OPEN_WATER:
+      return "water-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_SWIMMING_POOL:
+      return "water-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_TABLE_TENNIS:
+      return "tennisball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_TENNIS:
+      return "tennisball-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_VOLLEYBALL:
+      return "football-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_WALKING:
+      return "walk-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_WATER_POLO:
+      return "water-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_WEIGHTLIFTING:
+      return "barbell-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_WHEELCHAIR:
+      return "accessibility-outline";
+    case EXERCISE_TYPES.EXERCISE_TYPE_YOGA:
+      return "body-outline";
+    default:
+      return "fitness-outline";
+  }
 };
 
-// Mapeo de tipo de ejercicio a color
-export const getExerciseTypeColor = (exerciseType) => {
-  const typeName = typeof exerciseType === 'number' 
-    ? getExerciseTypeName(exerciseType)
-    : exerciseType;
 
-  const colorsMap = {
-    'Carrera': '#ff6b6b',
-    'Running': '#ff6b6b',
-    'Caminata': '#54a0ff',
-    'Walking': '#54a0ff',
-    'Ciclismo': '#5f27cd',
-    'Cycling': '#5f27cd',
-    'Bicicleta estática': '#5f27cd',
-    'Natación': '#00d2d3',
-    'Natación en piscina': '#00d2d3',
-    'Natación en aguas abiertas': '#00d2d3',
-    'Swimming': '#00d2d3',
-    'Fútbol': '#1dd1a1',
-    'Soccer': '#1dd1a1',
-    'Baloncesto': '#ff9f43',
-    'Basketball': '#ff9f43',
-    'Tenis': '#feca57',
-    'Tennis': '#feca57',
-    'Boxeo': '#ff6b6b',
-    'Boxing': '#ff6b6b',
-    'Entrenamiento': '#5f27cd',
-    'Entrenamiento de fuerza': '#5f27cd',
-    'Levantamiento de pesas': '#5f27cd',
-    'Workout': '#5f27cd',
-    'Yoga': '#1dd1a1',
-    'Pilates': '#1dd1a1',
-    'HIIT': '#ff6b6b',
-    'Hiit': '#ff6b6b',
-    'Baile': '#ff9ff3',
-    'Dance': '#ff9ff3',
-    'Senderismo': '#78e08f',
-    'Remo': '#38ada9',
-    'Máquina de remo': '#38ada9',
-    'Golf': '#78e08f',
-    'Escalada': '#fa983a',
-    'Esquí': '#54a0ff',
-    'Snowboard': '#54a0ff',
-    'Patinaje': '#54a0ff',
-    'Patinaje sobre hielo': '#54a0ff',
-    'Hockey sobre hielo': '#ff6b6b',
-    'Frisbee': '#1dd1a1',
-    'Voleibol': '#ffbe76',
-    'Rugby': '#ff6b6b',
-    'Fútbol Americano': '#ff6b6b',
-  };
+// Mapeo de tipo de ejercicio a color
+// Mapeo de tipo de ejercicio a color
+// También necesitamos implementar getExerciseTypeColor si no existe
+export const getExerciseTypeColor = (exerciseType) => {
+  // Si recibimos un string, intentamos convertirlo a número
+  const typeCode = typeof exerciseType === 'string' 
+    ? parseInt(exerciseType, 10) 
+    : exerciseType;
+    
+  // Si no es un número válido, devolvemos un color predeterminado
+  if (isNaN(typeCode)) {
+    return "#4c6ef5";
+  }
   
-  return colorsMap[typeName] || '#4a69bd';
-}; 
+  // Asignar colores por categoría de ejercicio
+  if ([8, 9, 56, 57, 79].includes(typeCode)) {
+    // Cardio (ciclismo, correr, caminar)
+    return "#ff6b6b";
+  } else if ([70, 81].includes(typeCode)) {
+    // Fuerza (entrenamiento de fuerza, levantamiento de pesas)
+    return "#4c6ef5";
+  } else if ([73, 74, 80].includes(typeCode)) {
+    // Agua (natación, waterpolo)
+    return "#4dabf7";
+  } else if ([5, 64, 76, 78].includes(typeCode)) {
+    // Deportes de equipo (baloncesto, fútbol, tenis, voleibol)
+    return "#51cf66";
+  } else if ([48, 71, 83].includes(typeCode)) {
+    // Flexibilidad (pilates, estiramientos, yoga)
+    return "#ae3ec9";
+  } else if ([36, 37, 68, 69].includes(typeCode)) {
+    // Alta intensidad (HIIT, senderismo, subir escaleras)
+    return "#fcc419";
+  } else {
+    // Otros tipos
+    return "#4c6ef5";
+  }
+};

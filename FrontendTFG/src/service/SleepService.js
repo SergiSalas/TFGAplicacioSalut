@@ -6,12 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL = "http://10.0.2.2:8080";
 
 /**
- * Guarda datos de sueño en el backend
- * @param {string} token - Token de autenticación
- * @param {object} sleepData - Datos de sueño a guardar
- * @returns {Promise<Object>} - Respuesta del servidor
- */
-/**
  * Mapea los valores textuales de etapas de sueño a los valores del enum StageType del backend
  * @param {string} stageText - Texto descriptivo de la etapa de sueño
  * @param {number} originalType - Tipo original numérico (si está disponible)
@@ -473,6 +467,76 @@ export const getSleepsByDate = async (token, date) => {
   }
 };
 
+/**
+ * Establece el objetivo diario de sueño del usuario
+ * @param {string} token - Token de autenticación
+ * @param {number} dailyObjectiveSleep - Objetivo diario de sueño en horas
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const addSleepObjective = async (token, dailyObjectiveSleep) => {
+  try {
+    if (!token) {
+      const storedToken = await AsyncStorage.getItem('userToken');
+      if (!storedToken) {
+        throw new Error('No authentication token available');
+      }
+      token = storedToken;
+    }
+
+    console.log(`Estableciendo objetivo diario de sueño: ${dailyObjectiveSleep} horas`);
+    
+    const response = await axios.post(
+      `${API_URL}/sleep/addObjective`,
+      dailyObjectiveSleep,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    console.log('Objetivo de sueño establecido correctamente');
+    return response.data;
+  } catch (error) {
+    console.error('Error al establecer objetivo de sueño:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene el objetivo de sueño del usuario
+ * @param {string} token - Token de autenticación
+ * @returns {Promise<number>} - Objetivo de sueño en horas
+ */
+export const getSleepObjective = async (token) => {
+  try {
+    if (!token) {
+      const storedToken = await AsyncStorage.getItem('userToken');
+      if (!storedToken) {
+        throw new Error('No authentication token available');
+      }
+      token = storedToken;
+    }
+
+    console.log('Obteniendo objetivo de sueño...');
+    const response = await axios.get(`${API_URL}/sleep/getObjective`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    console.log('Objetivo de sueño obtenido:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error en getSleepObjective:', error);
+    throw error;
+  }
+};
+
+
+
 // Actualizar el export default para incluir la nueva función
 export default {
   saveSleepData,
@@ -481,67 +545,8 @@ export default {
   updateSleep,
   deleteSleep,
   getSleepsByDate,
-  convertToLocalTimezone
+  convertToLocalTimezone,
+  addSleepObjective,
+  getSleepObjective
 };
 
-
-/**
- * Análisis de los Datos de Sueño de Health Connect
- *
- * Veo que estás recibiendo datos de sueño desde Health Connect en un formato específico. Vamos a analizar estos datos y ver cómo se están procesando en tu aplicación.
- *
- * ## Datos recibidos de Health Connect
- *
- * Los datos que recibes tienen esta estructura:
- * - Un objeto `Sleep Response` con un array de `records`
- * - Cada registro tiene:
- *   - Tiempo de inicio y fin
- *   - Un array de `stages` (etapas de sueño)
- *   - Notas, título y metadatos
- *
- * ## Etapas de sueño recibidas
- *
- * Las etapas de sueño vienen con valores numéricos:
- * 1. Etapa 7: 08:01 - 10:08 (2.1h) - Corresponde a `AWAKE_IN_BED`
- * 2. Etapa 4: 10:08 - 12:16 (2.1h) - Corresponde a `LIGHT`
- * 3. Etapa 3: 12:16 - 14:23 (2.1h) - Corresponde a `OUT_OF_BED`
- * 4. Etapa 0: 14:23 - 16:31 (2.1h) - Corresponde a `UNKNOWN`
- *
- * ## Problema identificado
- *
- * En tu código actual, estás mapeando correctamente los valores numéricos a los tipos de etapa en la función `mapStageTextToEnum`, pero hay un problema en cómo se están procesando las etapas en la función `saveSleepData`.
- *
- * El problema principal es que los datos que recibes de Health Connect tienen las etapas con valores numéricos (`stage: 7`, `stage: 4`, etc.), pero tu código está esperando que estos valores estén en la propiedad `originalType` y no en `stage`.
- *
- * ## Solución propuesta
- *
- * Necesitas modificar la función `saveSleepData` para manejar correctamente las etapas cuando vienen directamente de Health Connect:
-```javascript
-// ... existing code ...
-
-else if (sleepData.stages && Array.isArray(sleepData.stages) && sleepData.stages.length > 0) {
-  // Si tenemos etapas en el formato de Health Connect Toolbox
-  sleepStagesDTO = sleepData.stages.map(stage => {
-    // Verificar si stage es un número o un objeto
-    let stageType;
-    
-    if (typeof stage.stage === 'number') {
-      // Si stage es un número, usarlo directamente para mapear
-      stageType = mapStageTextToEnum(null, stage.stage);
-    } else if (stage.originalType !== undefined) {
-      // Si tenemos originalType, usarlo
-      stageType = mapStageTextToEnum(stage.stage, stage.originalType);
-    } else {
-      // Si no, intentar mapear desde el texto
-      stageType = mapStageTextToEnum(stage.stage, null);
-    }
-    
-    return {
-      startTime: new Date(stage.startTime),
-      endTime: new Date(stage.endTime),
-      stageType: stageType
-    };
-  });
-}
-
-// ... existing code ...*/

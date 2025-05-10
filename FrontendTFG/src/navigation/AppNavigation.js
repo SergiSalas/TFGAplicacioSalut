@@ -9,7 +9,6 @@ import AppContent from '../components/AppContent';
 import HomeScreen from '../screens/HomeScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SleepScreen from '../screens/SleepScreen';
-import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 import WorkoutListScreen from '../screens/WorkoutListScreen';
@@ -21,13 +20,14 @@ import ChallengesScreen from '../screens/ChallengesScreen';
 // Importación de pantallas de autenticación
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
-import { StackActions } from '@react-navigation/native';
 
 // Añadir la importación de la nueva pantalla
 import SetDailyObjectiveScreen from '../screens/SetDailyObjectiveScreen';
 import SetUserProfileScreen from '../screens/SetUserProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import TrendsScreen from '../screens/TrendsScreen';
+import InitialUserProfileScreen from '../screens/InitialUserProfileScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -41,7 +41,7 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
           {isNewUser ? (
             // Para usuarios nuevos, primero configurar el perfil
             <>
-              <Stack.Screen name="SetUserProfileScreen" component={SetUserProfileScreen} />
+              <Stack.Screen name="InitialUserProfileScreen" component={InitialUserProfileScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
             </>
           ) : (

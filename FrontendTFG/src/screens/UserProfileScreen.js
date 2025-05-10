@@ -56,6 +56,7 @@ const UserProfileScreen = ({ navigation }) => {
       setLoading(true);
       setError(null);
       const profileData = await getUserProfile(token);
+      console.log('Género recibido:', profileData.gender); // Añadir esta línea
       setUserProfile(profileData);
     } catch (error) {
       console.error('Error al cargar perfil:', error);
@@ -196,7 +197,12 @@ const UserProfileScreen = ({ navigation }) => {
   };
 
   // Helper function to translate gender
+  
   const getGenderLabel = (gender) => {
+    if (!gender) {
+      return 'No especificado';
+    }
+      
     switch (gender) {
       case 'MALE':
         return 'Masculino';
@@ -213,9 +219,6 @@ const UserProfileScreen = ({ navigation }) => {
     navigation.navigate('SetUserProfileScreen');
   };
 
-  const handleChallenges = () => {
-    navigation.navigate('ChallengesScreen');
-  };
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -479,13 +482,6 @@ const UserProfileScreen = ({ navigation }) => {
             <View style={styles.buttonContent}>
               <Icon name="create-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
               <Text style={styles.buttonText}>Editar Perfil</Text>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.editProfileButton} onPress={handleChallenges}>
-            <View style={styles.buttonContent}>
-              <Icon name="trophy-outline" size={18} color="#FFFFFF" style={{marginRight: 8}} />
-              <Text style={styles.buttonText}>Mis Desafíos</Text>
             </View>
           </TouchableOpacity>
           

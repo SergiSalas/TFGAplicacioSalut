@@ -17,7 +17,7 @@ public class UserDTO {
     private Double weight;
     private int height;
     private int age;
-    private String gender;
+    private Gender gender;
 
 
 
@@ -31,7 +31,7 @@ public class UserDTO {
         this.password = password;
         this.weight = weight;
         this.height = height;
-        this.gender = gender.name();
+        this.gender = gender;
     }
 
     public UserDTO(String name, String email, String password) {
@@ -51,7 +51,7 @@ public class UserDTO {
         this.weight = user.getWeight();
         this.height = user.getHeight();
         this.age = user.getAge();
-        this.gender = user.getGender() != null ? user.getGender().name() : null;
+        this.gender = user.getGender();
     }
 
 }

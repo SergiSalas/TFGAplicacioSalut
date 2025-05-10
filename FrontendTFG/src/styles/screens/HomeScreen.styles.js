@@ -70,7 +70,8 @@ export default StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 80, 
+    flexGrow: 1, 
   },
   statsCard: {
     width: '100%',
@@ -88,6 +89,8 @@ export default StyleSheet.create({
     shadowOpacity: 0.23,
     shadowRadius: 2.62,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -161,7 +164,7 @@ export default StyleSheet.create({
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#4c6ef5',
+    backgroundColor: '#4c6ef5', // Mantener este color o cambiarlo si prefieres
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -206,5 +209,16 @@ export default StyleSheet.create({
     textAlign: 'center',
     marginVertical: 10,
     lineHeight: 20,
+  },
+  hydrationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  hydrationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginLeft: 8,
   },
 });

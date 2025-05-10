@@ -22,7 +22,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import * as Progress from 'react-native-progress';
 import { useSleepData } from '../hooks/useSleepData';
 import { FOOTER_SCREENS } from '../constants/navigation';
-import { saveSleepData, getSleepsByDate } from '../service/SleepService';
+import { saveSleepData, getSleepsByDate, getSleepObjective } from '../service/SleepService';
 import { getUserProfile, getUserLevel } from '../service/UserService';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -39,19 +39,53 @@ const SleepScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [healthConnectAvailable, setHealthConnectAvailable] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getCurrentDateFormatted());
+  const [displayDate, setDisplayDate] = useState(''); // Nueva variable para mostrar la fecha formateada
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [userLevel, setUserLevel] = useState(null);
   const [sleepData, setSleepData] = useState(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  // Add the onRefresh function
+  const [recommendedHours, setRecommendedHours] = useState(8);
+
+  const [appState, setAppState] = useState(AppState.currentState);
+
+  const formatDisplayDate = useCallback((dateString) => {
+    const date = new Date(dateString);
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('es-ES', options);
+  }, []);
+
+
+  useEffect(() => {
+    setDisplayDate(formatDisplayDate(selectedDate));
+  }, [selectedDate, formatDisplayDate]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadSleepData().finally(() => {
-      setRefreshing(false);
-    });
-  }, []);
+    // Actualizar la fecha seleccionada a la fecha actual
+    const currentDate = getCurrentDateFormatted();
+    setSelectedDate(currentDate);
+    
+    // Reinicializar Health Connect
+    initializeHealthConnectService()
+      .then(() => loadSleepData(true, currentDate))
+      .then(() => loadSleepObjective())
+      .finally(() => {
+        setRefreshing(false);
+      });
+  }, [loadSleepData, loadSleepObjective, initializeHealthConnectService]);
+
+  const loadSleepObjective = useCallback(async () => {
+    if (!token) return;
+    try {
+      const objective = await getSleepObjective(token);
+      setRecommendedHours(objective);
+    } catch (err) {
+      console.error('Error cargando objetivo de sueño:', err);
+    }
+  }, [token]);
+
 
   const loadUserProfile = useCallback(async () => {
     if (!token) return;
@@ -77,10 +111,8 @@ const SleepScreen = ({ navigation }) => {
   useEffect(() => {
     loadUserProfile();
     loadUserLevel();
-  }, [loadUserProfile, loadUserLevel]);
-
-  // Añadir un nuevo useEffect para monitorear cambios en userLevel
-  
+    loadSleepObjective(); 
+  }, [loadUserProfile, loadUserLevel, loadSleepObjective]);
 
   useEffect(() => {
     if (token && !initialLoadDone) {
@@ -116,6 +148,11 @@ const SleepScreen = ({ navigation }) => {
     console.log('Obteniendo datos de sueño para la fecha:', dateToFetch);
     setLoading(true);
     try {
+      // Si se proporciona una nueva fecha, actualizar la fecha seleccionada
+      if (dateParam) {
+        setSelectedDate(dateParam);
+      }
+      
       const sleepRecords = await getSleepsByDate(token, dateToFetch);
       if (sleepRecords.length > 0) {
         const record = sleepRecords[0];
@@ -146,7 +183,7 @@ const SleepScreen = ({ navigation }) => {
     }
   }, [token, selectedDate]);
 
-  
+
   // Función para calcular el resumen de etapas de sueño
   const calculateStagesSummary = (stages) => {
     if (!stages || stages.length === 0) return null;
@@ -409,7 +446,6 @@ const renderSleepQualityCard = () => {
     if (!sleepData) return null;
     
     // Recomendación general de 7-9 horas para adultos
-    const recommendedHours = 8;
     const durationPercentage = Math.min(sleepData.durationHours / recommendedHours, 1);
     
     return (
@@ -494,15 +530,6 @@ const renderSleepQualityCard = () => {
     // Convertir a array y ordenar por duración (de mayor a menor)
     const sortedStages = Object.values(stageGroups)
       .sort((a, b) => b.totalDuration - a.totalDuration);
-    
-    // Asegurarse de que stagesSummary existe
-    const stagesSummary = sleepData.stagesSummary || {
-      deepSleep: 0,
-      lightSleep: 0,
-      remSleep: 0,
-      awake: 0,
-      totalSleep: sleepData.durationHours || 0
-    };
     
     return (
       <Card style={styles.card}>
@@ -659,7 +686,7 @@ const renderSleepQualityCard = () => {
 
   return (
     <View style={styles.container}>
-    <StatusBar barStyle="light-content" backgroundColor="#1A1A2E" />
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
       <Header 
         title="Sueño" 
         navigation={navigation}
@@ -667,7 +694,6 @@ const renderSleepQualityCard = () => {
         userLevel={userLevel}
         onRefresh={onRefresh}
       />
-      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -675,18 +701,22 @@ const renderSleepQualityCard = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#61dafb"]}
-            tintColor="#61dafb"
+            colors={["#4c6ef5"]}
+            tintColor="#4c6ef5"
           />
         }
       >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#61dafb" />
-            <Text style={styles.loadingText}>Cargando datos...</Text>
-          </View>
-        ) : (
-          <>
+        <View style={styles.content}>
+          <View style={styles.datePickerContainer}>
+            <TouchableOpacity 
+              style={styles.datePickerButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Icon name="calendar-outline" size={20} color="#61dafb" />
+              <Text style={styles.datePickerText}>{displayDate}</Text>
+              <Icon name="chevron-down-outline" size={16} color="#61dafb" />
+            </TouchableOpacity>
+            
             {showDatePicker && (
               <DateTimePicker
                 value={new Date(selectedDate)}
@@ -696,34 +726,28 @@ const renderSleepQualityCard = () => {
                 maximumDate={new Date()}
               />
             )}
-            
-            <View style={styles.datePickerContainer}>
-              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowDatePicker(true)}>
-                <Icon name="calendar-outline" size={20} color="#61dafb" />
-                <Text style={styles.datePickerText}>{selectedDate}</Text>
-              </TouchableOpacity>
+          </View>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#61dafb" />
+              <Text style={styles.loadingText}>Cargando datos de sueño...</Text>
             </View>
-            
-            {sleepData ? (
-              <>
-                {renderSleepQualityCard()}
-                {renderSleepDurationCard()}
-                {renderSleepStagesCard()}
-                {renderSleepTipsCard()}
-                
-                <View style={styles.buttonContainer}>
-                  <Button 
-                    title="Guardar Datos" 
-                    onPress={handleSaveSleepData} 
-                    style={styles.button}
-                  />
-                </View>
-              </>
-            ) : (
-              renderNoDataMessage()
-            )}
-          </>
-        )}
+          ) : (
+            <>
+              {sleepData ? (
+                <>
+                  {renderSleepQualityCard()}
+                  {renderSleepDurationCard()}
+                  {renderSleepStagesCard()}
+                  {renderSleepTipsCard()}
+                </>
+              ) : (
+                renderNoDataMessage()
+              )}
+            </>
+          )}
+        </View>
       </ScrollView>
       
       <Footer 

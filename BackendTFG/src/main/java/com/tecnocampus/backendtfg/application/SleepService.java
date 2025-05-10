@@ -113,12 +113,20 @@ public class SleepService {
                 cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH);
     }
 
-    public void addObjective(double dailyObjectiveSleep, String email) {
+    public void addObjective(String token, double dailyObjectiveSleep) {
+        String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         SleepProfile sleepProfile = user.getSleepProfile();
         sleepProfile.addObjective(dailyObjectiveSleep);
         sleepProfileRepository.save(sleepProfile);
         userRepository.save(user);
+    }
+
+    public Object getObjective(String token) {
+        String email = getEmailFromToken(token);
+        User user = userRepository.findByEmail(email);
+        SleepProfile sleepProfile = user.getSleepProfile();
+        return sleepProfile.getDailyObjectiveSleep();
     }
 
     private String getEmailFromToken(String token) {

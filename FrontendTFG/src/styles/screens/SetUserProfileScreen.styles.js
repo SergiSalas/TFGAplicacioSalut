@@ -28,7 +28,6 @@ const styles = StyleSheet.create({
   refreshButton: {
     padding: 8,
   },
-  // ... existing code ...
   content: {
     padding: 16,
     paddingBottom: 32,
@@ -44,21 +43,22 @@ const styles = StyleSheet.create({
     color: '#CCCCCC',
   },
   infoCard: {
-    marginBottom: 24,
-    borderRadius: 16,
+    marginBottom: 16,
+    borderRadius: 12,
     backgroundColor: '#1a1a2e',
     padding: 16,
-    elevation: 8,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
     marginBottom: 16,
   },
   cardHeaderLeft: {
@@ -66,10 +66,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardTitle: {
-    color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
     marginLeft: 8,
+    color: '#FFFFFF',
+  },
+  profileInfo: {
+    width: '100%',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  label: {
+    fontSize: 16,
+    color: '#CCCCCC',
+    fontWeight: '500',
+  },
+  value: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#333333',
+    width: '100%',
   },
   disabledInput: {
     backgroundColor: '#2A2A3A',
@@ -87,6 +110,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: 24,
     gap: 16,
+    width: '100%',
   },
   editProfileButton: {
     backgroundColor: '#4c6ef5',
@@ -109,6 +133,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#ff6b6b',
+    textAlign: 'center',
+    marginVertical: 10,
+    fontSize: 16,
   },
 });
 

@@ -37,17 +37,9 @@ public class ChallengeService {
         User user = userRepository.findByEmail(email);
 
         // Eliminar retos antiguos no completados
-        List<Challenge> activeNonCompletedChallenges = challengeRepository.findByUserAndCompletedFalse(user);
-        Calendar yesterday = Calendar.getInstance();
-        yesterday.add(Calendar.DAY_OF_MONTH, -1);
+        cleanOldChallenges(user);
 
-        for (Challenge challenge : activeNonCompletedChallenges) {
-            if (challenge.getCreationDate().before(yesterday.getTime())) {
-                challengeRepository.delete(challenge);
-            }
-        }
-
-        // Comprobar si ya tiene 3 retos activos hoy
+        // Comprobar si ya tiene retos activos hoy
         Calendar today = Calendar.getInstance();
         today.set(Calendar.HOUR_OF_DAY, 0);
         today.set(Calendar.MINUTE, 0);
@@ -63,55 +55,22 @@ public class ChallengeService {
         // Generar nuevos retos
         List<Challenge> newChallenges = new ArrayList<>();
 
-        // Aseguramos que generamos 3 retos de diferentes tipos
-        List<ChallengeType> types = new ArrayList<>(Arrays.asList(
-                ChallengeType.values()
-        ));
-        Collections.shuffle(types);
+        // Obtener todos los tipos de desafíos disponibles
+        List<ChallengeType> availableTypes = new ArrayList<>(Arrays.asList(ChallengeType.values()));
+        Collections.shuffle(availableTypes);
 
-        // Generar reto de pasos
-        if (types.get(0) == ChallengeType.STEPS) {
-            int targetSteps = getTargetSteps(user);
-            Challenge stepsChallenge = new Challenge(
-                    "Caminar " + targetSteps + " pasos hoy",
-                    20,
-                    ChallengeType.STEPS,
-                    targetSteps,
-                    user
-            );
-            user.addChallenge(stepsChallenge);
-            newChallenges.add(stepsChallenge);
-        }
+        // Determinar cuántos desafíos crear (mínimo 3, máximo según tipos disponibles)
+        int numChallengesToCreate = Math.min(3 + random.nextInt(availableTypes.size() - 2), availableTypes.size());
+        numChallengesToCreate = Math.max(numChallengesToCreate, 3); // Garantizar mínimo 3
 
-        // Generar reto de actividad
-        if (types.get(1) == ChallengeType.ACTIVITY_DURATION) {
-            int targetMinutes = 30 + random.nextInt(31); // Entre 30 y 60 minutos
-            Challenge activityChallenge = new Challenge(
-                    "Realizar " + targetMinutes + " minutos de ejercicio",
-                    25,
-                    ChallengeType.ACTIVITY_DURATION,
-                    targetMinutes,
-                    user
-            );
-            user.addChallenge(activityChallenge);
-            newChallenges.add(activityChallenge);
-        }
-
-        // Generar reto de sueño
-        if (types.get(2) == ChallengeType.SLEEP_HOURS) {
-            double targetHours = Math.round((user.getSleepProfile().getDailyObjectiveSleep() > 0
-                    ? user.getSleepProfile().getDailyObjectiveSleep()
-                    : 8) * 10) / 10.0;
-
-            Challenge sleepChallenge = new Challenge(
-                    "Dormir " + targetHours + " horas esta noche",
-                    15,
-                    ChallengeType.SLEEP_HOURS,
-                    (int)(targetHours * 60), // Convertimos a minutos
-                    user
-            );
-            user.addChallenge(sleepChallenge);
-            newChallenges.add(sleepChallenge);
+        // Generar los desafíos
+        for (int i = 0; i < numChallengesToCreate; i++) {
+            ChallengeType type = availableTypes.get(i);
+            Challenge challenge = createChallengeByType(type, user);
+            if (challenge != null) {
+                user.addChallenge(challenge);
+                newChallenges.add(challenge);
+            }
         }
 
         userRepository.save(user);
@@ -119,6 +78,78 @@ public class ChallengeService {
                 .map(ChallengeDTO::new)
                 .collect(Collectors.toList());
     }
+
+    private Challenge createChallengeByType(ChallengeType type, User user) {
+        switch (type) {
+            case STEPS:
+                int targetSteps = getTargetSteps(user);
+                return new Challenge(
+                        "Caminar " + targetSteps + " pasos hoy",
+                        20,
+                        ChallengeType.STEPS,
+                        targetSteps,
+                        user
+                );
+
+            case ACTIVITY_DURATION:
+                int targetMinutes = 30 + random.nextInt(31); // Entre 30 y 60 minutos
+                return new Challenge(
+                        "Realizar " + targetMinutes + " minutos de ejercicio",
+                        25,
+                        ChallengeType.ACTIVITY_DURATION,
+                        targetMinutes,
+                        user
+                );
+
+            case SLEEP_HOURS:
+                double targetHours = Math.round((user.getSleepProfile().getDailyObjectiveSleep() > 0
+                        ? user.getSleepProfile().getDailyObjectiveSleep()
+                        : 8) * 10) / 10.0;
+                return new Challenge(
+                        "Dormir " + targetHours + " horas esta noche",
+                        15,
+                        ChallengeType.SLEEP_HOURS,
+                        (int)(targetHours * 60), // Convertimos a minutos
+                        user
+                );
+
+            case SLEEP_QUALITY:
+                int targetQuality = 70 + random.nextInt(21); // Entre 70% y 90%
+                return new Challenge(
+                        "Alcanzar " + targetQuality + "% de calidad del sueño",
+                        30,
+                        ChallengeType.SLEEP_QUALITY,
+                        targetQuality,
+                        user
+                );
+
+            case HYDRATION:
+                int targetWater = 2000 + random.nextInt(1001); // Entre 2000ml y 3000ml
+                return new Challenge(
+                        "Beber " + targetWater + "ml de agua hoy",
+                        15,
+                        ChallengeType.HYDRATION,
+                        targetWater,
+                        user
+                );
+
+            default:
+                return null;
+        }
+    }
+
+    private void cleanOldChallenges(User user) {
+        List<Challenge> activeNonCompletedChallenges = challengeRepository.findByUserAndCompletedFalse(user);
+        Calendar yesterday = Calendar.getInstance();
+        yesterday.add(Calendar.DAY_OF_MONTH, -1);
+
+        for (Challenge challenge : activeNonCompletedChallenges) {
+            if (challenge.getCreationDate().before(yesterday.getTime())) {
+                challengeRepository.delete(challenge);
+            }
+        }
+    }
+
 
     private int getTargetSteps(User user) {
         // Si el usuario tiene un objetivo diario, usamos ese como base

@@ -109,6 +109,10 @@ export const uploadProfileImage = async (token, imageFile) =>{
 // Método para obtener la imagen de perfil
 export const getProfileImage = async (token) => {
   try {
+    if (!token) {
+      throw new Error('Token inválido o ausente');
+    }
+    
     // Intentar obtener desde caché primero
     const cachedImage = await ProfileImageCache.getImageFromCache();
     if (cachedImage) {
@@ -124,6 +128,12 @@ export const getProfileImage = async (token) => {
 
     const response = await axios.get(`${API_URL}/user/profile-image`, config);
     
+    // Verificar que la respuesta contiene los datos necesarios
+    if (!response.data || !response.data.imageData || !response.data.imageType) {
+      console.log('Respuesta del servidor no contiene datos de imagen válidos');
+      return null;
+    }
+    
     // Crear URI de datos con el tipo de imagen y los datos en base64
     const imageUri = `data:${response.data.imageType};base64,${response.data.imageData}`;
     
@@ -135,7 +145,8 @@ export const getProfileImage = async (token) => {
     return imageUri;
   } catch (error) {
     console.error('Error al obtener la imagen de perfil:', error);
-    throw error;
+    // No propagar el error, simplemente devolver null para manejar el caso de error
+    return null;
   }
 }
 

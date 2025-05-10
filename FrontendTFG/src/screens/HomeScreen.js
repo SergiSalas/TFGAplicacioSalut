@@ -29,13 +29,13 @@ const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => (
   <View style={styles.statsCard}>
     <View style={styles.statsContainer}>
       <View style={styles.cardHeader}>
-        <Icon name="analytics-outline" size={20} color="#61dafb" />
+        <Icon name="analytics-outline" size={20} color="#ff7f50" />
         <Text style={styles.statsTitle}>Resumen de Actividad</Text>
       </View>
 
       <View style={styles.metricsContainer}>
         <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
-          <Icon name="footsteps-outline" size={28} color="#4a69bd" />
+          <Icon name="footsteps-outline" size={28} color="#4cd964" />
           <Text style={styles.metricValue}>{todaySteps}</Text>
           <Text style={styles.metricLabel}>Pasos</Text>
         </View>
@@ -143,21 +143,6 @@ const HomeScreen = ({ navigation }) => {
     }
   }, []);
 
-  // Elimina esta segunda declaración o renómbrala
-  // const handleAddHydration = () => {
-  //   // aquí luego llamaremos al service para persistir
-  //   Alert.prompt(
-  //     'Añadir agua',
-  //     'Introduce la cantidad en ml:',
-  //     text => {
-  //       const amount = parseInt(text, 10);
-  //       if (!isNaN(amount)) setHydration(prev => prev + amount);
-  //     },
-  //     'plain-text',
-  //     '250'
-  //   );
-  // };
-
   const initializeHealthConnect = useCallback(async () => {
     try {
       setLoading(true);
@@ -251,12 +236,6 @@ const HomeScreen = ({ navigation }) => {
     loadUserLevel();
   }, [token]);
 
-  // Eliminar esta función duplicada
-  // const handleRefresh = () => {
-  //   refreshHealthData();
-  //   loadUserProfile();
-  //   loadUserLevel();
-  // };
 
   const renderSleepCard = () => (
     <TouchableOpacity
@@ -266,13 +245,13 @@ const HomeScreen = ({ navigation }) => {
     >
       <View style={styles.statsContainer}>
         <View style={styles.cardHeader}>
-          <Icon name="bed-outline" size={20} color="#61dafb" />
+          <Icon name="bed-outline" size={20} color="#9c88ff" />
           <Text style={styles.statsTitle}>Calidad del Sueño</Text>
         </View>
 
         <View style={styles.metricsContainer}>
           <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
-            <Icon name="moon-outline" size={28} color="#4a69bd" />
+            <Icon name="moon-outline" size={28} color="#9c88ff" />
             <Text style={styles.metricValue}>
               {sleepLoading ? '...' : (sleepData?.durationHours || '--')}
             </Text>
@@ -280,7 +259,7 @@ const HomeScreen = ({ navigation }) => {
           </View>
 
           <View style={[styles.metricCard, { backgroundColor: '#232342' }]}>
-            <Icon name="star-outline" size={28} color="#ff6b6b" />
+            <Icon name="star-outline" size={28} color="#ffd700" />
             <Text style={styles.metricValue}>
               {sleepLoading ? '...' : (sleepData?.quality || '--')}
             </Text>
@@ -309,43 +288,41 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+       <StatusBar barStyle="light-content" backgroundColor="#121212" />
+  
+    {/* Reemplazamos el header inline por nuestro componente */}
+    <Header
+      title="Mi Salud"
+      navigation={navigation}
+      userProfile={userProfile}
+      userLevel={userLevel}
+      onRefresh={handleRefresh}
+    />
 
-      {/* Reemplazamos el header inline por nuestro componente */}
-      <Header
-        title="Mi Salud"
+    {/* Main Content */}
+    <ScrollView 
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <HealthConnectSummary
+        todaySteps={todaySteps}
+        heartRate={heartRate}
         navigation={navigation}
-        userProfile={userProfile}
-        userLevel={userLevel}
-        onRefresh={handleRefresh}
       />
-
-      {/* Main Content */}
-      <ScrollView contentContainerStyle={styles.content}>
-        <HealthConnectSummary
-          todaySteps={todaySteps}
-          heartRate={heartRate}
-          navigation={navigation}
-        />
-        {renderSleepCard()}
-        <HydrationBottleCard
-          hydration={hydration}
-          dailyObjective={dailyObjectiveHydration}
-          onAdd={handleAddHydration}
-        />
-      </ScrollView>
-
+      {renderSleepCard()}
+      <View style={styles.statsCard}>
+        <View style={styles.statsContainer}>
+          <HydrationBottleCard
+            hydration={hydration}
+            dailyObjective={dailyObjectiveHydration}
+            onAdd={handleAddHydration}
+          />
+        </View>
+      </View>
+    </ScrollView>
+  
       {/* Footer */}
-      <Footer
-        activeScreen="home"
-        navigation={navigation}
-        screens={[
-          { name: 'home', icon: 'home-outline', label: 'Inicio' },
-          { name: 'activity', icon: 'fitness-outline', label: 'Actividad' },
-          { name: 'sleep', icon: 'bed-outline', label: 'Sueño' },
-          { name: 'profile', icon: 'person-outline', label: 'Perfil' }
-        ]}
-      />
+      <Footer />
     </View>
   );
 };

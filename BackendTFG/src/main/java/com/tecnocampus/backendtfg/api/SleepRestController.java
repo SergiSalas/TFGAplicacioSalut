@@ -48,9 +48,15 @@ public class SleepRestController {
     }
 
     @PostMapping("/addObjective")
-    public ResponseEntity<String> addObjective(double dailyObjectiveSleep, String email) {
-        sleepService.addObjective(dailyObjectiveSleep,email);
+    public ResponseEntity<String> addObjective(HttpServletRequest request, @RequestBody double dailyObjectiveSleep) {
+        String token = getTokenAuthFromRequest(request);
+        sleepService.addObjective(token,dailyObjectiveSleep);
         return ResponseEntity.ok("Objective added");
+    }
+
+    @GetMapping("/getObjective")
+    public ResponseEntity<?> getObjective(HttpServletRequest request) {
+        return ResponseEntity.ok(sleepService.getObjective(getTokenAuthFromRequest(request)));
     }
     private String getTokenAuthFromRequest(HttpServletRequest request) {
         return request.getHeader("Authorization");
