@@ -163,15 +163,18 @@ public class ActivityService {
         DailySteps existingDailySteps = dailyStepsRepository.findByDay(dailyStepsDTO.getDate());
 
         if (existingDailySteps != null) {
-            // Actualizar solo si los nuevos pasos son mayores
             if (existingDailySteps.getSteps() < dailyStepsDTO.getSteps()) {
                 existingDailySteps.setSteps(dailyStepsDTO.getSteps());
                 existingDailySteps.setDuration(dailyStepsDTO.getDuration());
+                existingDailySteps.setActivityProfile(activityProfile);
+                existingDailySteps.calculateCalories();
                 dailyStepsRepository.save(existingDailySteps);
             }
         } else {
             DailySteps dailySteps = new DailySteps(dailyStepsDTO);
+            dailySteps.setActivityProfile(activityProfile);
             activityProfile.addDailySteps(dailySteps);
+            dailySteps.calculateCalories();
             challengeService.updateChallengeProgress(token, ChallengeType.STEPS, dailyStepsDTO.getSteps());
             activityProfileRepository.save(activityProfile);
             dailyStepsRepository.save(dailySteps);
@@ -226,12 +229,19 @@ public class ActivityService {
         String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
         ActivityProfile activityProfile = user.getActivityProfile();
-        double totalCalories = activityProfile.getActivities().stream()
-                .filter(activity -> isSameDay(activity.getDate(), date)) // Using isSameDay for better date matching
+
+        double activitiesCalories = activityProfile.getActivities().stream()
+                .filter(activity -> isSameDay(activity.getDate(), date))
                 .mapToDouble(AbstractActivity::getCaloriesBurned)
                 .sum();
 
-        // Round to one decimal place
+        double stepsCalories = activityProfile.getDailySteps().stream()
+                .filter(steps -> isSameDay(steps.getDate(), date))
+                .mapToDouble(DailySteps::getCaloriesBurned)
+                .sum();
+
+        double totalCalories = activitiesCalories + stepsCalories;
+        
         return Math.round(totalCalories * 10.0) / 10.0;
     }
 }
