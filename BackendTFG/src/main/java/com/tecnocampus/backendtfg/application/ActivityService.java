@@ -241,7 +241,7 @@ public class ActivityService {
                 .sum();
 
         double totalCalories = activitiesCalories + stepsCalories;
-        
+
         return Math.round(totalCalories * 10.0) / 10.0;
     }
 }

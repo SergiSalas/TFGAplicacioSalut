@@ -47,6 +47,9 @@ public class HydrationService {
         double dailyTarget = calculateDailyObjective(user);
         hydrationProfile.setDailyObjectiveWater(dailyTarget);
 
+        // Guardar el perfil con el objetivo actualizado
+        hydrationProfileRepository.save(hydrationProfile);
+
         // Verificar si es un nuevo día para resetear
         if (isNewDay(hydrationProfile.getLastUpdate())) {
             hydrationProfile.resetDailyAmount();
@@ -80,8 +83,6 @@ public class HydrationService {
                 profile
         );
 
-        // Actualizar perfil y guardar solo a través del perfil
-        // Aprovechamos la cascada configurada en HydrationProfile
         profile.addHydration(hydration);
         hydrationProfileRepository.save(profile);
         challengeService.updateChallengeProgress(token, ChallengeType.HYDRATION, (int)(updateRequest.getAmount() * 1000));

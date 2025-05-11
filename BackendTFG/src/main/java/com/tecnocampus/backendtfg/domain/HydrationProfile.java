@@ -31,6 +31,8 @@ public class HydrationProfile {
         this.user = user;
         this.lastUpdate = new Date();
         this.currentAmount = 0;
+        this.calculateDailyObjectiveWater();
+
     }
 
     public void addHydration(Hydration hydration) {
@@ -43,5 +45,16 @@ public class HydrationProfile {
     public void resetDailyAmount() {
         this.currentAmount = 0;
         this.lastUpdate = new Date();
+    }
+
+    private void calculateDailyObjectiveWater() {
+        if (user.getWeight() != null) {
+            double baseAmount = user.getWeight() * 0.033;
+            if (user.getAge() > 30) baseAmount *= 1.1;
+            if (user.getGender() == Gender.MALE) baseAmount *= 1.1;
+            this.dailyObjectiveWater = Math.round(baseAmount * 100) / 100.0;
+        } else {
+            this.dailyObjectiveWater = 2.5;
+        }
     }
 }

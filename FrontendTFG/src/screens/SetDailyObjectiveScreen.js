@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,7 @@ import {
   StatusBar 
 } from 'react-native';
 import { AuthContext } from '../contexts/AuthContext';
-import { addDailyObjective } from '../service/ActivityService';
+import { addDailyObjective, getDailyObjective } from '../service/ActivityService';
 import SleepService from '../service/SleepService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Card from '../components/common/Card';
@@ -16,9 +16,10 @@ import styles from '../styles/screens/SetDailyObjectiveScreen.styles';
 import CustomAlert from '../components/common/CustomAlert';
 import { CommonActions } from '@react-navigation/native';
 
-const SetDailyObjectiveScreen = ({ navigation }) => {
+const SetDailyObjectiveScreen = ({ navigation, route }) => {
   const { token, setIsNewUser } = useContext(AuthContext);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [objectives, setObjectives] = useState({
     dailySteps: '10000',
     dailySleep: '8'
@@ -33,6 +34,45 @@ const SetDailyObjectiveScreen = ({ navigation }) => {
     cancelText: '',
     type: 'warning'
   });
+  
+  // Determinar si estamos editando (desde perfil) o configurando por primera vez
+  const isEditing = route?.params?.isEditing || false;
+
+  // Cargar objetivos actuales si estamos editando
+  useEffect(() => {
+    if (isEditing && token) {
+      loadCurrentObjectives();
+    } else {
+      setLoading(false);
+    }
+  }, [token, isEditing]);
+
+  const loadCurrentObjectives = async () => {
+    try {
+      setLoading(true);
+      
+      // Cargar objetivo de pasos
+      const stepsObj = await getDailyObjective(token);
+      
+      // Cargar objetivo de sueño
+      const sleepObj = await SleepService.getSleepObjective(token);
+      
+      setObjectives({
+        dailySteps: stepsObj ? stepsObj.toString() : '10000',
+        dailySleep: sleepObj ? sleepObj.toString() : '8'
+      });
+    } catch (error) {
+      console.error('Error al cargar objetivos actuales:', error);
+      showAlert({
+        title: 'Error',
+        message: 'No se pudieron cargar tus objetivos actuales. Se mostrarán valores predeterminados.',
+        type: 'error',
+        confirmText: 'Entendido'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setObjectives(prev => ({
@@ -83,7 +123,11 @@ const SetDailyObjectiveScreen = ({ navigation }) => {
       // Guardar objetivo de sueño
       await SleepService.addSleepObjective(token, sleepObjective);
       
-      setIsNewUser(false);
+      // Solo actualizar isNewUser si estamos en el flujo de registro
+      if (!isEditing) {
+        setIsNewUser(false);
+      }
+      
       setSaving(false);
       
       showAlert({
@@ -92,12 +136,18 @@ const SetDailyObjectiveScreen = ({ navigation }) => {
         type: 'success',
         confirmText: 'Continuar',
         onConfirm: () => {
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'HomeScreen' }],
-            })
-          );
+          if (isEditing) {
+            // Si estamos editando, volver a la pantalla anterior
+            navigation.goBack();
+          } else {
+            // Si es usuario nuevo, ir a la pantalla principal
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'HomeScreen' }],
+              })
+            );
+          }
         }
       });
     } catch (error) {
@@ -112,17 +162,30 @@ const SetDailyObjectiveScreen = ({ navigation }) => {
     }
   };
 
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
       
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Establece tus objetivos diarios</Text>
+        {isEditing && (
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        <Text style={styles.headerTitle}>
+          {isEditing ? 'Editar objetivos diarios' : 'Establece tus objetivos diarios'}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.welcomeText}>
-          Establece tus objetivos diarios para mantener un estilo de vida saludable.
+          {isEditing 
+            ? 'Actualiza tus objetivos diarios para mantener un estilo de vida saludable.'
+            : 'Establece tus objetivos diarios para mantener un estilo de vida saludable.'}
         </Text>
         
         {/* Tarjeta para objetivo de pasos */}

@@ -24,6 +24,9 @@ import { useSleepData } from '../hooks/useSleepData';
 import NotificationService from '../services/NotificationService';
 import HydrationBottleCard from '../components/HydrationBottleCard';
 import { getHydrationStatus, updateHydration } from '../service/HydrationService';
+import { useFocusEffect } from '@react-navigation/native';
+
+
 
 const HealthConnectSummary = ({ todaySteps, heartRate, navigation }) => (
   <View style={styles.statsCard}>
@@ -72,7 +75,6 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [todaySteps, setTodaySteps] = useState(0);
   const [heartRate, setHeartRate] = useState(null);
-  const [dailyObjective, setDailyObjective] = useState(10000);
   const [appState, setAppState] = useState(AppState.currentState);
   const [healthData, setHealthData] = useState(null);
   const { sleepData, loading: sleepLoading } = useSleepData();
@@ -80,7 +82,7 @@ const HomeScreen = ({ navigation }) => {
   const [userLevel, setUserLevel] = useState(null);
   const [hydration, setHydration] = useState(0);
   const [dailyObjectiveHydration, setDailyObjectiveHydration] = useState(2000);
-  const [hydrationLoading, setHydrationLoading] = useState(true);
+  const [hydrationLoading, setHydrationLoading] = useState(false); 
 
   // Función para cargar datos de hidratación
   const loadHydrationData = useCallback(async () => {
@@ -125,6 +127,16 @@ const HomeScreen = ({ navigation }) => {
     loadUserLevel();
     loadHydrationData();
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      // Cargar datos de hidratación cuando la pantalla obtiene el foco
+      loadHydrationData();
+      return () => {
+        // Limpiar si es necesario cuando la pantalla pierde el foco
+      };
+    }, [loadHydrationData])
+  );
 
   const handleHealthConnectUpdate = useCallback((data) => {
     if (data.type === 'today-steps' && data.steps !== undefined) {

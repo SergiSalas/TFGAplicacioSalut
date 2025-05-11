@@ -268,4 +268,182 @@ export default StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
+  // ... existing code ...
+  profileCard: {
+    alignItems: 'center',
+    padding: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: '#1a1a2e',
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+  },
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#2A2A2A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#1a1a2e',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  editPhotoButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#4c6ef5',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#1a1a2e',
+    elevation: 4,
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#AAAAAA',
+    marginBottom: 16,
+  },
+
+  // ... existing code ...
+  infoCard: {
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: '#1a1a2e',
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a4a',
+    backgroundColor: '#1e1e38',
+  },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a4a',
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#AAAAAA',
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'right',
+    flex: 1,
+  },
+
+  // ... existing code ...
+  actionButtons: {
+    marginTop: 20,
+    marginBottom: 20,
+    width: '100%',
+    gap: 12,
+  },
+  logoutButton: {
+    backgroundColor: '#f59c42',
+    marginBottom: 12,
+    borderRadius: 8,
+    paddingVertical: 14,
+  },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
+    borderRadius: 8,
+    paddingVertical: 14,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  // ... existing code ...
+  infoLabel: {
+    fontSize: 14,
+    color: '#AAAAAA',
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'right',
+    flex: 1,
+  },
+  
+  // Añadir estos estilos para los objetivos diarios
+  objectiveLabel: {
+    fontSize: 14,
+    color: '#AAAAAA',
+    flex: 1,
+  },
+  objectiveValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'right',
+    flex: 1,
+  },
+
 });

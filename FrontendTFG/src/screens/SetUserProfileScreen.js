@@ -16,6 +16,7 @@ import InputField from '../components/common/InputField';
 import CustomPicker from '../components/common/CustomPicker';
 import styles from '../styles/screens/SetUserProfileScreen.styles';
 import CustomAlert from '../components/common/CustomAlert';
+import { CommonActions } from '@react-navigation/native';
 
 const SetUserProfileScreen = ({ navigation }) => {
   const { token } = useContext(AuthContext);
