@@ -6,6 +6,7 @@ import { ActivityCache } from '../cache/ActivityCache';
 import { appStorage, STORAGE_KEYS } from '../storage/AppStorage';
 import { CommonActions } from '@react-navigation/native';
 import { ProfileImageCache } from '../cache/ProfileImageCache';
+import { SleepCache } from '../cache/SleepCache'; 
 
 export const AuthContext = createContext();
 
@@ -159,6 +160,13 @@ export const AuthProvider = ({ children }) => {
 
       ProfileImageCache.clearCache();
 
+      ActivityCache.clearAllCache();
+      ActivityCache.clearSavedExerciseIds();
+      ActivityCache.clearSavedStepIds();
+
+      SleepCache.clearSavedSleepIds
+      SleepCache.clearSleepData();
+      
       appStorage.delete(STORAGE_KEYS.AUTH_TOKEN);
       appStorage.delete(STORAGE_KEYS.USER_DATA);
       

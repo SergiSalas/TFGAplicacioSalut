@@ -57,6 +57,8 @@ const InitialUserProfileScreen = ({ navigation }) => {
     setAlertVisible(true);
   };
 
+  // ... existing code ...
+
   const handleSaveProfile = async () => {
     // Validar que peso, altura y edad sean números válidos
     const weight = parseFloat(profile.weight);
@@ -109,9 +111,9 @@ const InitialUserProfileScreen = ({ navigation }) => {
       // Preparar datos para enviar al servidor
       const updatedProfile = {
         weight: weight,
-        height: height,
+        height: parseInt(height), // Convertir a entero para coincidir con el DTO
         age: age,
-        gender: profile.gender
+        gender: profile.gender // Ya está en formato correcto (MALE, FEMALE, OTHER)
       };
       
       // Llamar al servicio para actualizar el perfil
@@ -132,6 +134,8 @@ const InitialUserProfileScreen = ({ navigation }) => {
       });
     }
   };
+
+// ... existing code ...
 
   return (
     <View style={styles.container}>

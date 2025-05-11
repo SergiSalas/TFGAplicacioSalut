@@ -98,6 +98,7 @@ public class User implements UserDetails {
         this.weight = dataProfileDTO.getWeight();
         this.height = dataProfileDTO.getHeight();
         this.age = dataProfileDTO.getAge();
+        this.gender = dataProfileDTO.getGender();
     }
 
     public void addChallenge(Challenge challenge) {

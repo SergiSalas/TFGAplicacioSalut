@@ -502,11 +502,11 @@ async syncSleepSessions(timeFilter, forceRefresh = false) {
             console.log(`Sesión de sueño guardada en backend: ${sleepId}`, response);
             
             // Solo guardar el ID como procesado si se guardó correctamente
-            await SleepCache.saveSleepId(sleepId);
+            SleepCache.saveSleepId(sleepId);
             
             // También guardar en caché local
             const sleepDate = new Date(sleepRecord.startTime).toISOString().split('T')[0];
-            await SleepCache.saveSleepData(sleepData, sleepDate);
+            SleepCache.saveSleepData(sleepData, sleepDate);
             
             newSessions++;
           } catch (error) {
@@ -522,7 +522,7 @@ async syncSleepSessions(timeFilter, forceRefresh = false) {
                 console.log(`Sesión de sueño ${sleepId} ya existe en el backend, marcando como guardada`);
                 
                 // Marcar el ID como guardado solo si ya existe en el backend
-                await SleepCache.saveSleepId(sleepId);
+                SleepCache.saveSleepId(sleepId);
               } else {
                 console.error(`Error al guardar sesión de sueño: ${error.message}`, error.response?.data);
               }
@@ -938,8 +938,6 @@ async loadInitialData() {
   }
 
   // Modificar el método readSleepData para que actualice el subject
-  // ... existing code ...
-
   async readSleepData() {
     try {
       if (!this.healthConnectAvailable) {

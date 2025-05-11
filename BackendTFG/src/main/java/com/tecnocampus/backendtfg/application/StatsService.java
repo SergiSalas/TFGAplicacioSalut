@@ -238,8 +238,8 @@ public class StatsService {
             }
         }
 
-        // Convertir índice a nombre del día
-        String[] dayNames = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+        // Convertir índice a nombre del día en español
+        String[] dayNames = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
         return dayNames[bestDayIndex];
     }
     private List<Integer> getLastWeekStepsValues(ActivityProfile activityProfile) {

@@ -335,12 +335,17 @@ const ActivityScreen = ({ navigation, route }) => {
   const handleRefresh = () => {
     // Si estamos viendo la fecha de hoy, refrescamos HealthConnect
     if (selectedDate === getCurrentDateFormatted()) {
-      initializeHealthConnectService();
+      // Forzar sincronización completa con Health Connect
+      if (healthConnectAvailable) {
+        forceRefreshExercises();
+      } else {
+        initializeHealthConnectService();
+      }
+    } else {
+      // Cargar actividades y calorías para la fecha seleccionada
+      loadActivities(true, selectedDate);
+      loadTotalCalories();
     }
-    
-    // Cargar actividades y calorías para la fecha seleccionada
-    loadActivities(true, selectedDate);
-    loadTotalCalories();
     
     // También recargar perfil/nivel si lo deseas
     loadUserProfile();
@@ -382,6 +387,7 @@ const ActivityScreen = ({ navigation, route }) => {
   };
   
   // Modificar forceRefreshExercises para eliminar la alerta
+  // Modificar forceRefreshExercises para eliminar la alerta
   const forceRefreshExercises = async () => {
     try {
       setIsLoadingHealthData(true);
@@ -403,6 +409,9 @@ const ActivityScreen = ({ navigation, route }) => {
             setHeartRate(currentData.heartRate);
           }
         }
+        
+        // Invalidar la caché para forzar una recarga completa
+        ActivityCache.invalidateCache(selectedDate);
         
         // Recargar actividades y calorías desde el backend
         await loadActivities(true);

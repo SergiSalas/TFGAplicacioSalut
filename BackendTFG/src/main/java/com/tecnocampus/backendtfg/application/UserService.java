@@ -57,9 +57,9 @@ public class UserService {
     public void setDataProfile(String token, DataProfileDTO dataProfileDTO) {
         String email = getEmailFromToken(token);
         User user = userRepository.findByEmail(email);
+        System.out.println(dataProfileDTO.getGender());
         user.setDataProfile(dataProfileDTO);
         userRepository.save(user);
-
     }
 
     public List<GenderTypeDTO> getGenderTypes (){

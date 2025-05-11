@@ -14,7 +14,9 @@ import * as Progress from 'react-native-progress';
 import { AuthContext } from '../contexts/AuthContext';
 import ChallengeService from '../service/ChallengeService';
 import Footer from '../components/layout/Footer';
+import Header from '../components/layout/Header';
 import styles from '../styles/screens/ChallengesScreen.styles';
+import { getUserProfile, getUserLevel } from '../service/UserService';
 
 const ChallengesScreen = ({ navigation }) => {
   const [challenges, setChallenges] = useState([]);
@@ -22,9 +24,13 @@ const ChallengesScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const { token } = useContext(AuthContext);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userLevel, setUserLevel] = useState(null);
 
   useEffect(() => {
     loadChallenges();
+    loadUserProfile();
+    loadUserLevel();
   }, [token]);
 
   const loadChallenges = async () => {
@@ -45,31 +51,32 @@ const ChallengesScreen = ({ navigation }) => {
     }
   };
 
-  const handleGenerateChallenges = async () => {
+  const loadUserProfile = async () => {
+    if (!token) return;
     try {
-      setLoading(true);
-      // Generar nuevos desafíos
-      await ChallengeService.generateDailyChallenges(token);
-      // Cargar los desafíos generados
-      const newChallenges = await ChallengeService.getUserChallenges(token);
-      setChallenges(newChallenges);
-      Alert.alert('¡Éxito!', 'Se han generado nuevos desafíos');
-    } catch (error) {
-      console.error('Error al generar desafíos:', error);
-      Alert.alert('Error', 'No se pudieron generar nuevos desafíos');
-    } finally {
-      setLoading(false);
+      const profile = await getUserProfile(token);
+      setUserProfile(profile);
+    } catch (err) {
+      console.error('Error cargando perfil:', err);
     }
   };
+  
+  const loadUserLevel = async () => {
+    if (!token) return;
+    try {
+      const level = await getUserLevel(token);
+      setUserLevel(level);
+    } catch (err) {
+      console.error('Error cargando nivel:', err);
+    }
+  };
+
 
   const onRefresh = () => {
     setRefreshing(true);
     loadChallenges();
   };
 
-  const handleBackPress = () => {
-    navigation.goBack();
-  };
 
   // Función para obtener el icono según el tipo de desafío
   const getChallengeIcon = (type) => {
@@ -168,13 +175,13 @@ const ChallengesScreen = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#121212" />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mis Desafíos</Text>
-          <View style={{width: 40}} />
-        </View>
+        <Header 
+          title="Mis Desafíos" 
+          navigation={navigation} 
+          userProfile={userProfile}
+          userLevel={userLevel}
+          onRefresh={loadChallenges}
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4c6ef5" />
           <Text style={styles.loadingText}>Cargando desafíos...</Text>
@@ -187,15 +194,13 @@ const ChallengesScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
       
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Desafíos</Text>
-        <TouchableOpacity onPress={loadChallenges} style={styles.refreshButton}>
-          <Icon name="refresh-outline" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      <Header 
+        title="Mis Desafíos" 
+        navigation={navigation} 
+        userProfile={userProfile}
+        userLevel={userLevel}
+        onRefresh={loadChallenges}
+      />
 
       <ScrollView 
         contentContainerStyle={styles.content}
@@ -230,17 +235,6 @@ const ChallengesScreen = ({ navigation }) => {
               </View>
             )}
             
-            <TouchableOpacity 
-              style={styles.generateButton}
-              onPress={handleGenerateChallenges}
-            >
-              <View style={styles.buttonContent}>
-                <Icon name={challenges && challenges.length > 0 ? "refresh-circle-outline" : "add-circle-outline"} size={20} color="#FFFFFF" />
-                <Text style={styles.buttonText}>
-                  {challenges && challenges.length > 0 ? "Generar Nuevos Desafíos" : "Generar Desafíos"}
-                </Text>
-              </View>
-            </TouchableOpacity>
           </>
         )}
       </ScrollView>
