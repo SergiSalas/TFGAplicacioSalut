@@ -574,22 +574,13 @@ const ActivityScreen = ({ navigation, route }) => {
           </View>
         </View>
         
-        {/* Botón de sincronización */}
+        {/* Botón de crear actividad con el diseño de la imagen */}
         <TouchableOpacity 
-          style={[styles.button, { marginTop: 16 }]}
-          onPress={forceRefreshExercises}
-          disabled={isLoadingHealthData}
+          style={styles.createActivityButton}
+          onPress={() => navigation.navigate('CreateActivityScreen')}
         >
-          <View style={styles.buttonContent}>
-            <Text style={styles.buttonText}>
-              {isLoadingHealthData ? 'Sincronizando...' : 'Actualizar datos de actividad'}
-            </Text>
-            {isLoadingHealthData ? (
-              <ActivityIndicator size="small" color="#fff" style={{marginLeft: 8}} />
-            ) : (
-              <Icon name="refresh-outline" size={18} color="#fff" style={{marginLeft: 8}} />
-            )}
-          </View>
+          <Icon name="add-outline" size={20} color="#fff" />
+          <Text style={styles.createActivityButtonText}>Crear nueva actividad</Text>
         </TouchableOpacity>
       </Card>
     );
@@ -685,68 +676,116 @@ const ActivityScreen = ({ navigation, route }) => {
 
   // Renderizar cada actividad
   const renderActivityItem = (activity, index) => {
-    const activityIcon = getActivityIcon(activity.type);
+    
     const activityColor = getActivityColor(activity.type);
+    
     const date = new Date(activity.date);
+    
     const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+    
     const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
+    
     // Determinar si proviene de Health Connect
-    const isFromHealthConnect = 
-      activity.source === 'Health Connect' || 
-      activity.externalId !== undefined;
-
+    
+    const isFromHealthConnect =
+    
+    activity.source === 'Health Connect' ||
+    
+    activity.externalId !== undefined;
+    
     return (
-      <View 
-        key={activity.id || index}
-        style={styles.activityItem}
-      >
-        <View style={styles.activityContent}>
-          <View style={styles.activityHeader}>
-            <View style={[styles.iconContainer, {backgroundColor: activityColor}]}>
-              <Icon name={activityIcon} size={24} color="#fff" />
-            </View>
-            <View style={styles.activityTitleContainer}>
-              <Text style={styles.activityType}>{activity.type}</Text>
-              <Text style={styles.activityDate}>
-                {formattedDate} • {formattedTime}
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.activityDetails}>
-            <View style={styles.activityStat}>
-              <Icon name="time-outline" size={16} color="#61dafb" />
-              <Text style={styles.activityStatText}>
-                {activity.duration ? `${activity.duration} min` : 'No disponible'}
-              </Text>
-            </View>
-            
-            {activity.calories && (
-              <View style={styles.activityStat}>
-                <Icon name="flame-outline" size={16} color="#ff6b6b" />
-                <Text style={styles.activityStatText}>
-                  {activity.calories} kcal
-                </Text>
-              </View>
-            )}
-            
-            {/* Indicador de origen */}
-            {isFromHealthConnect && (
-              <View style={styles.healthConnectBadge}>
-                <Text style={styles.healthConnectText}>Health Connect</Text>
-              </View>
-            )}
-          </View>
-          
-          <Text style={styles.activityDescription}>
-            {activity.description}
-          </Text>
-        </View>
-      </View>
+    
+    <View
+    
+    key={activity.id || index}
+    
+    style={styles.activityItem}
+    
+    >
+    
+    <View style={styles.activityContent}>
+    
+    <View style={styles.activityHeader}>
+    
+    <View style={[styles.iconContainer, {backgroundColor: activityColor}]}>
+      <Icon 
+        name={getExerciseTypeIcon(activity.type)} 
+        size={24} 
+        color="#fff" 
+      />
+    </View>
+    
+    <View style={styles.activityTitleContainer}>
+    
+    <Text style={styles.activityType}>{activity.type}</Text>
+    
+    <Text style={styles.activityDate}>
+    
+    {formattedDate} • {formattedTime}
+    
+    </Text>
+    
+    </View>
+    
+    </View>
+    
+    <View style={styles.activityDetails}>
+    
+    <View style={styles.activityStat}>
+    
+    <Icon name="time-outline" size={16} color="#61dafb" />
+    
+    <Text style={styles.activityStatText}>
+    
+    {activity.duration ? `${activity.duration} min` : 'No disponible'}
+    
+    </Text>
+    
+    </View>
+    
+    {activity.calories && (
+    
+    <View style={styles.activityStat}>
+    
+    <Icon name="flame-outline" size={16} color="#ff6b6b" />
+    
+    <Text style={styles.activityStatText}>
+    
+    {activity.calories} kcal
+    
+    </Text>
+    
+    </View>
+    
+    )}
+    
+    {/* Indicador de origen */}
+    
+    {isFromHealthConnect && (
+    
+    <View style={styles.healthConnectBadge}>
+    
+    <Text style={styles.healthConnectText}>Health Connect</Text>
+    
+    </View>
+    
+    )}
+    
+    </View>
+    
+    <Text style={styles.activityDescription}>
+    
+    {activity.description}
+    
+    </Text>
+    
+    </View>
+    
+    </View>
+    
     );
-  };
-
+    
+    };
   
 
   // Función para cambiar la fecha seleccionada
@@ -822,20 +861,7 @@ const ActivityScreen = ({ navigation, route }) => {
             </View>
           )}
         </View>
-  
-        {/* Botón flotante para crear nueva actividad */}
-        <TouchableOpacity
-          style={styles.fabButton}
-          onPress={() => navigation.navigate('CreateActivityScreen')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.fabContent}>
-            <Icon name="add-outline" size={24} color="#ffffff" />
-            <Text style={styles.fabText}>Nueva Actividad</Text>
-          </View>
-        </TouchableOpacity>
       </ScrollView>
-  
       <Footer
         activeScreen="activity"
         navigation={navigation}

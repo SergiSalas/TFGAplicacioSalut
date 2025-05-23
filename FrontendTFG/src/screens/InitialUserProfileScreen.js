@@ -135,8 +135,6 @@ const InitialUserProfileScreen = ({ navigation }) => {
     }
   };
 
-// ... existing code ...
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />

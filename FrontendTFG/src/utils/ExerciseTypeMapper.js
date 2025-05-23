@@ -329,13 +329,29 @@ export const getExerciseTypeName = (exerciseType) => {
 
 // Mapeo de tipo de ejercicio a icono
 export const getExerciseTypeIcon = (exerciseType) => {
-  // Si recibimos un string, intentamos convertirlo a número
-  const typeCode = typeof exerciseType === 'string' 
-    ? parseInt(exerciseType, 10) 
-    : exerciseType;
-    
-  // Si no es un número válido, devolvemos un icono predeterminado
+
+  // 1. Log inicial
+  console.log('[IconPicker] ejercicio recibido:', exerciseType, '(tipo:', typeof exerciseType + ')');
+
+  // 2. Resolver a código numérico
+  let typeCode;
+  if (typeof exerciseType === 'string') {
+    const parsed = parseInt(exerciseType, 10);
+    if (!isNaN(parsed)) {
+      typeCode = parsed;
+      console.log('[IconPicker] parsed string a número:', typeCode);
+    } else {
+      const key = exerciseType.trim().toLowerCase();
+      typeCode = NAME_TO_EXERCISE_TYPE[key];
+      console.log('[IconPicker] mapeado nombre a código:', key, '→', typeCode);
+    }
+  } else {
+    typeCode = exerciseType;
+    console.log('[IconPicker] ya era número:', typeCode);
+  }
+
   if (isNaN(typeCode)) {
+    console.log('[IconPicker] typeCode NO es un número válido, devolviendo fallback');
     return "fitness-outline";
   }
   
@@ -356,7 +372,7 @@ export const getExerciseTypeIcon = (exerciseType) => {
     case EXERCISE_TYPES.EXERCISE_TYPE_BOOT_CAMP:
       return "barbell-outline";
     case EXERCISE_TYPES.EXERCISE_TYPE_BOXING:
-      return "fist-outline";
+      return "hand-right-outline";
     case EXERCISE_TYPES.EXERCISE_TYPE_CALISTHENICS:
       return "body-outline";
     case EXERCISE_TYPES.EXERCISE_TYPE_CRICKET:
@@ -466,42 +482,88 @@ export const getExerciseTypeIcon = (exerciseType) => {
   }
 };
 
-
 // Mapeo de tipo de ejercicio a color
-// Mapeo de tipo de ejercicio a color
-// También necesitamos implementar getExerciseTypeColor si no existe
 export const getExerciseTypeColor = (exerciseType) => {
-  // Si recibimos un string, intentamos convertirlo a número
-  const typeCode = typeof exerciseType === 'string' 
-    ? parseInt(exerciseType, 10) 
-    : exerciseType;
-    
-  // Si no es un número válido, devolvemos un color predeterminado
-  if (isNaN(typeCode)) {
-    return "#4c6ef5";
-  }
-  
-  // Asignar colores por categoría de ejercicio
-  if ([8, 9, 56, 57, 79].includes(typeCode)) {
-    // Cardio (ciclismo, correr, caminar)
-    return "#ff6b6b";
-  } else if ([70, 81].includes(typeCode)) {
-    // Fuerza (entrenamiento de fuerza, levantamiento de pesas)
-    return "#4c6ef5";
-  } else if ([73, 74, 80].includes(typeCode)) {
-    // Agua (natación, waterpolo)
-    return "#4dabf7";
-  } else if ([5, 64, 76, 78].includes(typeCode)) {
-    // Deportes de equipo (baloncesto, fútbol, tenis, voleibol)
-    return "#51cf66";
-  } else if ([48, 71, 83].includes(typeCode)) {
-    // Flexibilidad (pilates, estiramientos, yoga)
-    return "#ae3ec9";
-  } else if ([36, 37, 68, 69].includes(typeCode)) {
-    // Alta intensidad (HIIT, senderismo, subir escaleras)
-    return "#fcc419";
+  let typeCode;
+
+  if (typeof exerciseType === 'string') {
+    const parsed = parseInt(exerciseType, 10);
+    if (!isNaN(parsed)) {
+      typeCode = parsed;
+
+    } else {
+      const key = exerciseType.trim().toLowerCase();
+      if (key in BACKEND_TO_EXERCISE_TYPE) {
+        typeCode = BACKEND_TO_EXERCISE_TYPE[key];
+      } else if (key in NAME_TO_EXERCISE_TYPE) {
+        typeCode = NAME_TO_EXERCISE_TYPE[key];
+      }
+    }
   } else {
-    // Otros tipos
-    return "#4c6ef5";
+    typeCode = exerciseType;
   }
+
+  // Fallback si sigue sin ser un número
+  if (isNaN(typeCode)) {
+    return "#4c6ef5";  // color genérico
+  }
+
+  // Aquí sigue tu lógica por categorías
+  if ([EXERCISE_TYPES.EXERCISE_TYPE_BIKING,
+       EXERCISE_TYPES.EXERCISE_TYPE_BIKING_STATIONARY,
+       EXERCISE_TYPES.EXERCISE_TYPE_RUNNING,
+       EXERCISE_TYPES.EXERCISE_TYPE_RUNNING_TREADMILL,
+       EXERCISE_TYPES.EXERCISE_TYPE_WALKING
+      ].includes(typeCode)) {
+    return "#ff6b6b";   // Cardio
+  }
+  if ([EXERCISE_TYPES.EXERCISE_TYPE_STRENGTH_TRAINING,
+       EXERCISE_TYPES.EXERCISE_TYPE_WEIGHTLIFTING
+      ].includes(typeCode)) {
+    return "#4c6ef5";   // Fuerza
+  }
+  if ([EXERCISE_TYPES.EXERCISE_TYPE_SWIMMING_POOL,
+       EXERCISE_TYPES.EXERCISE_TYPE_SWIMMING_OPEN_WATER,
+       EXERCISE_TYPES.EXERCISE_TYPE_WATER_POLO
+      ].includes(typeCode)) {
+    return "#4dabf7";   // Agua
+  }
+  if ([EXERCISE_TYPES.EXERCISE_TYPE_BASKETBALL,
+       EXERCISE_TYPES.EXERCISE_TYPE_SOCCER,
+       EXERCISE_TYPES.EXERCISE_TYPE_TENNIS,
+       EXERCISE_TYPES.EXERCISE_TYPE_VOLLEYBALL
+      ].includes(typeCode)) {
+    return "#51cf66";   // Deportes de equipo
+  }
+  if ([EXERCISE_TYPES.EXERCISE_TYPE_PILATES,
+       EXERCISE_TYPES.EXERCISE_TYPE_STRETCHING,
+       EXERCISE_TYPES.EXERCISE_TYPE_YOGA
+      ].includes(typeCode)) {
+    return "#ae3ec9";   // Flexibilidad
+  }
+  if ([EXERCISE_TYPES.EXERCISE_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+       EXERCISE_TYPES.EXERCISE_TYPE_HIKING,
+       EXERCISE_TYPES.EXERCISE_TYPE_STAIR_CLIMBING,
+       EXERCISE_TYPES.EXERCISE_TYPE_STAIR_CLIMBING_MACHINE
+      ].includes(typeCode)) {
+    return "#fcc419";   // Alta intensidad
+  }
+
+  // Resto de casos
+  return "#4c6ef5";
 };
+
+const NAME_TO_EXERCISE_TYPE = Object.entries(EXERCISE_TYPES)
+  .reduce((acc, [key, value]) => {
+    const name = key.replace('EXERCISE_TYPE_', '')  // e.g. "BADMINTON"
+      .toLowerCase();
+    acc[name] = value;
+    return acc;
+  }, {});
+
+
+  const BACKEND_TO_EXERCISE_TYPE = Object.entries(HEALTH_CONNECT_TO_BACKEND_TYPE)
+  .reduce((acc, [code, backendName]) => {
+    acc[backendName.toLowerCase()] = parseInt(code, 10);
+    return acc;
+  }, {});

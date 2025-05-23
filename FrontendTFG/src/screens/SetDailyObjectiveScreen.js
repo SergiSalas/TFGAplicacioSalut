@@ -126,30 +126,12 @@ const SetDailyObjectiveScreen = ({ navigation, route }) => {
       // Solo actualizar isNewUser si estamos en el flujo de registro
       if (!isEditing) {
         setIsNewUser(false);
+      } else {
+        // Si estamos editando, volver a la pantalla anterior
+        navigation.goBack();
       }
       
       setSaving(false);
-      
-      showAlert({
-        title: 'Objetivos establecidos',
-        message: `Has establecido un objetivo de ${stepsObjective} pasos diarios y ${sleepObjective} horas de sueño.`,
-        type: 'success',
-        confirmText: 'Continuar',
-        onConfirm: () => {
-          if (isEditing) {
-            // Si estamos editando, volver a la pantalla anterior
-            navigation.goBack();
-          } else {
-            // Si es usuario nuevo, ir a la pantalla principal
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'HomeScreen' }],
-              })
-            );
-          }
-        }
-      });
     } catch (error) {
       console.error('Error al guardar objetivos:', error);
       setSaving(false);
@@ -176,7 +158,7 @@ const SetDailyObjectiveScreen = ({ navigation, route }) => {
             <Icon name="arrow-back-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         )}
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle, isEditing && styles.headerTitleWithBack]}>
           {isEditing ? 'Editar objetivos diarios' : 'Establece tus objetivos diarios'}
         </Text>
       </View>

@@ -8,18 +8,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#1a1a2e',
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingTop: 40,
     elevation: 5,
+    position: 'relative',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
+    flex: 1,
+  },
+  headerTitleWithBack: {
+    marginLeft: 24, // Compensar el espacio del botón de volver
   },
   content: {
     padding: 16,
@@ -42,6 +46,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.23,
     shadowRadius: 2.62,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -130,7 +136,9 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 16,
+    top: 40,
     zIndex: 10,
+    padding: 4,
   },
   saveButton: {
     backgroundColor: '#4c6ef5',

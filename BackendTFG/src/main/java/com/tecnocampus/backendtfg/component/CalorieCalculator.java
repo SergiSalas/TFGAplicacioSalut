@@ -37,7 +37,6 @@ public class CalorieCalculator {
             case RUNNING: return 9.8;
             case WALKING: return 3.5;
             case CYCLING: return 7.5;
-            case SWIMMING: return 7.0;
             case HIKING: return 6.0;
             case YOGA: return 2.5;
             case PILATES: return 3.0;

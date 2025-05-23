@@ -5,29 +5,6 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: '#121212',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1a1a2e',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 40,
-    elevation: 5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    flex: 1,
-  },
-  backButton: {
-    padding: 8,
-  },
-  refreshButton: {
-    padding: 8,
-  },
   content: {
     padding: 16,
     paddingBottom: 80,
@@ -56,234 +33,8 @@ export default StyleSheet.create({
     },
     shadowOpacity: 0.23,
     shadowRadius: 2.62,
-  },
-  profileImageContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#1a1a2e',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  editPhotoButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#4c6ef5',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#1a1a2e',
-    elevation: 4,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  infoCard: {
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: '#1a1a2e',
-    elevation: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333333',
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 8,
-    color: '#FFFFFF',
-  },
-  profileInfo: {
-    width: '100%',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  label: {
-    fontSize: 16,
-    color: '#CCCCCC',
-    fontWeight: '500',
-  },
-  value: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#333333',
-    width: '100%',
-  },
-  errorText: {
-    color: '#ff6b6b',
-    textAlign: 'center',
-    marginVertical: 10,
-    fontSize: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#AAAAAA',
-    fontSize: 16,
-    marginVertical: 10,
-  },
-  editProfileButton: {
-    backgroundColor: '#4c6ef5',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 24,
-    elevation: 3,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionButtonsContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-    width: '100%',
-    gap: 12,
-  },
-  editButton: {
-    backgroundColor: '#4c6ef5',
-    marginBottom: 8,
-  },
-  logoutButton: {
-    backgroundColor: '#f59c42',
-    marginBottom: 8,
-  },
-  logoutButtonText: {
-    color: '#fff',
-  },
-  deleteButton: {
-    backgroundColor: '#e74c3c',
-  },
-  deleteButtonText: {
-    color: '#fff',
-  },
-  profileButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(74, 105, 189, 0.2)',
-    borderRadius: 20,
-    padding: 8,
-    elevation: 2,
-  },
-  
-  levelContainer: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
-  // Modificar estos estilos para los colores de los iconos
-  levelBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#4c6ef5", // Color azul para el badge de nivel
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  levelNumber: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  levelInfoContainer: {
-    flex: 1,
-  },
-  levelProgressContainer: {
-    width: '100%',
-    marginBottom: 8,
-  },
-  progressBar: {
-    width: '100%',
-  },
-  expInfoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  expText: {
-    color: '#AAAAAA',
-    fontSize: 12,
-  },
-  progressText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  levelLoadingContainer: {
-    alignItems: 'center',
-    padding: 16,
-  },
-  levelLoadingText: {
-    color: '#AAAAAA',
-    marginTop: 8,
-    fontSize: 14,
-  },
-  
-  buttonContainer: {
-    marginTop: 16,
-    marginBottom: 24,
-    width: '100%',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  // ... existing code ...
-  profileCard: {
-    alignItems: 'center',
-    padding: 20,
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: '#1a1a2e',
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.23,
-    shadowRadius: 2.62,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   profileImageContainer: {
     position: 'relative',
@@ -330,8 +81,6 @@ export default StyleSheet.create({
     color: '#AAAAAA',
     marginBottom: 16,
   },
-
-  // ... existing code ...
   infoCard: {
     marginBottom: 16,
     borderRadius: 12,
@@ -346,6 +95,8 @@ export default StyleSheet.create({
     shadowRadius: 2.62,
     padding: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeader: {
     flexDirection: 'row',
@@ -356,6 +107,8 @@ export default StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#2a2a4a',
     backgroundColor: '#1e1e38',
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
   cardHeaderLeft: {
     flexDirection: 'row',
@@ -388,8 +141,21 @@ export default StyleSheet.create({
     textAlign: 'right',
     flex: 1,
   },
-
-  // ... existing code ...
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    textAlign: 'center',
+    marginVertical: 10,
+    fontSize: 16,
+  },
+  retryButton: {
+    marginTop: 16,
+  },
   actionButtons: {
     marginTop: 20,
     marginBottom: 20,
@@ -412,27 +178,57 @@ export default StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  logoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  levelContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 5,
   },
-
-  // ... existing code ...
-  infoLabel: {
-    fontSize: 14,
-    color: '#AAAAAA',
-    flex: 1,
+  levelBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#4c6ef5",
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(97, 218, 251, 0.5)', 
   },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
+  levelNumber: {
     color: '#FFFFFF',
-    textAlign: 'right',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  levelInfoContainer: {
     flex: 1,
   },
-  
-  // Añadir estos estilos para los objetivos diarios
+  levelProgressContainer: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  progressBar: {
+    width: '100%',
+  },
+  expInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expText: {
+    color: '#AAAAAA',
+    fontSize: 12,
+  },
+  progressText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   objectiveLabel: {
     fontSize: 14,
     color: '#AAAAAA',
@@ -445,5 +241,4 @@ export default StyleSheet.create({
     textAlign: 'right',
     flex: 1,
   },
-
 });

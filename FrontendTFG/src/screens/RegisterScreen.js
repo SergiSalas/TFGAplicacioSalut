@@ -65,16 +65,13 @@ const RegisterScreen = ({ navigation }) => {
       showAlert('Error', 'Por favor, completa todos los campos');
       return;
     }
-
-    try {
-      setIsLoading(true);
-      await register(name, email, password);
-      showAlert('Éxito', 'Registro completado correctamente', 'success', 'Continuar');
-    } catch (error) {
-      showAlert('Error', 'No se pudo registrar. ' + error.message);
-    } finally {
-      setIsLoading(false);
-    }
+    navigation.navigate('TermsAndPermissionsScreen', {
+      userData: {
+        name,
+        email,
+        password
+      }
+    });
   };
 
   return (

@@ -62,6 +62,21 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
       }
     }
     
+    // Se verifica que el evento sea del tipo TRIGGER y que la notificación contenga el dato "hydration_reminder"
+    if (type === EventType.TRIGGER && detail.notification?.data?.type === 'hydration_reminder') {
+      console.log('Trigger de recordatorio de hidratación recibido en background');
+      try {
+        // Se invoca la notificación de fallback para hidratación
+        await NotificationService.showFallbackNotification(
+          '¡Recordatorio de hidratación!',
+          'Recuerda beber agua regularmente para mantenerte hidratado.'
+        );
+        console.log('Notificación de hidratación enviada desde background correctamente');
+      } catch (error) {
+        console.error('Error en el handler de background para hidratación:', error);
+      }
+    }
+    
     // Guardar ID como procesado
     processedIds.push(eventId);
     // Mantener solo los últimos 20 IDs
@@ -357,7 +372,139 @@ class NotificationServiceClass {
       return null;
     }
   }
+
+   // Programa una notificación de recordatorio de hidratación para las 18:00 diariamente
+   async scheduleHydrationReminder() {
+    try {
+      // Programar la notificación para las 18:00 cada día
+      const triggerTimestamp = this.getNextTriggerTime(18, 0); // 18:00 (6 PM)
+      const nextTriggerDate = new Date(triggerTimestamp);
+      const nextTriggerTime = nextTriggerDate.toLocaleTimeString();
+      const nextTriggerDay = nextTriggerDate.toLocaleDateString();
+      console.log(`Programando recordatorio de hidratación para las ${nextTriggerTime} del ${nextTriggerDay}`);
   
+      // Cancelar trigger previo, si existe
+      const existingTriggerId = await AsyncStorage.getItem('hydration_reminder_trigger_id');
+      if (existingTriggerId) {
+        await notifee.cancelTriggerNotification(existingTriggerId);
+        console.log(`Cancelado trigger anterior de hidratación con ID: ${existingTriggerId}`);
+      }
+      
+      // Crear (o reusar) el canal para las notificaciones
+      const channelId = await notifee.createChannel({
+        id: 'hydration_reminder',
+        name: 'Hydration Reminders',
+        importance: AndroidImportance.HIGH,
+      });
+  
+      // Crear la notificación con el trigger para las 18:00
+      const triggerId = await notifee.createTriggerNotification(
+        {
+          title: 'Recordatorio de hidratación',
+          body: '¡Recuerda beber agua! Mantente hidratado para un mejor rendimiento y salud.',
+          android: {
+            channelId,
+            smallIcon: 'ic_launcher',
+          },
+          data: { type: 'hydration_reminder' },
+        },
+        {
+          type: TriggerType.TIMESTAMP,
+          timestamp: triggerTimestamp,
+          repeatFrequency: TriggerType.DAILY, // Repetir diariamente
+        }
+      );
+      
+      console.log(`Notificación de hidratación programada con ID: ${triggerId} para las ${nextTriggerTime} del ${nextTriggerDay}`);
+      await AsyncStorage.setItem('hydration_reminder_trigger_id', triggerId);
+      return triggerId;
+    } catch (error) {
+      console.error('Error al programar el recordatorio de hidratación:', error);
+      return null;
+    }
+  }
+
+  async performHydrationReminder() {
+    try {
+      console.log('Ejecutando recordatorio de hidratación...');
+      
+      // Se obtiene el token del usuario (si existe)
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        console.log('No se encontró usuario autenticado, enviando notificación fallback de hidratación');
+        await this.displayLocalNotification(
+          '¡Recordatorio de hidratación!',
+          'Recuerda beber agua regularmente. ¡Mantenerse hidratado es esencial para tu salud!',
+          { type: 'hydration_reminder' },
+          `hydration_reminder_fallback_${Date.now()}`
+        );
+      } else {
+        // Importar el servicio de hidratación
+        const { getHydrationStatus } = require('../service/HydrationService');
+        
+        try {
+          // Obtener datos actuales de hidratación
+          const hydrationData = await getHydrationStatus(token);
+          
+          // Calcular el progreso de hidratación
+          const currentAmount = hydrationData.currentAmount; // en ml
+          const dailyTarget = hydrationData.dailyTarget; // en ml
+          const remaining = Math.max(0, dailyTarget - currentAmount);
+          const percentComplete = Math.round((currentAmount / dailyTarget) * 100);
+          
+          let title = '¡Recordatorio de hidratación!';
+          let body;
+          
+          // Personalizar el mensaje según el progreso
+          if (percentComplete >= 100) {
+            body = '¡Felicidades! Has alcanzado tu objetivo de hidratación diaria. Sigue así para mantener una buena salud.';
+          } else if (percentComplete >= 75) {
+            body = `¡Vas muy bien! Has completado el ${percentComplete}% de tu objetivo. Solo te faltan ${remaining} ml para completar tu meta diaria.`;
+          } else if (percentComplete >= 50) {
+            body = `Has bebido ${currentAmount} ml de agua hoy. Te faltan ${remaining} ml para alcanzar tu objetivo diario.`;
+          } else if (percentComplete >= 25) {
+            body = `Has completado el ${percentComplete}% de tu objetivo de hidratación. Recuerda beber ${remaining} ml más para alcanzar tu meta.`;
+          } else {
+            body = `¡Es importante mantenerse hidratado! Solo has bebido ${currentAmount} ml de los ${dailyTarget} ml recomendados para hoy.`;
+          }
+          
+          await this.displayLocalNotification(
+            title, 
+            body, 
+            { type: 'hydration_reminder' }, 
+            `hydration_reminder_${Date.now()}`
+          );
+          console.log('Notificación de hidratación personalizada enviada');
+        } catch (hydrationError) {
+          console.error('Error al obtener datos de hidratación:', hydrationError);
+          // Fallback si no se pueden obtener los datos de hidratación
+          await this.displayLocalNotification(
+            '¡Hora de hidratarse!',
+            '¿Has bebido suficiente agua hoy? Recuerda mantener una buena hidratación para tu bienestar.',
+            { type: 'hydration_reminder' },
+            `hydration_reminder_${Date.now()}`
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error durante el recordatorio de hidratación:', error);
+      try {
+        await notifee.displayNotification({
+          title: 'Recordatorio de hidratación',
+          body: 'Recuerda beber agua regularmente.',
+          android: {
+            channelId: 'default',
+            smallIcon: 'ic_launcher',
+          },
+        });
+      } catch (finalError) {
+        console.error('Error en fallback final de hidratación:', finalError);
+      }
+    } finally {
+      // Reprogramar para el día siguiente a las 18:00
+      await this.scheduleHydrationReminder();
+    }
+  }
 
   async performStepGoalCheck() {
     try {
@@ -445,6 +592,10 @@ class NotificationServiceClass {
           console.log('Trigger de verificación recibido en foreground');
           await this.performStepGoalCheck();
         }
+        if (type === EventType.TRIGGER && detail.notification?.data?.type === 'hydration_reminder') {
+          console.log('Trigger de hidratación recibido en foreground');
+          await this.performHydrationReminder();
+        }
       });
       console.log('Manejadores configurados correctamente');
       return true;
@@ -477,6 +628,10 @@ class NotificationServiceClass {
       
       // Programa una verificación de pasos para las 14:00
       await this.scheduleStepGoalCheck();
+
+      // Programa un recordatorio de hidratación para las 18:00
+      await this.scheduleHydrationReminder();
+    
       
       // Debug info
       await this.debugNotificationHandlers();

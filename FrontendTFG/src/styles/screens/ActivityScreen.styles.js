@@ -324,4 +324,20 @@ export default StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
+
+  createActivityButton: {
+    backgroundColor: '#4361ee',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createActivityButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
 });

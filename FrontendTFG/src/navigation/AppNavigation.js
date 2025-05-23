@@ -20,32 +20,29 @@ import ChallengesScreen from '../screens/ChallengesScreen';
 // Importación de pantallas de autenticación
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import TermsAndPermissionsScreen from '../screens/TermsAndPermissionsScreen';
+import RegisterConfirmScreen from '../screens/RegisterConfirmScreen';
 
-// Añadir la importación de la nueva pantalla
+// Importación de pantallas extra
 import SetDailyObjectiveScreen from '../screens/SetDailyObjectiveScreen';
 import SetUserProfileScreen from '../screens/SetUserProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import TrendsScreen from '../screens/TrendsScreen';
 import InitialUserProfileScreen from '../screens/InitialUserProfileScreen';
 
-
 const Stack = createStackNavigator();
 
-// Separar la definición del navegador de su uso
 const StackNavigator = ({ isAuthenticated, isNewUser }) => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
-        // Navegación para usuarios autenticados
         <>
           {isNewUser ? (
-            // Para usuarios nuevos, primero configurar el perfil
             <>
               <Stack.Screen name="InitialUserProfileScreen" component={InitialUserProfileScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
             </>
           ) : (
-            // Para usuarios existentes, mostrar la estructura normal de navegación
             <>
               <Stack.Screen name="HomeScreen" component={HomeScreen} />
               <Stack.Screen name="ActivityScreen" component={ActivityScreen} />
@@ -66,13 +63,13 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
           )}
         </>
       ) : (
-        // Navegación para usuarios NO autenticados
         <>
           <Stack.Screen name="LoginScreen" component={LoginScreen} />
           <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
+          <Stack.Screen name="TermsAndPermissionsScreen" component={TermsAndPermissionsScreen} />
+          <Stack.Screen name="RegisterConfirmScreen" component={RegisterConfirmScreen} />
         </>
       )}
-      {/* Remove this line: <Stack.Screen name="TrendsScreen" component={TrendsScreen} /> */}
     </Stack.Navigator>
   );
 };
@@ -82,11 +79,29 @@ const AppNavigator = () => {
   const isAuthenticated = !!token;
   const navigationRef = useRef(null);
 
+  // Ref para guardar el valor anterior de isNewUser
+  const prevIsNewUser = useRef(isNewUser);
+
   useEffect(() => {
     if (navigationRef.current) {
       registerNavigation(navigationRef.current);
     }
   }, [navigationRef.current, registerNavigation]);
+
+  // Efecto para detectar el cambio de isNewUser y navegar correctamente
+  useEffect(() => {
+    if (
+      prevIsNewUser.current === true &&
+      isNewUser === false &&
+      navigationRef.current
+    ) {
+      navigationRef.current.reset({
+        index: 0,
+        routes: [{ name: 'HomeScreen' }],
+      });
+    }
+    prevIsNewUser.current = isNewUser;
+  }, [isNewUser]);
 
   if (loading) {
     return (
@@ -109,4 +124,3 @@ const AppNavigator = () => {
 };
 
 export default AppNavigator;
-
