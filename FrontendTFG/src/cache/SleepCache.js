@@ -1,10 +1,16 @@
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
 
-// Extender las claves de almacenamiento para incluir las relacionadas con el sueño
-// Esto se debe hacer en AppStorage.js
-
+/**
+ * Módulo para gestionar el almacenamiento en caché de datos relacionados con el sueño.
+ * Proporciona funciones para guardar, recuperar, validar y limpiar datos de sueño.
+ */
 export const SleepCache = {
-  // Gestión de datos de sueño en caché
+  /**
+   * Guarda los datos de sueño en la caché para una fecha específica.
+   * @param {Object} sleepData - Datos de sueño a guardar.
+   * @param {string|null} date - Fecha opcional en formato ISO (YYYY-MM-DD). Si no se proporciona, se usa la fecha de inicio del sueño o la fecha actual.
+   * @returns {boolean} - Verdadero si se guardó correctamente, falso en caso de error.
+   */
   saveSleepData: (sleepData, date = null) => {
     try {
       // Si no se proporciona fecha, usar la fecha de inicio del sueño
@@ -28,6 +34,11 @@ export const SleepCache = {
     }
   },
   
+  /**
+   * Recupera los datos de sueño de la caché para una fecha específica.
+   * @param {string|null} date - Fecha opcional en formato ISO (YYYY-MM-DD). Si no se proporciona, se usa la fecha actual.
+   * @returns {Object|null} - Datos de sueño si existen y son válidos, o null si no existen o han expirado.
+   */
   getSleepData: (date = null) => {
     try {
       // Si no se proporciona fecha, usar la fecha actual
@@ -55,6 +66,11 @@ export const SleepCache = {
     }
   },
   
+  /**
+   * Verifica si la caché de sueño para una fecha específica es válida (no ha expirado).
+   * @param {string|null} date - Fecha opcional en formato ISO (YYYY-MM-DD). Si no se proporciona, se usa la fecha actual.
+   * @returns {boolean} - Verdadero si la caché es válida, falso si no existe o ha expirado.
+   */
   isCacheValid: (date = null) => {
     try {
       const sleepDate = date || new Date().toISOString().split('T')[0];
@@ -75,6 +91,11 @@ export const SleepCache = {
     }
   },
   
+  /**
+   * Invalida la caché de sueño para una fecha específica o todas las cachés de sueño.
+   * @param {string|null} date - Fecha opcional en formato ISO (YYYY-MM-DD). Si no se proporciona, se invalidan todas las cachés de sueño.
+   * @returns {boolean} - Verdadero si se invalidó correctamente, falso en caso de error.
+   */
   invalidateCache: (date = null) => {
     try {
       if (date) {
@@ -101,7 +122,10 @@ export const SleepCache = {
     }
   },
   
-  // Gestión de IDs de sueño guardados
+  /**
+   * Recupera la lista de IDs de sueño guardados.
+   * @returns {Array} - Array con los IDs de sueño guardados, o array vacío si no hay ninguno o hay error.
+   */
   getSavedSleepIds: () => {
     try {
       if (!activityStorage.contains(STORAGE_KEYS.SAVED_SLEEP_IDS)) return [];
@@ -114,6 +138,11 @@ export const SleepCache = {
     }
   },
   
+  /**
+   * Guarda un ID de sueño en la lista de IDs guardados si no existe ya.
+   * @param {string} sleepId - ID de sueño a guardar.
+   * @returns {boolean} - Verdadero si se guardó correctamente, falso en caso de error.
+   */
   saveSleepId: (sleepId) => {
     try {
       const savedIds = SleepCache.getSavedSleepIds();
@@ -129,6 +158,10 @@ export const SleepCache = {
     }
   },
   
+  /**
+   * Elimina todos los IDs de sueño guardados.
+   * @returns {boolean} - Verdadero si se eliminaron correctamente, falso en caso de error.
+   */
   clearSavedSleepIds: () => {
     try {
       activityStorage.delete(STORAGE_KEYS.SAVED_SLEEP_IDS);
@@ -140,6 +173,10 @@ export const SleepCache = {
     }
   },
   
+  /**
+   * Elimina todos los datos de sueño almacenados en caché.
+   * @returns {boolean} - Verdadero si se eliminaron correctamente, falso en caso de error.
+   */
   clearSleepData: () => {
     try {
       const allKeys = activityStorage.getAllKeys();

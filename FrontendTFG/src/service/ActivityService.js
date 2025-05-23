@@ -1,8 +1,5 @@
-import Config from 'react-native-config';
 import axios from 'axios';
 import { ActivityCache } from '../cache/ActivityCache';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CacheService } from '../services/CacheService';
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
 import { useContext } from 'react';
 

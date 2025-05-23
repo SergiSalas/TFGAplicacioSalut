@@ -3,7 +3,6 @@ package com.tecnocampus.backendtfg.api;
 import com.tecnocampus.backendtfg.application.ChallengeService;
 import com.tecnocampus.backendtfg.application.dto.ChallengeDTO;
 import com.tecnocampus.backendtfg.application.dto.LevelDTO;
-import com.tecnocampus.backendtfg.domain.Challenge;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

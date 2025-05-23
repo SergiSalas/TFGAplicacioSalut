@@ -747,7 +747,7 @@ public class TrendService {
         datasets.add(new SleepStageDataSetDTO("REM", remValues));
         datasets.add(new SleepStageDataSetDTO("DEEP", deepValues));
         datasets.add(new SleepStageDataSetDTO("LIGHT", lightValues));
-        datasets.add(new SleepStageDataSetDTO("AWAKE_IN_BED", awakeValues));;
+        datasets.add(new SleepStageDataSetDTO("AWAKE_IN_BED", awakeValues));
 
         return new SleepStageTrendDTO(labels, datasets, "minutos");
     }

@@ -3,7 +3,6 @@ package com.tecnocampus.backendtfg.persistence;
 
 import com.tecnocampus.backendtfg.application.dto.ActivityDTO;
 import com.tecnocampus.backendtfg.domain.AbstractActivity;
-import com.tecnocampus.backendtfg.domain.Activity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

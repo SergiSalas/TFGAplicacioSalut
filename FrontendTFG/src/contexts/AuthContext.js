@@ -8,8 +8,17 @@ import { CommonActions } from '@react-navigation/native';
 import { ProfileImageCache } from '../cache/ProfileImageCache';
 import { SleepCache } from '../cache/SleepCache'; 
 
+/**
+ * Contexto de autenticación para gestionar el estado de la sesión del usuario.
+ * Proporciona funciones para iniciar sesión, registrarse, cerrar sesión y gestionar el token.
+ */
 export const AuthContext = createContext();
 
+/**
+ * Proveedor del contexto de autenticación que encapsula la lógica de gestión de sesiones.
+ * @param {Object} props - Propiedades del componente.
+ * @param {React.ReactNode} props.children - Componentes hijos que tendrán acceso al contexto.
+ */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -21,6 +30,10 @@ export const AuthProvider = ({ children }) => {
     loadStoredData();
   }, []);
 
+  /**
+   * Carga los datos de autenticación almacenados localmente.
+   * Verifica la validez del token con el servidor y establece el estado de la sesión.
+   */
   const loadStoredData = async () => {
     try {
       setLoading(true);
@@ -100,6 +113,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Inicia sesión con email y contraseña.
+   * @param {string} email - Correo electrónico del usuario.
+   * @param {string} password - Contraseña del usuario.
+   * @returns {Promise} - Promesa que se resuelve cuando se completa el inicio de sesión.
+   * @throws {Error} - Error si falla el inicio de sesión.
+   */
   const login = async (email, password) => {
     try {
       const data = await loginUser(email, password);
@@ -120,6 +140,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Registra un nuevo usuario en el sistema.
+   * @param {string} name - Nombre del usuario.
+   * @param {string} email - Correo electrónico del usuario.
+   * @param {string} password - Contraseña del usuario.
+   * @returns {Promise<Object>} - Datos del usuario registrado.
+   * @throws {Error} - Error si falla el registro.
+   */
   const register = async (name, email, password) => {
     try {
       const data = await registerUser(name, email, password);
@@ -155,6 +183,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Cierra la sesión del usuario actual y limpia todas las cachés y datos almacenados.
+   */
   const logout = () => {
     try {
 
@@ -164,7 +195,7 @@ export const AuthProvider = ({ children }) => {
       ActivityCache.clearSavedExerciseIds();
       ActivityCache.clearSavedStepIds();
 
-      SleepCache.clearSavedSleepIds
+      SleepCache.clearSavedSleepIds();
       SleepCache.clearSleepData();
       
       appStorage.delete(STORAGE_KEYS.AUTH_TOKEN);
@@ -177,6 +208,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Maneja la expiración del token de autenticación.
+   * Limpia los datos de sesión y redirige al usuario a la pantalla de inicio de sesión.
+   */
   const handleTokenExpiration = () => {
     try {
       console.log('Sesión expirada, limpiando todas las cachés y datos guardados');
@@ -221,6 +256,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Actualiza el estado de usuario nuevo.
+   * @param {boolean} value - Nuevo valor para el estado de usuario nuevo.
+   */
   const updateIsNewUser = (value) => {
     try {
       appStorage.set(STORAGE_KEYS.IS_NEW_USER, value.toString());
@@ -230,7 +269,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para limpiar por completo cualquier dato de autenticación
+  /**
+   * Limpia por completo todos los datos de autenticación almacenados.
+   * Útil para resolver problemas de sesión o forzar un cierre de sesión completo.
+   */
   const forceCleanAuth = () => {
     console.log('⚠️ Forzando limpieza de todos los datos de autenticación');
     
@@ -245,16 +287,6 @@ export const AuthProvider = ({ children }) => {
 
       ProfileImageCache.clearCache();
       
-      // Limpiar también en el módulo CacheService si existe
-      try {
-        const { CacheService } = require('../services/CacheService');
-        if (CacheService && CacheService.clearAuthData) {
-          CacheService.clearAuthData();
-        }
-      } catch (e) {
-        // Ignorar si no existe
-      }
-      
       // Actualizar estado
       setToken(null);
       setUser(null);
@@ -266,13 +298,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Añadir método para registrar la navegación
+  /**
+   * Registra el objeto de navegación para poder utilizarlo en redirecciones.
+   * @param {Object} nav - Objeto de navegación de React Navigation.
+   */
   const registerNavigation = (nav) => {
     console.log('Navegación registrada correctamente');
     setNavigation(nav);
   };
 
-  // Añadir este método para comprobar el estado del almacenamiento
+  /**
+   * Comprueba y devuelve el estado actual del almacenamiento relacionado con la autenticación.
+   * @returns {Object} - Objeto con el estado del almacenamiento (hasToken, hasUserData, isNewUser).
+   */
   const checkStorageStatus = () => {
     const allKeys = appStorage.getAllKeys();
     const storedToken = appStorage.getString(STORAGE_KEYS.AUTH_TOKEN);

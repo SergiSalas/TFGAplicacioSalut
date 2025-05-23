@@ -21,7 +21,7 @@ import { getUserProfile, getUserLevel } from '../service/UserService';
 import { AuthContext } from '../contexts/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSleepData } from '../hooks/useSleepData';
-import NotificationService from '../services/NotificationService';
+import NotificationService from '../service/NotificationService';
 import HydrationBottleCard from '../components/HydrationBottleCard';
 import { getHydrationStatus, updateHydration } from '../service/HydrationService';
 import { useFocusEffect } from '@react-navigation/native';

@@ -1,7 +1,5 @@
 package com.tecnocampus.backendtfg.application.dto;
 
-import com.tecnocampus.backendtfg.domain.ActivityOrigin;
-import com.tecnocampus.backendtfg.domain.TypeActivity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

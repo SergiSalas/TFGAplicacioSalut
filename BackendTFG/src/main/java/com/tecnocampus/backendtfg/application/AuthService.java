@@ -11,11 +11,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    private JwtUtils jwtUtils;
+    private final JwtUtils jwtUtils;
 
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository,JwtUtils jwtUtils, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;

@@ -1,7 +1,9 @@
 package com.tecnocampus.backendtfg;
 
+import com.tecnocampus.backendtfg.application.ChallengeService;
 import com.tecnocampus.backendtfg.application.SleepService;
 import com.tecnocampus.backendtfg.application.dto.SleepDTO;
+import com.tecnocampus.backendtfg.component.JwtUtils;
 import com.tecnocampus.backendtfg.domain.Sleep;
 import com.tecnocampus.backendtfg.domain.SleepProfile;
 import com.tecnocampus.backendtfg.domain.User;
@@ -22,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class SleepTests {
-/*
+
     @Mock
     private SleepRepository sleepRepository;
 
@@ -31,6 +33,12 @@ public class SleepTests {
 
     @Mock
     private SleepProfileRepository sleepProfileRepository;
+
+    @Mock
+    private JwtUtils jwtUtils;
+
+    @Mock
+    private ChallengeService challengeService;
 
     @InjectMocks
     private SleepService sleepService;
@@ -43,6 +51,7 @@ public class SleepTests {
     @Test
     public void testCreateSleep() {
         // Arrange
+        String token = "test-token";
         String email = "test@example.com";
         Date startTime = new Date();
         Date endTime = new Date(startTime.getTime() + 28800000); // 8 hours later
@@ -52,7 +61,6 @@ public class SleepTests {
         sleepDTO.setStartTime(startTime);
         sleepDTO.setEndTime(endTime);
         sleepDTO.setQuality(3); // GOOD quality value
-        sleepDTO.setRemSleep(120);
         sleepDTO.setComment("Good sleep");
 
         User user = new User();
@@ -60,12 +68,13 @@ public class SleepTests {
         user.setSleepProfile(sleepProfile);
         sleepProfile.setSleeps(new ArrayList<>());
 
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
         when(userRepository.existsByEmail(email)).thenReturn(true);
         when(userRepository.findByEmail(email)).thenReturn(user);
         when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(new ArrayList<>());
 
         // Act
-        sleepService.createSleep(sleepDTO, email);
+        sleepService.createSleep(sleepDTO, token);
 
         // Assert
         verify(sleepRepository, times(1)).save(any(Sleep.class));
@@ -117,7 +126,6 @@ public class SleepTests {
         sleepDTO.setStartTime(startTime);
         sleepDTO.setEndTime(endTime);
         sleepDTO.setQuality(2); // AVERAGE quality value
-        sleepDTO.setRemSleep(90);
         sleepDTO.setComment("Average sleep");
 
         User user = new User();
@@ -146,20 +154,43 @@ public class SleepTests {
     @Test
     public void testGetSleeps() {
         // Arrange
+        String token = "test-token";
         String email = "test@example.com";
         User user = new User();
         SleepProfile sleepProfile = new SleepProfile();
         user.setSleepProfile(sleepProfile);
 
-        Sleep sleep1 = new Sleep(8, new Date(), new Date(), 3, 120, "Good sleep", sleepProfile);
-        Sleep sleep2 = new Sleep(6, new Date(), new Date(), 2, 90, "Average sleep", sleepProfile);
+        // Crear SleepDTOs y luego Sleep con ellos
+        SleepDTO sleepDTO1 = new SleepDTO();
+        sleepDTO1.setHours(8);
+        sleepDTO1.setQuality(3);
+        sleepDTO1.setComment("Good sleep");
+
+        SleepDTO sleepDTO2 = new SleepDTO();
+        sleepDTO2.setHours(6);
+        sleepDTO2.setQuality(2);
+        sleepDTO2.setComment("Average sleep");
+
+        Sleep sleep1 = new Sleep();
+        sleep1.setSleepProfile(sleepProfile);
+        sleep1.setHours(8);
+        sleep1.setQuality(3);
+        sleep1.setComment("Good sleep");
+
+        Sleep sleep2 = new Sleep();
+        sleep2.setSleepProfile(sleepProfile);
+        sleep2.setHours(6);
+        sleep2.setQuality(2);
+        sleep2.setComment("Average sleep");
+
         List<Sleep> sleepList = List.of(sleep1, sleep2);
 
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
         when(userRepository.findByEmail(email)).thenReturn(user);
         when(sleepRepository.findBySleepProfile(sleepProfile)).thenReturn(sleepList);
 
-        // Act
-        List<SleepDTO> sleeps = sleepService.getSleeps(email);
+        // Act - se necesitan dos parámetros: token y date (puede ser null)
+        List<SleepDTO> sleeps = sleepService.getSleeps(token, null);
 
         // Assert
         verify(userRepository, times(1)).findByEmail(email);
@@ -172,6 +203,7 @@ public class SleepTests {
     @Test
     public void testAddObjective() {
         // Arrange
+        String token = "test-token";
         String email = "test@example.com";
         double dailyObjectiveSleep = 8.0;
 
@@ -179,16 +211,15 @@ public class SleepTests {
         SleepProfile sleepProfile = new SleepProfile();
         user.setSleepProfile(sleepProfile);
 
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
         when(userRepository.findByEmail(email)).thenReturn(user);
 
-        // Act
-        sleepService.addObjective(dailyObjectiveSleep, email);
+        // Act - orden correcto: primero token, luego objetivo
+        sleepService.addObjective(token, dailyObjectiveSleep);
 
         // Assert
         verify(sleepProfileRepository, times(1)).save(sleepProfile);
         verify(userRepository, times(1)).save(user);
         assertEquals(dailyObjectiveSleep, sleepProfile.getDailyObjectiveSleep());
     }
-
- */
 }

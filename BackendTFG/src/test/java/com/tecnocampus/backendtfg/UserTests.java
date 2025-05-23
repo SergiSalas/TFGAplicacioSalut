@@ -1,119 +1,231 @@
 package com.tecnocampus.backendtfg;
 
 import com.tecnocampus.backendtfg.application.UserService;
+import com.tecnocampus.backendtfg.application.dto.DataProfileDTO;
+import com.tecnocampus.backendtfg.application.dto.GenderTypeDTO;
 import com.tecnocampus.backendtfg.application.dto.UserDTO;
+import com.tecnocampus.backendtfg.component.JwtUtils;
+import com.tecnocampus.backendtfg.domain.Gender;
 import com.tecnocampus.backendtfg.domain.User;
+import com.tecnocampus.backendtfg.domain.UserImage;
+import com.tecnocampus.backendtfg.persistence.UserImageRepository;
 import com.tecnocampus.backendtfg.persistence.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.MockitoAnnotations;
+import org.springframework.web.multipart.MultipartFile;
 
-@SpringBootTest
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 public class UserTests {
+
     @InjectMocks
     private UserService userService;
 
     @Mock
     private UserRepository userRepository;
-/*
-    @Test
-    void testCreateUser() {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setName("testuser");
-        userDTO.setPassword("password");
 
-        System.out.println("UserDTO created: " + userDTO);
+    @Mock
+    private UserImageRepository userImageRepository;
 
-        User user = new User(userDTO);
+    @Mock
+    private JwtUtils jwtUtils;
 
-        System.out.println("User created from UserDTO: " + user);
+    @Mock
+    private MultipartFile mockFile;
 
-        Mockito.when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
-
-        System.out.println("Mock setup for userRepository.save");
-
-        userService.createUser(userDTO);
-
-        System.out.println("UserService.createUser called with UserDTO");
-
-        Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any(User.class));
-
-        System.out.println("Verified userRepository.save was called once");
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testDeleteUser() {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setName("testuser2");
-        userDTO.setPassword("password2");
-        userDTO.setEmail("test@example.com");  // Add this line
+    public void testSetDataProfile() {
+        // Arrange
+        String token = "test-token";
+        String email = "test@example.com";
 
-        System.out.println("UserDTO created: " + userDTO);
+        DataProfileDTO dataProfileDTO = new DataProfileDTO();
+        dataProfileDTO.setWeight(75.5);
+        dataProfileDTO.setHeight(180);
+        dataProfileDTO.setGender(Gender.MALE);
+        dataProfileDTO.setAge(30);
 
-        User user = new User(userDTO);
+        User user = new User();
 
-        System.out.println("User created from UserDTO: " + user);
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(user);
 
-        Mockito.when(userRepository.findByEmail("test@example.com")).thenReturn(user);
+        // Act
+        userService.setDataProfile(token, dataProfileDTO);
 
-        System.out.println("Mock setup for userRepository.findByEmail");
-
-        userService.deleteUser(userDTO);
-
-        System.out.println("UserService.deleteUser called with UserDTO");
-
-        Mockito.verify(userRepository, Mockito.times(1)).findByEmail("test@example.com");
-
-        System.out.println("Verified userRepository.findByEmail was called once");
-
-        Mockito.verify(userRepository, Mockito.times(1)).delete(user);
-
-        System.out.println("Verified userRepository.delete was called once");
+        // Assert
+        verify(userRepository).save(user);
+        assertEquals(75.5, user.getWeight());
+        assertEquals(180.0, user.getHeight());
+        assertEquals(Gender.MALE, user.getGender());
+        assertEquals(30, user.getAge());
     }
 
     @Test
-    void testUpdateUser() {
-        // Create initial UserDTO
-        UserDTO userDTO = new UserDTO();
-        userDTO.setName("testuser3");
-        userDTO.setPassword("password3");
-        userDTO.setEmail("test3@example.com");
-        userDTO.setWeight(70.0);
-        userDTO.setHeight(175.0);
+    public void testGetGenderTypes() {
+        // Act
+        List<GenderTypeDTO> genderTypes = userService.getGenderTypes();
 
-        // Create existing user
-        User existingUser = new User(userDTO);
-        System.out.println("Existing user created: " + existingUser);
+        // Assert
+        assertEquals(Gender.values().length, genderTypes.size());
 
-        // Create updated UserDTO with new values
-        UserDTO updatedDTO = new UserDTO();
-        updatedDTO.setName("updatedUser");
-        updatedDTO.setPassword("newPassword");
-        updatedDTO.setEmail("test3@example.com"); // Same email to find the user
-        updatedDTO.setWeight(75.0);
-        updatedDTO.setHeight(180.0);
+        // Verificamos que todos los tipos de género estén presentes
+        Set<String> genderNames = new HashSet<>();
+        for (GenderTypeDTO genderTypeDTO : genderTypes) {
+            genderNames.add(genderTypeDTO.getName());
+        }
 
-        System.out.println("Updated UserDTO created: " + updatedDTO);
-
-        // Mock repository behavior
-        Mockito.when(userRepository.findByEmail("test3@example.com")).thenReturn(existingUser);
-        Mockito.when(userRepository.save(Mockito.any(User.class))).thenReturn(existingUser);
-
-        System.out.println("Mock setup for userRepository methods");
-
-        // Call the service method
-        userService.updateUser(updatedDTO);
-
-        System.out.println("UserService.updateUser called with updated UserDTO");
-
-        // Verify that repository methods were called
-        Mockito.verify(userRepository, Mockito.times(1)).findByEmail("test3@example.com");
-        Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any(User.class));
-
-        System.out.println("Verified userRepository methods were called");
+        for (Gender gender : Gender.values()) {
+            assertTrue(genderNames.contains(gender.name()));
+        }
     }
 
- */
+    @Test
+    public void testGetDataProfile() {
+        // Arrange
+        String token = "test-token";
+        String email = "test@example.com";
+        String name = "Test User";
+
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setWeight(75.5);
+        user.setHeight(180);
+        user.setGender(Gender.MALE);
+        user.setAge(30);
+
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+
+        // Act
+        UserDTO result = userService.getDataProfile(token);
+
+        // Assert
+        assertEquals(name, result.getName());
+        assertEquals(email, result.getEmail());
+        assertEquals(75.5, result.getWeight());
+        assertEquals(180.0, result.getHeight());
+        assertEquals(Gender.MALE, result.getGender());
+        assertEquals(30, result.getAge());
+    }
+
+    @Test
+    public void testGetDataProfileUserNotFound() {
+        // Arrange
+        String token = "test-token";
+        String email = "nonexistent@example.com";
+
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(null);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> userService.getDataProfile(token));
+    }
+
+    @Test
+    public void testSaveUserProfileImage_NewImage() throws IOException {
+        // Arrange
+        String token = "test-token";
+        String email = "test@example.com";
+        User user = new User();
+        byte[] imageData = "test image data".getBytes();
+
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(userImageRepository.findByUser(user)).thenReturn(Optional.empty());
+        when(mockFile.getBytes()).thenReturn(imageData);
+        when(mockFile.getContentType()).thenReturn("image/jpeg");
+        when(mockFile.getOriginalFilename()).thenReturn("profile.jpg");
+
+        // Act
+        userService.saveUserProfileImage(token, mockFile);
+
+        // Assert
+        verify(userImageRepository, times(1)).save(any(UserImage.class));
+        assertNotNull(user.getUserImage());
+        assertEquals("profile.jpg", user.getUserImage().getFilename());
+    }
+
+    @Test
+    public void testSaveUserProfileImage_UpdateExisting() throws IOException {
+        // Arrange
+        String token = "test-token";
+        String email = "test@example.com";
+        User user = new User();
+        UserImage existingImage = new UserImage();
+        existingImage.setImageData("old data".getBytes());
+        existingImage.setImageType("image/png");
+        existingImage.setFilename("old.png");
+        existingImage.setUser(user);
+        user.setUserImage(existingImage);
+
+        byte[] newImageData = "new image data".getBytes();
+
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(userImageRepository.findByUser(user)).thenReturn(Optional.of(existingImage));
+        when(mockFile.getBytes()).thenReturn(newImageData);
+        when(mockFile.getContentType()).thenReturn("image/jpeg");
+        when(mockFile.getOriginalFilename()).thenReturn("new.jpg");
+
+        // Act
+        userService.saveUserProfileImage(token, mockFile);
+
+        // Assert
+        verify(userImageRepository, times(2)).save(existingImage);
+        assertEquals("new.jpg", existingImage.getFilename());
+    }
+
+    @Test
+    public void testGetUserProfileImageAsBase64() {
+        // Arrange
+        String token = "test-token";
+        String email = "test@example.com";
+        User user = new User();
+        UserImage userImage = new UserImage();
+        byte[] imageData = "test image data".getBytes();
+        userImage.setImageData(imageData);
+        userImage.setImageType("image/jpeg");
+        userImage.setFilename("profile.jpg");
+
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(userImageRepository.findByUser(user)).thenReturn(Optional.of(userImage));
+
+        // Act
+        Map<String, String> result = userService.getUserProfileImageAsBase64(token);
+
+        // Assert
+        assertEquals("image/jpeg", result.get("imageType"));
+        assertEquals(Base64.getEncoder().encodeToString(imageData), result.get("imageData"));
+        assertEquals("profile.jpg", result.get("filename"));
+    }
+
+    @Test
+    public void testGetUserProfileImageAsBase64_NotFound() {
+        // Arrange
+        String token = "test-token";
+        String email = "test@example.com";
+        User user = new User();
+
+        when(jwtUtils.extractEmail(token)).thenReturn(email);
+        when(userRepository.findByEmail(email)).thenReturn(user);
+        when(userImageRepository.findByUser(user)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> userService.getUserProfileImageAsBase64(token));
+    }
 }

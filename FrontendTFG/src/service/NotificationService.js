@@ -1,6 +1,3 @@
-// NotificationService.js
-
-// Importaciones necesarias
 import { Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { 
@@ -10,8 +7,8 @@ import notifee, {
 } from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firebase from '@react-native-firebase/app';
-import { getDailySteps } from '../service/StepService';
-import { getDailyObjective } from '../service/ActivityService';
+import { getDailySteps } from './StepService';
+import { getDailyObjective } from './ActivityService';
 
 /**
  * Registro del manejador de eventos en background.
@@ -440,7 +437,7 @@ class NotificationServiceClass {
         );
       } else {
         // Importar el servicio de hidratación
-        const { getHydrationStatus } = require('../service/HydrationService');
+        const { getHydrationStatus } = require('./HydrationService');
         
         try {
           // Obtener datos actuales de hidratación

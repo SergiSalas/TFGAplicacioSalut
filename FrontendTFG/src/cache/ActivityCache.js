@@ -1,7 +1,12 @@
 import { activityStorage, STORAGE_KEYS } from '../storage/AppStorage';
 
 export const ActivityCache = {
-  // Gestión de actividades en caché
+  /**
+   * Guarda actividades en la caché local con una marca de tiempo
+   * @param {Array} activities - Lista de actividades a guardar
+   * @param {string|null} date - Fecha específica para la caché (formato YYYY-MM-DD) o null para todas
+   * @returns {boolean} - true si se guardó correctamente, false si hubo error
+   */
   saveActivities: (activities, date = null) => {
     try {
       const key = date ? 
@@ -22,6 +27,11 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Recupera actividades de la caché local verificando su validez temporal
+   * @param {string|null} date - Fecha específica para recuperar (formato YYYY-MM-DD) o null para todas
+   * @returns {Array|null} - Lista de actividades o null si no hay datos válidos
+   */
   getActivities: (date = null) => {
     try {
       const key = date ? 
@@ -49,6 +59,11 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Verifica si la caché para una fecha específica es válida (no ha expirado)
+   * @param {string|null} date - Fecha a verificar (formato YYYY-MM-DD) o null para todas
+   * @returns {boolean} - true si la caché es válida, false si no existe o ha expirado
+   */
   isCacheValid: (date = null) => {
     try {
       const key = date ? 
@@ -70,6 +85,11 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Invalida (elimina) la caché de actividades para una fecha específica o todas
+   * @param {string|null} date - Fecha específica a invalidar o null para todas
+   * @returns {boolean} - true si se invalidó correctamente, false si hubo error
+   */
   invalidateCache: (date = null) => {
     try {
       if (date) {
@@ -96,7 +116,10 @@ export const ActivityCache = {
     }
   },
   
-  // HealthConnect IDs - Simplificado
+  /**
+   * Recupera los IDs de ejercicios guardados de HealthConnect
+   * @returns {Array} - Lista de IDs de ejercicios o array vacío si no hay datos
+   */
   getSavedExerciseIds: () => {
     try {
       if (!activityStorage.contains(STORAGE_KEYS.SAVED_EXERCISE_IDS)) return [];
@@ -109,6 +132,11 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Guarda un ID de ejercicio de HealthConnect si no existe previamente
+   * @param {string} exerciseId - ID del ejercicio a guardar
+   * @returns {boolean} - true si se guardó correctamente, false si hubo error
+   */
   saveExerciseId: (exerciseId) => {
     try {
       const savedIds = ActivityCache.getSavedExerciseIds();
@@ -124,6 +152,10 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Recupera los IDs de pasos guardados de HealthConnect
+   * @returns {Array} - Lista de IDs de pasos o array vacío si no hay datos
+   */
   getSavedStepIds: () => {
     try {
       if (!activityStorage.contains(STORAGE_KEYS.SAVED_STEP_IDS)) return [];
@@ -136,6 +168,11 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Guarda un ID de paso de HealthConnect si no existe previamente
+   * @param {string} stepId - ID del paso a guardar
+   * @returns {boolean} - true si se guardó correctamente, false si hubo error
+   */
   saveStepId: (stepId) => {
     try {
       const savedIds = ActivityCache.getSavedStepIds();
@@ -151,7 +188,10 @@ export const ActivityCache = {
     }
   },
   
-  // Funciones de limpieza - Simplificado
+  /**
+   * Limpia completamente toda la caché de actividades
+   * @returns {boolean} - true si se limpió correctamente, false si hubo error
+   */
   clearAllCache: () => {
     try {
       activityStorage.clearAll();
@@ -163,7 +203,10 @@ export const ActivityCache = {
     }
   },
   
-  // Métodos específicos para limpiezas parciales
+  /**
+   * Elimina solo los IDs de ejercicios guardados
+   * @returns {boolean} - true si se eliminaron correctamente, false si hubo error
+   */
   clearSavedExerciseIds: () => {
     try {
       activityStorage.delete(STORAGE_KEYS.SAVED_EXERCISE_IDS);
@@ -175,6 +218,10 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Elimina solo los IDs de pasos guardados
+   * @returns {boolean} - true si se eliminaron correctamente, false si hubo error
+   */
   clearSavedStepIds: () => {
     try {
       activityStorage.delete(STORAGE_KEYS.SAVED_STEP_IDS);
@@ -186,6 +233,10 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Elimina todos los datos de actividades y marcas de tiempo de última carga
+   * @returns {boolean} - true si se eliminaron correctamente, false si hubo error
+   */
   clearActivityData: () => {
     try {
       const allKeys = activityStorage.getAllKeys();
@@ -206,6 +257,10 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Registra el momento actual como tiempo de última carga de actividades
+   * @returns {boolean} - true si se guardó correctamente, false si hubo error
+   */
   setLastLoadTime: () => {
     try {
       activityStorage.set(STORAGE_KEYS.LAST_LOAD_TIME, Date.now().toString());
@@ -216,6 +271,10 @@ export const ActivityCache = {
     }
   },
   
+  /**
+   * Obtiene el timestamp de la última carga de actividades
+   * @returns {number} - Timestamp en milisegundos o 0 si no hay registro
+   */
   getLastLoadTime: () => {
     try {
       if (!activityStorage.contains(STORAGE_KEYS.LAST_LOAD_TIME)) return 0;

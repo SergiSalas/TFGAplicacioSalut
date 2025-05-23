@@ -21,8 +21,6 @@ public class ActivityProfile {
 
     private int dailyObjectiveDistance;
 
-    //FrecuenciaCardiaca???
-
     @OneToOne
     private User user;
 

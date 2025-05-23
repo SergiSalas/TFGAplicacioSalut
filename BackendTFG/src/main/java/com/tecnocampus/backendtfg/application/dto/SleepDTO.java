@@ -1,8 +1,6 @@
 package com.tecnocampus.backendtfg.application.dto;
 
 import com.tecnocampus.backendtfg.domain.Sleep;
-import com.tecnocampus.backendtfg.domain.SleepStage;
-import com.tecnocampus.backendtfg.domain.TypeQuality;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

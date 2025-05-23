@@ -9,11 +9,6 @@ import AppContent from '../components/AppContent';
 import HomeScreen from '../screens/HomeScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SleepScreen from '../screens/SleepScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
-import WorkoutListScreen from '../screens/WorkoutListScreen';
-import ProgressScreen from '../screens/ProgressScreen';
-import StatisticsScreen from '../screens/StatisticsScreen';
 import CreateActivityScreen from '../screens/CreateActivityScreen';
 import ChallengesScreen from '../screens/ChallengesScreen';
 
@@ -48,11 +43,6 @@ const StackNavigator = ({ isAuthenticated, isNewUser }) => {
               <Stack.Screen name="ActivityScreen" component={ActivityScreen} />
               <Stack.Screen name="SleepScreen" component={SleepScreen} />
               <Stack.Screen name="ProfileScreen" component={UserProfileScreen} />
-              <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
-              <Stack.Screen name="WorkoutDetailScreen" component={WorkoutDetailScreen} />
-              <Stack.Screen name="WorkoutListScreen" component={WorkoutListScreen} />
-              <Stack.Screen name="ProgressScreen" component={ProgressScreen} />
-              <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
               <Stack.Screen name="CreateActivityScreen" component={CreateActivityScreen} />
               <Stack.Screen name="SetDailyObjectiveScreen" component={SetDailyObjectiveScreen} />
               <Stack.Screen name="SetUserProfileScreen" component={SetUserProfileScreen} />

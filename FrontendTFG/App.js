@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Button, View, Text, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';;
 import AppNavigator from './src/navigation/AppNavigation';
 import { AuthProvider } from './src/contexts/AuthContext';
-import { DataProvider } from './src/contexts/DataContext';
-import NotificationService from './src/services/NotificationService';
+import NotificationService from './src/service/NotificationService';
 // Import Firebase
 import firebase from '@react-native-firebase/app';
 
@@ -69,9 +67,7 @@ function App() {
   
   return (
     <AuthProvider>
-      <DataProvider>
         <AppNavigator />
-      </DataProvider>
     </AuthProvider>
   );
 }
