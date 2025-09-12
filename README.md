@@ -1,5 +1,5 @@
 # 🌍 Language Selector
-[🇬🇧 English](#-wellness-monitoring-application) | [🇪🇸 Español](#-aplicación-de-monitorización-del-bienestar) | [🏴 Català](#-aplicació-de-monitoratge-del-benestar)
+[🇬🇧 English](#-wellness-monitoring-application) | [🇪🇸 Español](#-aplicación-de-monitorización-del-bienestar) 
 
 ---
 
@@ -133,9 +133,10 @@ By combining **React Native, Spring Boot, gamification, and wearable integration
 
 ---
 
-## 🌟 Descripción del Proyecto Este proyecto es una aplicación móvil y web diseñada para mejorar el bienestar de los usuarios mediante el seguimiento y la organización de hábitos saludables como el sueño, la hidratación y la actividad física. 
+## 🌟 Descripción del Proyecto 
+Este proyecto es una **aplicación móvil y web** diseñada para **mejorar el bienestar de los usuarios** mediante el seguimiento y la organización de hábitos saludables como **el sueño, la hidratación y la actividad física**.  
 
-✨ Ofrece una experiencia personalizada, atractiva y accesible, combinando gamificación e integración con dispositivos wearables para fomentar estilos de vida más saludables. 
+✨ Ofrece una **experiencia personalizada, atractiva y accesible**, combinando **gamificación** e **integración con dispositivos wearables** para fomentar estilos de vida más saludables.
 
 ## 🎯 Objetivos Principales 
 ✔️ Promover rutinas saludables (sueño, actividad, hidratación). 
