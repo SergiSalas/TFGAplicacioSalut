@@ -179,7 +179,8 @@ Este proyecto es una **aplicación móvil y web** diseñada para **mejorar el bi
 
 ### ⚡ Pasos 
 ```bash
-# Clonar repositorio git clone https://github.com/SergiSalas/TFGAplicacioSalut.git 
+# Clonar repositorio
+git clone https://github.com/SergiSalas/TFGAplicacioSalut.git 
 # Configuración frontend 
 cd frontend 
 npm install 
