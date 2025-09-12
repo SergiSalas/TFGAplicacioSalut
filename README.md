@@ -204,8 +204,7 @@ cd backend
 - ☁️ Despliegue en la nube con **AWS & CI/CD pipelines**. 
 
 ---
-
-##📝 Conclusiones 
+##📝 Conclusiones
 Este proyecto demuestra la viabilidad de construir una **aplicación de salud robusta, escalable y centrada en el usuario**.  
 
 Al combinar **React Native, Spring Boot, gamificación e integración con wearables**, se cubre una carencia del mercado: ofrecer una **plataforma unificada** que integre **seguimiento del sueño, actividad física e hidratación** en una sola aplicación.
