@@ -1,4 +1,9 @@
-<!-- Title -->
+# 🌍 Language Selector
+[🇬🇧 English](#-wellness-monitoring-application) | [🇪🇸 Español](#-aplicación-de-monitorización-del-bienestar) | [🏴 Català](#-aplicació-de-monitoratge-del-benestar)
+
+---
+
+<!-- ================= ENGLISH VERSION ================= -->
 <h1 align="center">📱 Wellness Monitoring Application</h1>
 <h3 align="center">Final Degree Project (TFG) – Sergi Salas Andres</h3>
 <p align="center">
@@ -89,7 +94,6 @@ npm start
 cd backend
 ./mvnw spring-boot:run
 ```
-
 ## 👥 Target Audience
 - Adults wanting to **improve daily habits**.  
 - People seeking to **optimize sleep and hydration**.  
@@ -119,3 +123,96 @@ By combining **React Native, Spring Boot, gamification, and wearable integration
 **Sergi Salas Andres**  
 📚 Final Degree Project – 2024/2025  
 👩‍🏫 Tutor: Montse Rabassa  
+
+<!-- ================= SPANISH VERSION ================= --> 
+<h1 align="center">📱 Aplicación de Monitorización del Bienestar</h1> 
+<h3 align="center">Trabajo de Fin de Grado (TFG) – Sergi Salas Andres</h3> 
+<p align="center"> 
+  <i>Grado en Ingeniería Informática de Gestión y Sistemas de Información</i> 
+</p> 
+
+---
+
+## 🌟 Descripción del Proyecto Este proyecto es una aplicación móvil y web diseñada para mejorar el bienestar de los usuarios mediante el seguimiento y la organización de hábitos saludables como el sueño, la hidratación y la actividad física. 
+
+✨ Ofrece una experiencia personalizada, atractiva y accesible, combinando gamificación e integración con dispositivos wearables para fomentar estilos de vida más saludables. 
+
+## 🎯 Objetivos Principales 
+✔️ Promover rutinas saludables (sueño, actividad, hidratación). 
+✔️ Ofrecer una interfaz intuitiva y fácil de usar. 
+✔️ Integrarse con Google Fit, Samsung Health Connect, Apple HealthKit. 
+✔️ Garantizar la privacidad de datos y cumplimiento del RGPD. 
+✔️ Proporcionar herramientas de seguimiento, análisis y motivación. 
+
+---
+
+## ⚙️ Funcionalidades Clave 
+- 🏃 **Seguimiento de Actividad** → pasos, calorías, distancia.
+- 😴 **Control del Sueño** → duración, calidad y fases. 
+- 💧 **Registro de Hidratación** → recordatorios y estadísticas. 
+- 📊 **Visualización de Datos** → gráficas interactivas (diarias, semanales, mensuales). 
+- 🏆 **Gamificación** → retos, logros y recompensas. 
+- 👤 **Perfil de Usuario** → objetivos y preferencias personalizadas. 
+
+---
+
+## 🛠️ Tecnologías 
+- **Frontend** → React Native 
+- **Backend** → Spring Boot (Java) 
+- **Base de datos** → PostgreSQL 
+- **Diseño & UX** → Figma 
+- **Integraciones** → Google Fit, Samsung Health Connect, Apple HealthKit (futuro) 
+- **Despliegue** → AWS (futuras iteraciones) 
+
+---
+
+##🚀 Instalación y Ejecución 
+
+###📌 Requisitos 
+- Node.js y npm/yarn 
+- JDK 11+ y Spring Boot 
+- PostgreSQL en ejecución 
+- Emulador o dispositivo Android 
+
+###⚡ Pasos 
+```bash
+# Clonar repositorio git clone https://github.com/SergiSalas/TFGAplicacioSalut.git 
+# Configuración frontend 
+cd frontend 
+npm install 
+npm start 
+# Configuración backend 
+cd backend 
+./mvnw spring-boot:run 
+```
+
+## 👥 Público Objetivo 
+- Adultos que desean mejorar **sus hábitos diarios**. 
+- Personas interesadas en optimizar **su descanso e hidratación**. 
+- Usuarios de wearables que quieren **centralizar sus datos de salud**. 
+- Individuos con objetivos de **bienestar concretos**.
+
+---
+
+## 🔮 Futuras Ampliaciones 
+- 🤖 Correlación avanzada de **datos** con IA/ML. 
+- 🥗 Nutrición y control **alimentario**. 
+- 🍏 Versión completa para **iOS**. 
+- 🌍 **Soporte multilingüe** (catalán, español, inglés, más). 
+- 🏅 **Gamificación avanzada** (insignias, rankings, retos sociales). 
+- ☁️ Despliegue en la nube con **AWS & CI/CD pipelines**. 
+
+---
+
+##📝 Conclusiones 
+Este proyecto demuestra la viabilidad de construir una **aplicación de salud robusta, escalable y centrada en el usuario**.  
+
+Al combinar **React Native, Spring Boot, gamificación e integración con wearables**, se cubre una carencia del mercado: ofrecer una **plataforma unificada** que integre **seguimiento del sueño, actividad física e hidratación** en una sola aplicación.
+
+---
+
+##👨‍💻 Autor 
+
+**Sergi Salas Andres** 
+📚 Trabajo de Fin de Grado – 2024/2025 
+👩‍🏫 Tutora: Montse Rabassa
