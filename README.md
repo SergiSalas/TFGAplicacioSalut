@@ -124,6 +124,8 @@ By combining **React Native, Spring Boot, gamification, and wearable integration
 📚 Final Degree Project – 2024/2025  
 👩‍🏫 Tutor: Montse Rabassa  
 
+
+
 <!-- ================= SPANISH VERSION ================= --> 
 <h1 align="center">📱 Aplicación de Monitorización del Bienestar</h1> 
 <h3 align="center">Trabajo de Fin de Grado (TFG) – Sergi Salas Andres</h3> 
