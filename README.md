@@ -213,7 +213,6 @@ Al combinar **React Native, Spring Boot, gamificación e integración con wearab
 ---
 
 ##👨‍💻 Autor 
-
 **Sergi Salas Andres** 
 📚 Trabajo de Fin de Grado – 2024/2025 
 👩‍🏫 Tutora: Montse Rabassa
