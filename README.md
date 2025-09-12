@@ -167,15 +167,15 @@ Este proyecto es una **aplicación móvil y web** diseñada para **mejorar el bi
 
 ---
 
-##🚀 Instalación y Ejecución 
+## 🚀 Instalación y Ejecución 
 
-###📌 Requisitos 
+### 📌 Requisitos 
 - Node.js y npm/yarn 
 - JDK 11+ y Spring Boot 
 - PostgreSQL en ejecución 
 - Emulador o dispositivo Android 
 
-###⚡ Pasos 
+### ⚡ Pasos 
 ```bash
 # Clonar repositorio git clone https://github.com/SergiSalas/TFGAplicacioSalut.git 
 # Configuración frontend 
@@ -204,14 +204,14 @@ cd backend
 - ☁️ Despliegue en la nube con **AWS & CI/CD pipelines**. 
 
 ---
-##📝 Conclusiones
+## 📝 Conclusiones
 Este proyecto demuestra la viabilidad de construir una **aplicación de salud robusta, escalable y centrada en el usuario**.  
 
 Al combinar **React Native, Spring Boot, gamificación e integración con wearables**, se cubre una carencia del mercado: ofrecer una **plataforma unificada** que integre **seguimiento del sueño, actividad física e hidratación** en una sola aplicación.
 
 ---
 
-##👨‍💻 Autor 
+## 👨‍💻 Autor 
 **Sergi Salas Andres** 
 📚 Trabajo de Fin de Grado – 2024/2025 
 👩‍🏫 Tutora: Montse Rabassa
