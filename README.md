@@ -62,36 +62,37 @@ npm start
 # Backend setup
 cd backend
 ./mvnw spring-boot:run
+```
 
-👥 Target Audience
+## 👥 Target Audience
 
-Adults seeking to establish and maintain healthy routines.
+- Adults seeking to establish and maintain healthy routines.
 
-Users interested in improving sleep and hydration.
+- Users interested in improving sleep and hydration.
 
-Wearable users wanting to centralize health data.
+- Wearable users wanting to centralize health data.
 
-Individuals pursuing specific wellness goals.
+- Individuals pursuing specific wellness goals.
 
-🔮 Future Improvements
+## 🔮 Future Improvements
 
-Advanced data correlation (AI/ML).
+- Advanced data correlation (AI/ML).
 
-Nutrition and dietary tracking.
+- Nutrition and dietary tracking.
 
-Full iOS adaptation.
+- Full iOS adaptation.
 
-Multilingual support (Catalan, Spanish, English, more).
+- Multilingual support (Catalan, Spanish, English, more).
 
-Enhanced gamification (badges, rankings, social challenges).
+- Enhanced gamification (badges, rankings, social challenges).
 
-Cloud deployment on AWS with CI/CD.
+- Cloud deployment on AWS with CI/CD.
 
-📝 Conclusions
+## 📝 Conclusions
 
 The project demonstrates the feasibility of building a robust, scalable, and user-centered health app. By combining React Native, Spring Boot, gamification, and wearable integration, it addresses a market gap: providing a unified tool that integrates sleep, physical activity, and hydration monitoring in one place.
 
-👨‍💻 Author
+## 👨‍💻 Author
 
 Sergi Salas Andres
 Final Degree Project – 2024/2025
